@@ -1,0 +1,23 @@
+# Build directories
+build/
+_build/
+out/
+
+# Generated files
+generated/
+
+# IDE files
+.vscode/
+.vs/
+*.vcxproj*
+*.sln
+*.suo
+*.user
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python cache (for GLAD2)
+__pycache__/
+*.pyc
