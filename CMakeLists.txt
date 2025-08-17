@@ -16,19 +16,23 @@ include(cmake/gamecoe_config.cmake)
 fetch_glfw()
 # GLAD
 generate_glad()
+# logcoe
+fetch_logcoe()
 
 # learnopengl executable
-add_executable(learnopengl main.cpp) # main.cpp will be used for learning learnopengl, later on we will add the gamecoe files.
+add_executable(learnopengl src/gamecoe/shader.cpp main.cpp) # main.cpp will be used for learning learnopengl, later on we will add the gamecoe files.
 
 target_sources(learnopengl PRIVATE ${GAMECOE_GLAD_SOURCES})
 target_include_directories(learnopengl 
     PRIVATE 
+    "include/"
     "${GAMECOE_GLAD_OUTPUT_DIR}/include"
     "${GAMECOE_CONFIG_DIR}"
 )
 target_link_libraries(learnopengl
     PRIVATE
         glfw
+        logcoe
 )
 add_dependencies(learnopengl gamecoe_generate_glad)
 

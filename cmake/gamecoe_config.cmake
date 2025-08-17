@@ -3,5 +3,6 @@
 
 include(${CMAKE_CURRENT_LIST_DIR}/glad.cmake)
 include(${CMAKE_CURRENT_LIST_DIR}/glfw.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/logcoe.cmake)
 
 # Future modules can be added here
