@@ -3,10 +3,13 @@ project(gamecoe LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(GAMECOE_SOURCE_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
 endif()
+
+add_subdirectory(external)
 
 include(FetchContent)
 include(cmake/gamecoe_config.cmake)
@@ -33,8 +36,11 @@ target_link_libraries(learnopengl
     PRIVATE
         glfw
         logcoe
+        stb
 )
-add_dependencies(learnopengl gamecoe_generate_glad)
+add_dependencies(learnopengl glad)
+
+copy_directory_to_build_root(learnopengl "assets")
 
 if(MSVC)
     target_compile_options(learnopengl PRIVATE /W4)

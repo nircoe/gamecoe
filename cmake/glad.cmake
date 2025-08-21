@@ -102,7 +102,7 @@ function(generate_glad)
         VERBATIM
     )
 
-    add_custom_target(gamecoe_generate_glad
+    add_custom_target(glad
         DEPENDS ${GAMECOE_GLAD_SOURCES} ${GAMECOE_GLAD_HEADERS}
         COMMENT "[gamecoe] GLAD2 generation complete"
     )
