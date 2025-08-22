@@ -89,7 +89,7 @@ function(generate_glad)
     endif()
     list(APPEND GLAD_COMMAND_ARGS c)
 
-    set(GLAD_COMMENT "[gamecoe] Generating GLAD2 ")
+    set(GLAD_COMMENT "[gamecoe] Generating GLAD2")
     string(APPEND GLAD_COMMENT "${GAMECOE_GRAPHICS_API}:${GAMECOE_GRAPHICS_PROFILE}=")
     string(APPEND GLAD_COMMENT "${GAMECOE_GRAPHICS_VERSION_MAJOR}.${GAMECOE_GRAPHICS_VERSION_MINOR} loader")
 
@@ -104,6 +104,5 @@ function(generate_glad)
 
     add_custom_target(glad
         DEPENDS ${GAMECOE_GLAD_SOURCES} ${GAMECOE_GLAD_HEADERS}
-        COMMENT "[gamecoe] GLAD2 generation complete"
     )
 endfunction()

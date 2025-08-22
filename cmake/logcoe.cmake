@@ -1,5 +1,4 @@
 function(fetch_logcoe)
-
     message(STATUS "[gamecoe] Fetching logcoe from source...")
 
     FetchContent_Declare(
@@ -8,5 +7,4 @@ function(fetch_logcoe)
         GIT_TAG v0.1.0
     )
     FetchContent_MakeAvailable(logcoe)
-
 endfunction()

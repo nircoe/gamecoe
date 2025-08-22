@@ -7,6 +7,9 @@
 #include <gamecoe/shader.hpp>
 #include <logcoe.hpp>
 #include <stb_image.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
@@ -173,6 +176,13 @@ int main()
     shader->use();
     shader->set("texture1", 0);
     shader->set("texture2", 1);
+
+    // transformation
+    glm::mat4 trans(1.0f);
+    trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    trans = glm::scale(trans, glm::vec3(0.5f, 0.5f, 0.5f));
+
+    // shader->set()
 
     // wire mode
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
