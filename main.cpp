@@ -21,30 +21,45 @@ void framebuffer_size_callback([[maybe_unused]] GLFWwindow *window, int width, i
 
 void processInput(GLFWwindow *window)
 {
-    if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }
 
-int shutdown()
+struct garbage_collector
 {
-    logcoe::shutdown();
-    glfwTerminate();
-    return -1;
-}
+    unsigned int m_VAO = 0;
+    unsigned int m_VBO = 0;
+    unsigned int m_EBO = 0;
+    unsigned int m_texture1 = 0;
+    unsigned int m_texture2 = 0;
+    std::optional<gamecoe::shader> *m_shader = nullptr;
+    ~garbage_collector()
+    {
+        glDeleteTextures(1, &m_texture1);
+        glDeleteTextures(1, &m_texture2);
+        glDeleteVertexArrays(1, &m_VAO);
+        glDeleteBuffers(1, &m_VBO);
+        glDeleteBuffers(1, &m_EBO);
+        if (m_shader)
+            m_shader->reset();
+        logcoe::shutdown();
+        glfwTerminate();
+    }
+};
 
 int main()
 {
+    garbage_collector gc;
     logcoe::initialize(logcoe::LogLevel::INFO, "gamecoe");
     // glfw: initialize and configure
-    if(!glfwInit()) 
+    if (!glfwInit())
     {
         logcoe::error("GLFW failed to initialize");
-        logcoe::shutdown();
         return -1;
     }
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GAMECOE_GRAPHICS_VERSION_MAJOR);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GAMECOE_GRAPHICS_VERSION_MINOR);
-    
+
 #if GAMECOE_USE_OPENGL
     glfwWindowHint(GLFW_OPENGL_PROFILE, GAMECOE_GRAPHICS_PROFILE);
 #ifdef __APPLE__
@@ -54,23 +69,23 @@ int main()
 
     // glfw window creation
     GLFWwindow *window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "LearnOpenGL", NULL, NULL);
-    if(!window)
+    if (!window)
     {
         logcoe::error("Failed to create GLFW window");
-        return shutdown();
+        return -1;
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
 #if GAMECOE_USE_OPENGL
     // glad: load all opengl function pointers
-    if(!gladLoadGL(glfwGetProcAddress))
+    if (!gladLoadGL(glfwGetProcAddress))
     {
         logcoe::error("Failed to initialize GLAD");
-        return shutdown();
+        return -1;
     }
 #endif
-    
+
     // build and compile our shader program
     // ------------------------------------
 
@@ -79,56 +94,55 @@ int main()
     {
         shader.emplace("shader.vert", "shader.frag");
     }
-    catch(const std::runtime_error &e) 
+    catch (const std::runtime_error &e)
     {
         logcoe::error(std::string(e.what()));
-        return shutdown();
+        return -1;
     }
+
+    gc.m_shader = &shader;
 
     // vertex data and buffers
     float vertices[] = {
-        // positions          // colors           // texture coords
-        0.5f, 0.5f, 0.0f,       1.0f, 0.0f, 0.0f,   1.0f, 1.0f,     // top right
-        0.5f, -0.5f, 0.0f,      0.0f, 1.0f, 0.0f,   1.0f, 0.0f,     // bottom right
-        -0.5f, -0.5f, 0.0f,     0.0f, 0.0f, 1.0f,   0.0f, 0.0f,     // bottom left
-        -0.5f, 0.5f, 0.0f,      1.0f, 1.0f, 0.0f,   0.0f, 1.0f      // top left
+        // positions     // texture coords
+        0.5f, 0.5f, 0.0f, 1.0f, 1.0f,   // top right
+        0.5f, -0.5f, 0.0f, 1.0f, 0.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, // bottom left
+        -0.5f, 0.5f, 0.0f, 0.0f, 1.0f   // top left
     };
     unsigned int indices[] = {
         // note that we start from 0!
-        0, 1, 3,    // first triangle
-        1, 2, 3     // second triangle
+        0, 1, 3, // first triangle
+        1, 2, 3  // second triangle
     };
 
     unsigned int VAO, VBO, EBO;
     glGenVertexArrays(1, &VAO);
+    gc.m_VAO = VAO;
     glGenBuffers(1, &VBO);
+    gc.m_VBO = VBO;
     glGenBuffers(1, &EBO);
+    gc.m_EBO = EBO;
 
     glBindVertexArray(VAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    
+
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
     glEnableVertexAttribArray(0);
-    // color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
     // texture attribute
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void *)(6 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0); // unbind
-    glBindVertexArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // first texture
     unsigned int texture1;
     glGenTextures(1, &texture1);
-    glActiveTexture(GL_TEXTURE0);
+    gc.m_texture1 = texture1;
     glBindTexture(GL_TEXTURE_2D, texture1);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -139,13 +153,12 @@ int main()
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(true);
     unsigned char *data = stbi_load("assets/images/container.jpg", &width, &height, &nrChannels, 0);
-    if(!data)
+    if (!data)
     {
         logcoe::error("Failed to load texture1");
-        shader.reset();
-        return shutdown();
+        return -1;
     }
-  
+
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(data);
@@ -153,6 +166,7 @@ int main()
     // second texture
     unsigned int texture2;
     glGenTextures(1, &texture2);
+    gc.m_texture2 = texture2;
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, texture2);
 
@@ -165,24 +179,16 @@ int main()
     if (!data)
     {
         logcoe::error("Failed to load texture2");
-        shader.reset();
-        return shutdown();
+        return -1;
     }
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(data);
 
     shader->use();
     shader->set("texture1", 0);
     shader->set("texture2", 1);
-
-    // transformation
-    glm::mat4 trans(1.0f);
-    trans = glm::rotate(trans, glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    trans = glm::scale(trans, glm::vec3(0.5f, 0.5f, 0.5f));
-
-    // shader->set()
 
     // wire mode
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -195,31 +201,26 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        if(shader)
-            shader->use();
-
-        // float timeValue = glfwGetTime();
-        // float redValue = (std::sinf(timeValue) / 2.0f) + 0.5f;
-        // int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
-        // glUniform4f(vertexColorLocation, redValue, 0.0f, 0.0f, 1.0f);
-
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texture1);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture2);
+
+        // transformation
+        glm::mat4 trans(1.0f);
+        float time = glfwGetTime();
+        trans = glm::translate(trans, glm::vec3(glm::cos(time), glm::sin(time), 0.0f));
+        trans = glm::rotate(trans, time, glm::vec3(0.0f, 0.0f, 1.0f));
+
+        shader->use();
+        shader->set("transform", trans);
+
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
-    glDeleteBuffers(1, &EBO);
-
-    shader.reset();
-    shutdown();
     return 0;
 }

@@ -9,35 +9,32 @@
 
 namespace gamecoe
 {
-    void shader::logIfCreationFailed(const std::string &operation, unsigned int id) // I made it a static function (it doesn't use any member variable or method)
+    void shader::logIfCreationFailed(const std::string &operation, unsigned int id)
     {
-        if (id != 0) return;
-    
+        if (id != 0)
+            return;
+
         std::string error = "failed to create " + operation;
         logcoe::error(error);
         throw std::runtime_error(error);
     }
 
-    void shader::logIfCompileOrLinkFailed(const std::string &operation, unsigned int id, bool isProgram) // changed it to static function as well, is it more efficient?
+    void shader::logIfCompileOrLinkFailed(const std::string &operation, unsigned int id, bool isProgram)
     {
         GLint success;
-        isProgram ? 
-            glGetProgramiv(id, GL_LINK_STATUS, &success) :
-            glGetShaderiv(id, GL_COMPILE_STATUS, &success);
+        isProgram ? glGetProgramiv(id, GL_LINK_STATUS, &success) : glGetShaderiv(id, GL_COMPILE_STATUS, &success);
 
-        if(success) return;
+        if (success)
+            return;
 
         GLint logLength = 0;
-        isProgram ?
-            glGetProgramiv(id, GL_INFO_LOG_LENGTH, &logLength) :
-            glGetShaderiv(id, GL_INFO_LOG_LENGTH, &logLength);
+        isProgram ? glGetProgramiv(id, GL_INFO_LOG_LENGTH, &logLength) : glGetShaderiv(id, GL_INFO_LOG_LENGTH, &logLength);
 
-        if(logLength <= 0) return;
+        if (logLength <= 0)
+            return;
 
-        std::string log(logLength, '\0'); // there are no redundent chars, you just see it because of a string issue
-        isProgram ?
-            glGetProgramInfoLog(id, logLength, nullptr, &(log[0])) :
-            glGetShaderInfoLog(id, logLength, nullptr, &(log[0]));
+        std::string log(logLength, '\0');
+        isProgram ? glGetProgramInfoLog(id, logLength, nullptr, &(log[0])) : glGetShaderInfoLog(id, logLength, nullptr, &(log[0]));
         log.pop_back();
 
         log = operation + ": " + log;
@@ -48,7 +45,7 @@ namespace gamecoe
     int shader::getUniformLocation(const std::string &name) const
     {
         auto it = m_uniformLocation.find(name);
-        if(it != m_uniformLocation.end())
+        if (it != m_uniformLocation.end())
             return it->second;
 
         int location = glGetUniformLocation(m_id, name.c_str());
@@ -58,6 +55,23 @@ namespace gamecoe
 
     shader::shader(const std::string &vertexPath, const std::string &fragmentPath) : m_id(0)
     {
+        struct garbage_collector
+        {
+            unsigned int m_vertex = 0, m_fragment = 0, m_program = 0;
+
+            garbage_collector() { }
+            garbage_collector(const garbage_collector &) = delete;
+            garbage_collector &operator=(const garbage_collector &) = delete;
+
+            ~garbage_collector()
+            {
+                glDeleteShader(m_vertex);
+                glDeleteShader(m_fragment);
+                glDeleteProgram(m_program);
+            }
+        } gc;
+
+        // reading the glsl files
         std::stringstream vertexStream;
         std::stringstream fragmentStream;
 
@@ -75,7 +89,7 @@ namespace gamecoe
             vertexStream << vertexShaderFile.rdbuf();
             fragmentStream << fragmentShaderFile.rdbuf();
         }
-        catch(const std::ifstream::failure &f)
+        catch (const std::ifstream::failure &f)
         {
             std::string error = "failed to read shader file: " + std::string(f.what());
             logcoe::error(error);
@@ -90,6 +104,7 @@ namespace gamecoe
 
         // vertex shader
         unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+        gc.m_vertex = vertexShader;
         logIfCreationFailed("vertex shader", vertexShader);
         glShaderSource(vertexShader, 1, &vertexCode, nullptr);
         glCompileShader(vertexShader);
@@ -97,21 +112,22 @@ namespace gamecoe
 
         // fragment shader
         unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+        gc.m_fragment = fragmentShader;
         logIfCreationFailed("fragment shader", fragmentShader);
         glShaderSource(fragmentShader, 1, &fragmentCode, nullptr);
         glCompileShader(fragmentShader);
         logIfCompileOrLinkFailed("fragment shader compilation failed", fragmentShader, false);
 
-        // link shaders
-        m_id = glCreateProgram();
-        logIfCreationFailed("shader program", m_id);
-        glAttachShader(m_id, vertexShader);
-        glAttachShader(m_id, fragmentShader);
-        glLinkProgram(m_id);
-        logIfCompileOrLinkFailed("shader program linking failed", m_id);
-
-        glDeleteShader(vertexShader);
-        glDeleteShader(fragmentShader);
+        // shader program
+        unsigned int program = glCreateProgram();
+        gc.m_program = program;
+        logIfCreationFailed("shader program", program);
+        glAttachShader(program, vertexShader);
+        glAttachShader(program, fragmentShader);
+        glLinkProgram(program);
+        logIfCompileOrLinkFailed("shader program linking failed", program);
+        gc.m_program = 0;
+        m_id = program;
     }
 
     shader::shader(shader &&other) noexcept : m_id(other.m_id)
@@ -121,7 +137,7 @@ namespace gamecoe
 
     shader &shader::operator=(shader &&other) noexcept
     {
-        if(this != &other)
+        if (this != &other)
         {
             glDeleteProgram(m_id);
             m_id = other.m_id;
@@ -153,51 +169,51 @@ namespace gamecoe
     void shader::set(const std::string &name, float value) const
     {
         glUniform1f(getUniformLocation(name), value);
-        }
+    }
 
     void shader::set(const std::string &name, const glm::vec2 &value) const
     {
-        glUniform2fv(getUniformLocation(name), 1, glm::value_ptr(value));
+        glUniform2fv(getUniformLocation(name), 1, &value[0]);
     }
 
     void shader::set(const std::string &name, const glm::vec3 &value) const
     {
-        glUniform3fv(getUniformLocation(name), 1, glm::value_ptr(value));
+        glUniform3fv(getUniformLocation(name), 1, &value[0]);
     }
 
     void shader::set(const std::string &name, const glm::vec4 &value) const
     {
-        glUniform4fv(getUniformLocation(name), 1, glm::value_ptr(value));
+        glUniform4fv(getUniformLocation(name), 1, &value[0]);
     }
 
     void shader::set(const std::string &name, const glm::ivec2 &value) const
     {
-        glUniform2iv(getUniformLocation(name), 1, glm::value_ptr(value));
+        glUniform2iv(getUniformLocation(name), 1, &value[0]);
     }
 
     void shader::set(const std::string &name, const glm::ivec3 &value) const
     {
-        glUniform3iv(getUniformLocation(name), 1, glm::value_ptr(value));
+        glUniform3iv(getUniformLocation(name), 1, &value[0]);
     }
 
     void shader::set(const std::string &name, const glm::ivec4 &value) const
     {
-        glUniform4iv(getUniformLocation(name), 1, glm::value_ptr(value));
+        glUniform4iv(getUniformLocation(name), 1, &value[0]);
     }
 
     void shader::set(const std::string &name, const glm::mat2 &value) const
     {
-        glUniformMatrix2fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+        glUniformMatrix2fv(getUniformLocation(name), 1, GL_FALSE, &value[0][0]);
     }
 
     void shader::set(const std::string &name, const glm::mat3 &value) const
     {
-        glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+        glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, &value[0][0]);
     }
 
     void shader::set(const std::string &name, const glm::mat4 &value) const
     {
-        glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+        glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, &value[0][0]); // should we do like this or glm::value_ptr(value) ?
     }
 
     void shader::set(const std::string &name, const glm::quat &value) const
