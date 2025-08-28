@@ -49,6 +49,7 @@ namespace gamecoe
             return it->second;
 
         int location = glGetUniformLocation(m_id, name.c_str());
+        if(location < 0) logcoe::warning("undefined uniform: " + name);
         m_uniformLocation[name] = location;
         return location;
     }
@@ -173,47 +174,47 @@ namespace gamecoe
 
     void shader::set(const std::string &name, const glm::vec2 &value) const
     {
-        glUniform2fv(getUniformLocation(name), 1, &value[0]);
+        glUniform2fv(getUniformLocation(name), 1, glm::value_ptr(value));
     }
 
     void shader::set(const std::string &name, const glm::vec3 &value) const
     {
-        glUniform3fv(getUniformLocation(name), 1, &value[0]);
+        glUniform3fv(getUniformLocation(name), 1, glm::value_ptr(value));
     }
 
     void shader::set(const std::string &name, const glm::vec4 &value) const
     {
-        glUniform4fv(getUniformLocation(name), 1, &value[0]);
+        glUniform4fv(getUniformLocation(name), 1, glm::value_ptr(value));
     }
 
     void shader::set(const std::string &name, const glm::ivec2 &value) const
     {
-        glUniform2iv(getUniformLocation(name), 1, &value[0]);
+        glUniform2iv(getUniformLocation(name), 1, glm::value_ptr(value));
     }
 
     void shader::set(const std::string &name, const glm::ivec3 &value) const
     {
-        glUniform3iv(getUniformLocation(name), 1, &value[0]);
+        glUniform3iv(getUniformLocation(name), 1, glm::value_ptr(value));
     }
 
     void shader::set(const std::string &name, const glm::ivec4 &value) const
     {
-        glUniform4iv(getUniformLocation(name), 1, &value[0]);
+        glUniform4iv(getUniformLocation(name), 1, glm::value_ptr(value));
     }
 
     void shader::set(const std::string &name, const glm::mat2 &value) const
     {
-        glUniformMatrix2fv(getUniformLocation(name), 1, GL_FALSE, &value[0][0]);
+        glUniformMatrix2fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
     }
 
     void shader::set(const std::string &name, const glm::mat3 &value) const
     {
-        glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, &value[0][0]);
+        glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
     }
 
     void shader::set(const std::string &name, const glm::mat4 &value) const
     {
-        glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, &value[0][0]); // should we do like this or glm::value_ptr(value) ?
+        glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value)); // should we do like this or glm::value_ptr(value) ?
     }
 
     void shader::set(const std::string &name, const glm::quat &value) const
