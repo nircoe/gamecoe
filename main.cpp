@@ -13,6 +13,17 @@
 
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+float lastX = 400.0f;
+float lastY = 300.0f;
+float yaw = -90.0f;
+float pitch = 0.0f;
+float fov = 45.0f;
+bool firstMouse = true;
+glm::vec3 cameraPos(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraFront(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp(0.0f, 1.0f, 0.0f);
 
 void framebuffer_size_callback([[maybe_unused]] GLFWwindow *window, int width, int height)
 {
@@ -21,8 +32,53 @@ void framebuffer_size_callback([[maybe_unused]] GLFWwindow *window, int width, i
 
 void processInput(GLFWwindow *window)
 {
+    const float cameraSpeed = 10.0f * deltaTime;
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        cameraPos += cameraSpeed * cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        cameraPos -= cameraSpeed * cameraFront;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+}
+
+void mouse_callback([[maybe_unused]] GLFWwindow *window, double xpos, double ypos)
+{
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+    float xOffset = xpos - lastX;
+    float yOffset = ypos - lastY;
+    lastX = xpos;
+    lastY = ypos;
+    const float sensitivity = 0.1f;
+    xOffset *= sensitivity;
+    yOffset *= sensitivity;
+
+    yaw += xOffset;
+    pitch -= yOffset;
+
+    pitch = glm::clamp(pitch, -89.0f, 89.0f);
+
+    glm::vec3 direction;
+    direction.x = glm::cos(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
+    direction.y = glm::sin(glm::radians(pitch));
+    direction.z = glm::sin(glm::radians(yaw)) * glm::cos(glm::radians(pitch));
+
+    cameraFront = glm::normalize(direction);
+}
+
+void scroll_callback([[maybe_unused]] GLFWwindow *window, [[maybe_unused]] double xoffset, double yoffset)
+{
+    fov -= yoffset;
+    fov = glm::clamp(fov, 1.0f, 45.0f);
 }
 
 struct garbage_collector
@@ -76,6 +132,9 @@ int main()
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
 
 #if GAMECOE_USE_OPENGL
     // glad: load all opengl function pointers
@@ -237,10 +296,6 @@ int main()
         glm::vec3(1.5f, 0.2f, -1.5f),
         glm::vec3(-1.3f, 1.0f, -1.5f)};
 
-    glm::mat4 view(1.0f), projection;
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-    projection = glm::perspective(glm::radians(45.0f), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f);
-
     glEnable(GL_DEPTH_TEST);
 
     // wire mode
@@ -249,6 +304,9 @@ int main()
     // main loop
     while (!glfwWindowShouldClose(window))
     {
+        float currentFrame = glfwGetTime();
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
         processInput(window);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -259,7 +317,9 @@ int main()
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture2);
 
-        // transformation
+        // camera
+        glm::mat4 view(glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp));
+        glm::mat4 projection(glm::perspective(glm::radians(fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f));
 
         shader->use();
         shader->set("view", view);
@@ -271,8 +331,7 @@ int main()
             // cubePositions
             glm::mat4 model(1.0f);
             model = glm::translate(model, cubePositions[i]);
-            if((i + 1) % 3 == 0 || i == 0)
-                model = glm::rotate(model, (10 - i) * (float)glfwGetTime() * glm::radians((i + 1) * 20.0f), glm::vec3(1.0f + i, 0.3f - i, i * 0.5f));
+            model = glm::rotate(model, (10 - i) * (float)glfwGetTime() * glm::radians((i + 1) * 20.0f), glm::vec3(1.0f + i, 0.3f - i, i * 0.5f));
             shader->set("model", model);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
