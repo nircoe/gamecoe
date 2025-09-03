@@ -7,7 +7,6 @@ set(GAMECOE_SOURCE_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 include(cmake/gamecoe_config.cmake)
 check_compiler_version()
-test_cpp20_features()
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)

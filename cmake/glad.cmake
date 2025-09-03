@@ -14,7 +14,11 @@ function(ensure_jinja2)
         )
         
         if(NOT INSTALL_RESULT EQUAL 0)
-            message(FATAL_ERROR "[gamecoe] Failed to install jinja2. Please run: pip install jinja2")
+            message(FATAL_ERROR 
+                "[gamecoe] Failed to install jinja2. Please run: pip install --user jinja2\n"
+                "  For Arch-based distros (externally-managed Python): sudo pacman -S python-jinja\n"
+                "  Or use a virtual environment: python -m venv venv && source venv/bin/activate && pip install jinja2\n"
+            )
         endif()
     endif()
 endfunction()

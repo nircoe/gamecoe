@@ -33,33 +33,3 @@ function(check_compiler_version)
         endif()
     endif()
 endfunction()
-
-function(test_cpp20_features)
-    include(CheckCXXSourceCompiles)
-    
-    # Test concepts
-    check_cxx_source_compiles("
-        #include <concepts>
-        template<std::integral T> void test(T) {}
-        int main() { test(42); return 0; }
-    " HAVE_CPP20_CONCEPTS)
-    
-    if(NOT HAVE_CPP20_CONCEPTS)
-        message(WARNING "C++20 concepts not available")
-    endif()
-    
-    # Test ranges (if you plan to use them)
-    check_cxx_source_compiles("
-        #include <ranges>
-        #include <vector>
-        int main() { 
-            std::vector<int> v{1,2,3};
-            auto r = v | std::views::filter([](int i){ return i > 1; });
-            return 0; 
-        }
-    " HAVE_CPP20_RANGES)
-    
-    if(NOT HAVE_CPP20_RANGES)
-        message(WARNING "C++20 ranges not available")
-    endif()
-endfunction()
