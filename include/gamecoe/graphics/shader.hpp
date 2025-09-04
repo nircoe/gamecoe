@@ -6,7 +6,7 @@
 
 namespace gamecoe
 {
-    class shader
+    class Shader
     {
         unsigned int m_id;
         mutable std::unordered_map<std::string, int> m_uniformLocation;
@@ -17,13 +17,13 @@ namespace gamecoe
         int getUniformLocation(const std::string &name) const;
 
     public:
-        shader() = delete;
-        shader(const std::string &vertexPath, const std::string &fragmentPath);
-        shader(const shader &) = delete;
-        shader &operator=(const shader &) = delete;
-        shader(shader &&other) noexcept;
-        shader &operator=(shader &&other) noexcept;
-        ~shader();
+        Shader() = delete;
+        Shader(const std::string &vertexPath, const std::string &fragmentPath);
+        Shader(const Shader &) = delete;
+        Shader &operator=(const Shader &) = delete;
+        Shader(Shader &&other) noexcept;
+        Shader &operator=(Shader &&other) noexcept;
+        ~Shader();
 
         void use();
 

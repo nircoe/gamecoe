@@ -27,7 +27,7 @@ fetch_glm()
 fetch_logcoe()
 
 # learnopengl executable
-add_executable(learnopengl src/gamecoe/shader.cpp main.cpp) # main.cpp will be used for learning learnopengl, later on we will add the gamecoe files.
+add_executable(learnopengl src/gamecoe/graphics/shader.cpp main.cpp) # main.cpp will be used for learning learnopengl, later on we will add the gamecoe files.
 
 target_sources(learnopengl PRIVATE ${GAMECOE_GLAD_SOURCES})
 target_include_directories(learnopengl 

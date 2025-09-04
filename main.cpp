@@ -4,7 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include <optional>
-#include <gamecoe/shader.hpp>
+#include <gamecoe/graphics/shader.hpp>
 #include <logcoe.hpp>
 #include <stb_image.h>
 #include <glm/glm.hpp>
@@ -25,7 +25,7 @@ glm::vec3 cameraPos(0.0f, 0.0f, 3.0f);
 glm::vec3 cameraFront(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp(0.0f, 1.0f, 0.0f);
 
-void framebuffer_size_callback([[maybe_unused]] GLFWwindow *window, int width, int height)
+void framebufferSizeCallback([[maybe_unused]] GLFWwindow *window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
@@ -46,7 +46,7 @@ void processInput(GLFWwindow *window)
         glfwSetWindowShouldClose(window, true);
 }
 
-void mouse_callback([[maybe_unused]] GLFWwindow *window, double xpos, double ypos)
+void mouseCallback([[maybe_unused]] GLFWwindow *window, double xpos, double ypos)
 {
     if (firstMouse)
     {
@@ -75,21 +75,21 @@ void mouse_callback([[maybe_unused]] GLFWwindow *window, double xpos, double ypo
     cameraFront = glm::normalize(direction);
 }
 
-void scroll_callback([[maybe_unused]] GLFWwindow *window, [[maybe_unused]] double xoffset, double yoffset)
+void scrollCallback([[maybe_unused]] GLFWwindow *window, [[maybe_unused]] double xoffset, double yoffset)
 {
     fov -= yoffset;
     fov = glm::clamp(fov, 1.0f, 45.0f);
 }
 
-struct garbage_collector
+struct GarbageCollector
 {
     unsigned int m_VAO = 0;
     unsigned int m_VBO = 0;
     unsigned int m_EBO = 0;
     unsigned int m_texture1 = 0;
     unsigned int m_texture2 = 0;
-    std::optional<gamecoe::shader> *m_shader = nullptr;
-    ~garbage_collector()
+    std::optional<gamecoe::Shader> *m_shader = nullptr;
+    ~GarbageCollector()
     {
         glDeleteTextures(1, &m_texture1);
         glDeleteTextures(1, &m_texture2);
@@ -105,7 +105,7 @@ struct garbage_collector
 
 int main()
 {
-    garbage_collector gc;
+    GarbageCollector gc;
     logcoe::initialize(logcoe::LogLevel::INFO, "gamecoe");
     // glfw: initialize and configure
     if (!glfwInit())
@@ -131,10 +131,10 @@ int main()
         return -1;
     }
     glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetCursorPosCallback(window, mouse_callback);
-    glfwSetScrollCallback(window, scroll_callback);
+    glfwSetCursorPosCallback(window, mouseCallback);
+    glfwSetScrollCallback(window, scrollCallback);
 
 #if GAMECOE_USE_OPENGL
     // glad: load all opengl function pointers
@@ -148,10 +148,10 @@ int main()
     // build and compile our shader program
     // ------------------------------------
 
-    std::optional<gamecoe::shader> shader;
+    std::optional<gamecoe::Shader> shader;
     try
     {
-        shader.emplace("shader.vert", "shader.frag");
+        shader.emplace("assets/shaders/shader.vert", "assets/shaders/shader.frag");
     }
     catch (const std::runtime_error &e)
     {
@@ -317,7 +317,7 @@ int main()
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, texture2);
 
-        // camera
+        // Camera
         glm::mat4 view(glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp));
         glm::mat4 projection(glm::perspective(glm::radians(fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f));
 

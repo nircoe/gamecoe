@@ -1,4 +1,4 @@
-#include <gamecoe/shader.hpp>
+#include <gamecoe/graphics/shader.hpp>
 #include <glad/gl.h>
 #include <fstream>
 #include <sstream>
@@ -9,7 +9,7 @@
 
 namespace gamecoe
 {
-    void shader::logIfCreationFailed(const std::string &operation, unsigned int id)
+    void Shader::logIfCreationFailed(const std::string &operation, unsigned int id)
     {
         if (id != 0)
             return;
@@ -19,7 +19,7 @@ namespace gamecoe
         throw std::runtime_error(error);
     }
 
-    void shader::logIfCompileOrLinkFailed(const std::string &operation, unsigned int id, bool isProgram)
+    void Shader::logIfCompileOrLinkFailed(const std::string &operation, unsigned int id, bool isProgram)
     {
         GLint success;
         isProgram ? glGetProgramiv(id, GL_LINK_STATUS, &success) : glGetShaderiv(id, GL_COMPILE_STATUS, &success);
@@ -42,7 +42,7 @@ namespace gamecoe
         throw std::runtime_error(log);
     }
 
-    int shader::getUniformLocation(const std::string &name) const
+    int Shader::getUniformLocation(const std::string &name) const
     {
         auto it = m_uniformLocation.find(name);
         if (it != m_uniformLocation.end())
@@ -54,7 +54,7 @@ namespace gamecoe
         return location;
     }
 
-    shader::shader(const std::string &vertexPath, const std::string &fragmentPath) : m_id(0)
+    Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath) : m_id(0)
     {
         struct garbage_collector
         {
@@ -92,7 +92,7 @@ namespace gamecoe
         }
         catch (const std::ifstream::failure &f)
         {
-            std::string error = "failed to read shader file: " + std::string(f.what());
+            std::string error = "failed to read Shader file: " + std::string(f.what());
             logcoe::error(error);
             throw std::runtime_error(error);
         }
@@ -103,40 +103,40 @@ namespace gamecoe
         const char *vertexCode = vertexSource.c_str();
         const char *fragmentCode = fragmentSource.c_str();
 
-        // vertex shader
+        // vertex Shader
         unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
         gc.m_vertex = vertexShader;
-        logIfCreationFailed("vertex shader", vertexShader);
+        logIfCreationFailed("vertex Shader", vertexShader);
         glShaderSource(vertexShader, 1, &vertexCode, nullptr);
         glCompileShader(vertexShader);
-        logIfCompileOrLinkFailed("vertex shader compilation failed", vertexShader, false);
+        logIfCompileOrLinkFailed("vertex Shader compilation failed", vertexShader, false);
 
-        // fragment shader
+        // fragment Shader
         unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
         gc.m_fragment = fragmentShader;
-        logIfCreationFailed("fragment shader", fragmentShader);
+        logIfCreationFailed("fragment Shader", fragmentShader);
         glShaderSource(fragmentShader, 1, &fragmentCode, nullptr);
         glCompileShader(fragmentShader);
-        logIfCompileOrLinkFailed("fragment shader compilation failed", fragmentShader, false);
+        logIfCompileOrLinkFailed("fragment Shader compilation failed", fragmentShader, false);
 
-        // shader program
+        // Shader program
         unsigned int program = glCreateProgram();
         gc.m_program = program;
-        logIfCreationFailed("shader program", program);
+        logIfCreationFailed("Shader program", program);
         glAttachShader(program, vertexShader);
         glAttachShader(program, fragmentShader);
         glLinkProgram(program);
-        logIfCompileOrLinkFailed("shader program linking failed", program);
+        logIfCompileOrLinkFailed("Shader program linking failed", program);
         gc.m_program = 0;
         m_id = program;
     }
 
-    shader::shader(shader &&other) noexcept : m_id(other.m_id)
+    Shader::Shader(Shader &&other) noexcept : m_id(other.m_id)
     {
         other.m_id = 0;
     }
 
-    shader &shader::operator=(shader &&other) noexcept
+    Shader &Shader::operator=(Shader &&other) noexcept
     {
         if (this != &other)
         {
@@ -147,77 +147,77 @@ namespace gamecoe
         return *this;
     }
 
-    shader::~shader()
+    Shader::~Shader()
     {
         glDeleteProgram(m_id);
     }
 
-    void shader::use()
+    void Shader::use()
     {
         glUseProgram(m_id);
     }
 
-    void shader::set(const std::string &name, bool value) const
+    void Shader::set(const std::string &name, bool value) const
     {
         glUniform1i(getUniformLocation(name), value);
     }
 
-    void shader::set(const std::string &name, int value) const
+    void Shader::set(const std::string &name, int value) const
     {
         glUniform1i(getUniformLocation(name), value);
     }
 
-    void shader::set(const std::string &name, float value) const
+    void Shader::set(const std::string &name, float value) const
     {
         glUniform1f(getUniformLocation(name), value);
     }
 
-    void shader::set(const std::string &name, const glm::vec2 &value) const
+    void Shader::set(const std::string &name, const glm::vec2 &value) const
     {
         glUniform2fv(getUniformLocation(name), 1, glm::value_ptr(value));
     }
 
-    void shader::set(const std::string &name, const glm::vec3 &value) const
+    void Shader::set(const std::string &name, const glm::vec3 &value) const
     {
         glUniform3fv(getUniformLocation(name), 1, glm::value_ptr(value));
     }
 
-    void shader::set(const std::string &name, const glm::vec4 &value) const
+    void Shader::set(const std::string &name, const glm::vec4 &value) const
     {
         glUniform4fv(getUniformLocation(name), 1, glm::value_ptr(value));
     }
 
-    void shader::set(const std::string &name, const glm::ivec2 &value) const
+    void Shader::set(const std::string &name, const glm::ivec2 &value) const
     {
         glUniform2iv(getUniformLocation(name), 1, glm::value_ptr(value));
     }
 
-    void shader::set(const std::string &name, const glm::ivec3 &value) const
+    void Shader::set(const std::string &name, const glm::ivec3 &value) const
     {
         glUniform3iv(getUniformLocation(name), 1, glm::value_ptr(value));
     }
 
-    void shader::set(const std::string &name, const glm::ivec4 &value) const
+    void Shader::set(const std::string &name, const glm::ivec4 &value) const
     {
         glUniform4iv(getUniformLocation(name), 1, glm::value_ptr(value));
     }
 
-    void shader::set(const std::string &name, const glm::mat2 &value) const
+    void Shader::set(const std::string &name, const glm::mat2 &value) const
     {
         glUniformMatrix2fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
     }
 
-    void shader::set(const std::string &name, const glm::mat3 &value) const
+    void Shader::set(const std::string &name, const glm::mat3 &value) const
     {
         glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
     }
 
-    void shader::set(const std::string &name, const glm::mat4 &value) const
+    void Shader::set(const std::string &name, const glm::mat4 &value) const
     {
         glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value)); // should we do like this or glm::value_ptr(value) ?
     }
 
-    void shader::set(const std::string &name, const glm::quat &value) const
+    void Shader::set(const std::string &name, const glm::quat &value) const
     {
         glUniform4fv(getUniformLocation(name), 1, glm::value_ptr(value));
     }
