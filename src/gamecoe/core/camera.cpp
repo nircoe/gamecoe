@@ -54,67 +54,67 @@ namespace gamecoe
         m_zoom = glm::clamp(m_zoom, 1.0f, 45.0f);
     }
 
-    Camera::Camera()
-    {
-    }
+    // Camera::Camera()
+    // {
+    // }
 
-    Camera::Camera(void *window, const glm::vec3 &position, const glm::vec3 &target, const glm::vec3 &up)
-    {
-    }
+    // Camera::Camera(void *window, const glm::vec3 &position, const glm::vec3 &target, const glm::vec3 &up)
+    // {
+    // }
 
-    Camera::Camera(const Camera &other)
-    {
-    }
+    // Camera::Camera(const Camera &other)
+    // {
+    // }
 
-    Camera &Camera::operator=(const Camera &other)
-    {
-    }
+    // Camera &Camera::operator=(const Camera &other)
+    // {
+    // }
 
-    Camera::Camera(Camera &&other) noexcept
-    {
-    }
+    // Camera::Camera(Camera &&other) noexcept
+    // {
+    // }
 
-    Camera &Camera::operator=(Camera &&other) noexcept
-    {
-    }
+    // Camera &Camera::operator=(Camera &&other) noexcept
+    // {
+    // }
 
-    Camera::~Camera()
-    {
-    }
+    // Camera::~Camera()
+    // {
+    // }
 
-    void Camera::update()
-    {
-    }
+    // void Camera::update()
+    // {
+    // }
 
-    glm::mat4 Camera::getViewMatrix() const
-    {
-    }
+    // glm::mat4 Camera::getViewMatrix() const
+    // {
+    // }
 
-    void Camera::enableMouseMovement(bool inverseY, bool inverseX)
-    {
-    }
+    // void Camera::enableMouseMovement(bool inverseY, bool inverseX)
+    // {
+    // }
 
-    void Camera::disableMouseMovement()
-    {
-    }
+    // void Camera::disableMouseMovement()
+    // {
+    // }
 
-    void Camera::enableScrollZoom()
-    {
-    }
+    // void Camera::enableScrollZoom()
+    // {
+    // }
 
-    void Camera::disableScrollZoom()
-    {
-    }
+    // void Camera::disableScrollZoom()
+    // {
+    // }
 
-    void Camera::move(const glm::vec3 &movement)
-    {
-    }
+    // void Camera::move(const glm::vec3 &movement)
+    // {
+    // }
 
-    void Camera::rotate(const glm::vec3 &rotation)
-    {
-    }
+    // void Camera::rotate(const glm::vec3 &rotation)
+    // {
+    // }
 
-    void Camera::inverse()
-    {
-    }
+    // void Camera::inverse()
+    // {
+    // }
 } // namespace gamecoe

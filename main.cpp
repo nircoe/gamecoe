@@ -1,11 +1,9 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
-#include <gamecoe_config.h>
+#include <gamecoe.hpp>
 #include <iostream>
 #include <cmath>
 #include <optional>
-#include <gamecoe/graphics/shader.hpp>
-#include <logcoe.hpp>
 #include <stb_image.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -13,8 +11,6 @@
 
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
-float deltaTime = 0.0f;
-float lastFrame = 0.0f;
 float lastX = 400.0f;
 float lastY = 300.0f;
 float yaw = -90.0f;
@@ -32,7 +28,7 @@ void framebufferSizeCallback([[maybe_unused]] GLFWwindow *window, int width, int
 
 void processInput(GLFWwindow *window)
 {
-    const float cameraSpeed = 10.0f * deltaTime;
+    const float cameraSpeed = 10.0f * timecoe::deltaTime();
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         cameraPos += cameraSpeed * cameraFront;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -88,7 +84,6 @@ struct GarbageCollector
     unsigned int m_EBO = 0;
     unsigned int m_texture1 = 0;
     unsigned int m_texture2 = 0;
-    std::optional<gamecoe::Shader> *m_shader = nullptr;
     ~GarbageCollector()
     {
         glDeleteTextures(1, &m_texture1);
@@ -96,70 +91,25 @@ struct GarbageCollector
         glDeleteVertexArrays(1, &m_VAO);
         glDeleteBuffers(1, &m_VBO);
         glDeleteBuffers(1, &m_EBO);
-        if (m_shader)
-            m_shader->reset();
-        logcoe::shutdown();
-        glfwTerminate();
     }
 };
 
 int main()
 {
-    GarbageCollector gc;
-    logcoe::initialize(logcoe::LogLevel::INFO, "gamecoe");
-    // glfw: initialize and configure
-    if (!glfwInit())
-    {
-        logcoe::error("GLFW failed to initialize");
-        return -1;
-    }
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GAMECOE_GRAPHICS_VERSION_MAJOR);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GAMECOE_GRAPHICS_VERSION_MINOR);
+    gamecoe::Window window(WINDOW_WIDTH, WINDOW_HEIGHT, "gamecoe");
 
-#if GAMECOE_USE_OPENGL
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GAMECOE_GRAPHICS_PROFILE);
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-#endif
 
-    // glfw window creation
-    GLFWwindow *window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "LearnOpenGL", NULL, NULL);
-    if (!window)
-    {
-        logcoe::error("Failed to create GLFW window");
-        return -1;
-    }
-    glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    glfwSetCursorPosCallback(window, mouseCallback);
-    glfwSetScrollCallback(window, scrollCallback);
-
-#if GAMECOE_USE_OPENGL
-    // glad: load all opengl function pointers
-    if (!gladLoadGL(glfwGetProcAddress))
-    {
-        logcoe::error("Failed to initialize GLAD");
-        return -1;
-    }
-#endif
+    // glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+    // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    // glfwSetCursorPosCallback(window, mouseCallback);
+    // glfwSetScrollCallback(window, scrollCallback);
 
     // build and compile our shader program
     // ------------------------------------
 
-    std::optional<gamecoe::Shader> shader;
-    try
-    {
-        shader.emplace("assets/shaders/shader.vert", "assets/shaders/shader.frag");
-    }
-    catch (const std::runtime_error &e)
-    {
-        logcoe::error(std::string(e.what()));
-        return -1;
-    }
+    gamecoe::Shader shader("assets/shaders/shader.vert", "assets/shaders/shader.frag");
 
-    gc.m_shader = &shader;
+    GarbageCollector gc;
 
     // vertex data and buffers
     float vertices[] = {
@@ -280,9 +230,9 @@ int main()
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(data);
 
-    shader->use();
-    shader->set("texture1", 0);
-    shader->set("texture2", 1);
+    shader.use();
+    shader.set("texture1", 0);
+    shader.set("texture2", 1);
 
     glm::vec3 cubePositions[]{
         glm::vec3(0.0f, 0.0f, 0.0f),
@@ -302,12 +252,9 @@ int main()
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // main loop
-    while (!glfwWindowShouldClose(window))
+    while (window.active())
     {
-        float currentFrame = glfwGetTime();
-        deltaTime = currentFrame - lastFrame;
-        lastFrame = currentFrame;
-        processInput(window);
+        // processInput(window);
 
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -321,9 +268,9 @@ int main()
         glm::mat4 view(glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp));
         glm::mat4 projection(glm::perspective(glm::radians(fov), (float)WINDOW_WIDTH / WINDOW_HEIGHT, 0.1f, 100.0f));
 
-        shader->use();
-        shader->set("view", view);
-        shader->set("projection", projection);
+        shader.use();
+        shader.set("view", view);
+        shader.set("projection", projection);
 
         glBindVertexArray(VAO);
         for (int i = 0; i < 10; ++i)
@@ -332,13 +279,9 @@ int main()
             glm::mat4 model(1.0f);
             model = glm::translate(model, cubePositions[i]);
             model = glm::rotate(model, (10 - i) * (float)glfwGetTime() * glm::radians((i + 1) * 20.0f), glm::vec3(1.0f + i, 0.3f - i, i * 0.5f));
-            shader->set("model", model);
+            shader.set("model", model);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
-        // glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
     }
 
     return 0;

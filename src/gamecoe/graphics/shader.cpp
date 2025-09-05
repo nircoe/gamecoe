@@ -150,6 +150,7 @@ namespace gamecoe
     Shader::~Shader()
     {
         glDeleteProgram(m_id);
+        m_uniformLocation.clear();
     }
 
     void Shader::use()

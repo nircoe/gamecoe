@@ -26,31 +26,22 @@ fetch_glm()
 # logcoe
 fetch_logcoe()
 
-# learnopengl executable
-add_executable(learnopengl src/gamecoe/graphics/shader.cpp main.cpp) # main.cpp will be used for learning learnopengl, later on we will add the gamecoe files.
+message(STATUS "[gamecoe] Building gamecoe library...")
+add_subdirectory(include)
+add_subdirectory(src)
 
-target_sources(learnopengl PRIVATE ${GAMECOE_GLAD_SOURCES})
-target_include_directories(learnopengl 
-    PRIVATE 
-    "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    "${GAMECOE_GLAD_OUTPUT_DIR}/include"
-    "${GAMECOE_CONFIG_DIR}"
-)
-target_link_libraries(learnopengl
+# gamecoe tester executable
+add_executable(tester main.cpp)
+
+target_link_libraries(tester
     PRIVATE
-        glfw
-        logcoe
-        stb
-        glm::glm-header-only
+        gamecoe
 )
-target_compile_features(learnopengl PRIVATE cxx_std_20)
 
-add_dependencies(learnopengl glad)
-
-copy_directory_to_build_root(learnopengl "assets")
+copy_directory_to_build_root(tester "assets")
 
 if(MSVC)
-    target_compile_options(learnopengl PRIVATE /W4)
+    target_compile_options(tester PRIVATE /W4)
 else()
-    target_compile_options(learnopengl PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(tester PRIVATE -Wall -Wextra -Wpedantic)
 endif()

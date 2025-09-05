@@ -7,7 +7,7 @@ function(fetch_glfw)
     set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
 
     if(UNIX AND NOT APPLE)
-        option(GAMECOE_GLFW_WAYLAND "Enable Wayland support" OFF)
+        option(GAMECOE_GLFW_WAYLAND "Enable Wayland support" ON)
         option(GAMECOE_GLFW_X11 "Enable X11 support" ON)
         if(NOT GAMECOE_GLFW_WAYLAND AND NOT GAMECOE_GLFW_X11)
             message(FATAL_ERROR "[gamecoe] Linux requires at least X11 or Wayland")
