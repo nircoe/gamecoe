@@ -5,6 +5,7 @@
 #include <gamecoe/core/time.hpp>
 #include <gamecoe/core/camera.hpp>
 #include <gamecoe/graphics/shader.hpp>
+#include <gamecoe/graphics/texture.hpp>
 
 // gamecoe toolkit libraries headers
 #include <logcoe.hpp>

@@ -4,18 +4,14 @@
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
 #include <gamecoe_config.h>
-#include <stdexcept>
+#include <gamecoe/utils/error_handler.hpp>
 #include <cassert>
 #include <cstdlib>
 
+using namespace gamecoe::detail;
+
 namespace gamecoe
 {
-    static inline void throwError(const std::string &message)
-    {
-        logcoe::error(message);
-        throw std::runtime_error(message);
-    }
-
     static void framebufferSizeCallback(GLFWwindow *window, int width, int height) // should be static?
     {
         glViewport(0, 0, width, height);
