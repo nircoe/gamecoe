@@ -14,7 +14,11 @@ function(ensure_jinja2)
         )
         
         if(NOT INSTALL_RESULT EQUAL 0)
-            message(FATAL_ERROR "[gamecoe] Failed to install jinja2. Please run: pip install jinja2")
+            message(FATAL_ERROR 
+                "[gamecoe] Failed to install jinja2. Please run: pip install --user jinja2\n"
+                "  For Arch-based distros (externally-managed Python): sudo pacman -S python-jinja\n"
+                "  Or use a virtual environment: python -m venv venv && source venv/bin/activate && pip install jinja2\n"
+            )
         endif()
     endif()
 endfunction()
@@ -39,19 +43,19 @@ function(generate_glad)
     set(GAMECOE_GRAPHICS_PROFILE "core" CACHE STRING "Graphics profile (core, compatibility)")
 
     if(GAMECOE_GRAPHICS_API STREQUAL "gl")
-        set(GAMECOE_USE_OPENGL "1")
-        set(GAMECOE_USE_VULKAN "0")
+        set(GAMECOE_USE_OPENGL 1)
+        set(GAMECOE_USE_VULKAN 0)
     elseif(GAMECOE_GRAPHICS_API STREQUAL "vulkan")
-        set(GAMECOE_USE_OPENGL "0")
-        set(GAMECOE_USE_VULKAN "1")
+        set(GAMECOE_USE_OPENGL 0)
+        set(GAMECOE_USE_VULKAN 1)
     endif()
 
     if(GAMECOE_GRAPHICS_PROFILE STREQUAL "core")
-        set(GAMECOE_PROFILE_CORE "1")
-        set(GAMECOE_PROFILE_COMPAT "0")
+        set(GAMECOE_PROFILE_CORE 1)
+        set(GAMECOE_PROFILE_COMPAT 0)
     elseif(GAMECOE_GRAPHICS_PROFILE STREQUAL "compatibility")
-        set(GAMECOE_PROFILE_CORE "0")
-        set(GAMECOE_PROFILE_COMPAT "1")
+        set(GAMECOE_PROFILE_CORE 0)
+        set(GAMECOE_PROFILE_COMPAT 1)
     endif()
 
     # GLAD paths
@@ -89,7 +93,7 @@ function(generate_glad)
     endif()
     list(APPEND GLAD_COMMAND_ARGS c)
 
-    set(GLAD_COMMENT "[gamecoe] Generating GLAD2 ")
+    set(GLAD_COMMENT "[gamecoe] Generating GLAD2")
     string(APPEND GLAD_COMMENT "${GAMECOE_GRAPHICS_API}:${GAMECOE_GRAPHICS_PROFILE}=")
     string(APPEND GLAD_COMMENT "${GAMECOE_GRAPHICS_VERSION_MAJOR}.${GAMECOE_GRAPHICS_VERSION_MINOR} loader")
 
@@ -102,8 +106,7 @@ function(generate_glad)
         VERBATIM
     )
 
-    add_custom_target(gamecoe_generate_glad
+    add_custom_target(glad
         DEPENDS ${GAMECOE_GLAD_SOURCES} ${GAMECOE_GLAD_HEADERS}
-        COMMENT "[gamecoe] GLAD2 generation complete"
     )
 endfunction()

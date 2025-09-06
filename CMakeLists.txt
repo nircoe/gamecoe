@@ -1,39 +1,47 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.20)
 project(gamecoe LANGUAGES C CXX)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(GAMECOE_SOURCE_ROOT_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+include(cmake/gamecoe_config.cmake)
+check_compiler_version()
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
 endif()
 
+add_subdirectory(external)
+
 include(FetchContent)
-include(cmake/gamecoe_config.cmake)
 
 # Fetching libraries for gamecoe:
-# GLFW
+# glfw
 fetch_glfw()
-# GLAD
+# glad
 generate_glad()
+# glm
+fetch_glm()
+# logcoe
+fetch_logcoe()
 
-# learnopengl executable
-add_executable(learnopengl main.cpp) # main.cpp will be used for learning learnopengl, later on we will add the gamecoe files.
+message(STATUS "[gamecoe] Building gamecoe library...")
+add_subdirectory(include)
+add_subdirectory(src)
 
-target_sources(learnopengl PRIVATE ${GAMECOE_GLAD_SOURCES})
-target_include_directories(learnopengl 
-    PRIVATE 
-    "${GAMECOE_GLAD_OUTPUT_DIR}/include"
-    "${GAMECOE_CONFIG_DIR}"
-)
-target_link_libraries(learnopengl
+# gamecoe tester executable
+add_executable(tester main.cpp)
+
+target_link_libraries(tester
     PRIVATE
-        glfw
+        gamecoe
 )
-add_dependencies(learnopengl gamecoe_generate_glad)
+
+copy_directory_to_build_root(tester "assets")
 
 if(MSVC)
-    target_compile_options(learnopengl PRIVATE /W4)
+    target_compile_options(tester PRIVATE /W4)
 else()
-    target_compile_options(learnopengl PRIVATE -Wall -Wextra -Wpedantic)
+    target_compile_options(tester PRIVATE -Wall -Wextra -Wpedantic)
 endif()
