@@ -4,7 +4,7 @@
 #include <iostream>
 #include <cmath>
 #include <optional>
-#include <stb_image.h>
+#include <stb/stb_image.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -184,51 +184,18 @@ int main()
     glEnableVertexAttribArray(1);
 
     // first texture
-    unsigned int texture1;
-    glGenTextures(1, &texture1);
-    gc.m_texture1 = texture1;
-    glBindTexture(GL_TEXTURE_2D, texture1);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    int width, height, nrChannels;
-    stbi_set_flip_vertically_on_load(true);
-    unsigned char *data = stbi_load("assets/images/container.jpg", &width, &height, &nrChannels, 0);
-    if (!data)
-    {
-        logcoe::error("Failed to load texture1");
-        return -1;
-    }
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(data);
+    gamecoe::Texture texture1("assets/images/container.jpg");
+    texture1.setParameters(gamecoe::TextureWrap::Repeat, 
+                           gamecoe::TextureWrap::Repeat, 
+                           gamecoe::TextureFilter::LinearMipmapLinear, 
+                           gamecoe::TextureFilter::Linear);
 
     // second texture
-    unsigned int texture2;
-    glGenTextures(1, &texture2);
-    gc.m_texture2 = texture2;
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, texture2);
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    data = stbi_load("assets/images/awesomeface.png", &width, &height, &nrChannels, 0);
-    if (!data)
-    {
-        logcoe::error("Failed to load texture2");
-        return -1;
-    }
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    stbi_image_free(data);
+    gamecoe::Texture texture2("assets/images/awesomeface.png");
+    texture2.setParameters(gamecoe::TextureWrap::Repeat, 
+                           gamecoe::TextureWrap::Repeat, 
+                           gamecoe::TextureFilter::LinearMipmapLinear, 
+                           gamecoe::TextureFilter::Linear);
 
     shader.use();
     shader.set("texture1", 0);
@@ -260,9 +227,9 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
+        texture1.bind();
         glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture2);
+        texture2.bind();
 
         // Camera
         glm::mat4 view(glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp));
