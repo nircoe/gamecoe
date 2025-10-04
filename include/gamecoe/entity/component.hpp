@@ -21,17 +21,21 @@ namespace gamecoe
     template<typename Derived>
     class Component : public ComponentBase
     {
-        GameObject* m_parent;
+    protected:
+        GameObject* m_owner;
         bool m_active;
 
     public:
         Component() = delete;
-        Component(GameObject* parent) : m_parent(parent), m_active(false) { };
+        Component(GameObject* owner) : m_owner(owner), m_active(false) { };
         virtual ~Component() = default;
 
         static std::string staticType() { return Derived::TYPE_NAME; };
         // Returns the component type in string
         const std::string &type() const { return staticType(); };
+
+        GameObject *owner() { return m_owner; };
+        const GameObject *owner() const { return m_owner; };
 
         bool active() const { return m_active; };
     };
