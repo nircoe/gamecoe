@@ -7,7 +7,7 @@
 #include <concepts>
 #include <cstdint>
 #include <gamecoe/entity/component.hpp>
-// #include <gamecoe/entity/transform.hpp>
+#include <gamecoe/entity/transform.hpp>
 #include <logcoe.hpp>
 
 namespace gamecoe
@@ -16,7 +16,8 @@ namespace gamecoe
     {
         static std::atomic<uint32_t> s_currentId;
         uint32_t m_id;
-        // Transform m_transform; // after I'll implement this class
+        GameObject *m_parent;
+        Transform m_transform;
         std::unordered_map<std::string, std::unique_ptr<ComponentBase>> m_components;
         // std::unique_ptr<Renderer> m_renderer; // after I'll implement this class
         
@@ -26,7 +27,8 @@ namespace gamecoe
         void setUpComponent(std::unique_ptr<ComponentBase> &component);
 
     public:
-        GameObject() : m_id(++s_currentId),/* m_transform(this),*/ m_components(), m_initialized(false), m_active(false) { };
+        GameObject() = delete;
+        GameObject(GameObject *parent = nullptr) : m_id(++s_currentId), m_parent(parent), m_transform(this), m_components(), m_initialized(false), m_active(false) { };
         ~GameObject() { m_components.clear(); m_initialized = m_active = false; };
 
         // Called only once, when initializing the GameObject
@@ -57,8 +59,11 @@ namespace gamecoe
         template<std::derived_from<ComponentBase> T>
         bool hasComponent() const;
 
-        // Transform &getTransform();
-        // const Transform &getTransform() const;
+        Transform &transform();
+        const Transform &transform() const;
+
+        GameObject *parent();
+        const GameObject *parent() const;
 
         bool active() const;
     };
@@ -67,7 +72,7 @@ namespace gamecoe
     inline bool GameObject::addComponent()
     {
         static const std::string componentType = T::staticType();
-        if (m_components.contains(componentType)/* || componentType == Transform::staticType()*/)
+        if (m_components.contains(componentType) || componentType == Transform::staticType())
         {
             logcoe::warning("The Game Object (id " + std::to_string(m_id) + ") already have a " + componentType + " component");
             return false;
@@ -103,6 +108,11 @@ namespace gamecoe
     {
         static const std::string componentType = T::staticType();
 
+        if (componentType == Transform::staticType())
+            return m_transform;
+
+        // check for Renderer, now if someone call getComponent<Renderer> it will throw an exception...
+
         if (!m_components.contains(componentType))
         {
             std::string message = "The Game Object (id " + std::to_string(m_id) + ") does not have a " + componentType + " component";
@@ -117,6 +127,11 @@ namespace gamecoe
     inline const T &GameObject::getComponent() const
     {
         static const std::string componentType = T::staticType();
+
+        if (componentType == Transform::staticType())
+            return m_transform;
+
+        // check for Renderer, now if someone call getComponent<Renderer> it will throw an exception...
 
         if (!m_components.contains(componentType))
         {

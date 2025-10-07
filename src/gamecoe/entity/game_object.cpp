@@ -65,15 +65,25 @@ namespace gamecoe
         //     m_renderer->render();
     }
 
-    // Transform &GameObject::getTransform()
-    // {
-    //     return m_transform;
-    // }
+    Transform &GameObject::transform()
+    {
+        return m_transform;
+    }
     
-    // const Transform &GameObject::getTransform() const
-    // {
-    //     return m_transform;
-    // }
+    const Transform &GameObject::transform() const
+    {
+        return m_transform;
+    }
+
+    GameObject *GameObject::parent()
+    {
+        return m_parent;
+    }
+
+    const GameObject *GameObject::parent() const
+    {
+        return m_parent;
+    }
 
     bool GameObject::active() const
     {
