@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+
 namespace gamecoe
 {
     class GraphicsBuffer 
@@ -18,6 +20,8 @@ namespace gamecoe
 
         void bind() const;
         void unbind() const;
+        
+        void uploadData(const void* data, size_t size);
 
         static GraphicsBuffer createVertexBuffer();
         static GraphicsBuffer createIndexBuffer();

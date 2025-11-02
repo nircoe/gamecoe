@@ -30,6 +30,7 @@ namespace gamecoe
         m_target = other.m_target;
         other.m_id = 0;
         other.m_target = 0;
+
         return *this;
     }
 
@@ -43,6 +44,12 @@ namespace gamecoe
         glBindBuffer(m_target, 0);
     }
 
+    void GraphicsBuffer::uploadData(const void* data, size_t size)
+    {
+        // TODO: introduce usage argument instead of hardcode GL_STATIC_DRAW in the future
+        glBufferData(m_target, size, data, GL_STATIC_DRAW);
+    }
+
     GraphicsBuffer GraphicsBuffer::createVertexBuffer()
     {
         return GraphicsBuffer(GL_ARRAY_BUFFER);
@@ -52,4 +59,4 @@ namespace gamecoe
     {
         return GraphicsBuffer(GL_ELEMENT_ARRAY_BUFFER);
     }
-}
+} // namespace gamecoe
