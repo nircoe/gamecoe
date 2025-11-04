@@ -42,6 +42,8 @@ namespace
 
 namespace gamecoe
 {
+    std::vector<VertexArray*> VertexArray::s_shapeVAs = {};
+
     VertexArray::VertexArray(const float *vertices, size_t vertexCount, size_t vertexSize,
                              const unsigned int *indices, size_t indexCount) :  m_id(0), 
                                                                                 m_vertexBuffer(VertexBuffer()), 
@@ -63,7 +65,6 @@ namespace gamecoe
         {
             m_indexBuffer->bind();
             m_indexBuffer->uploadData(indices, indexCount * sizeof(unsigned int));
-            m_indexBuffer->unbind();
         }
 
         setupVertexAttributes();
@@ -144,19 +145,47 @@ namespace gamecoe
 
     const VertexArray &VertexArray::triangle()
     {
-        static VertexArray triangleVA(triangleVertices, 3, 3);
-        return triangleVA;
+        static VertexArray *triangleVA = nullptr;
+        if (!triangleVA)
+        {
+            triangleVA = new VertexArray(triangleVertices, 3, 3);
+            s_shapeVAs.push_back(triangleVA);
+        }
+    
+        return *triangleVA;
     }
 
     const VertexArray &VertexArray::rectangle()
     {
-        static VertexArray rectangleVA(rectangleVertices, 4, 3, rectangleIndices, 6);
-        return rectangleVA;
+        static VertexArray *rectangleVA = nullptr;
+        if (!rectangleVA)
+        {
+            rectangleVA = new VertexArray(rectangleVertices, 4, 3, rectangleIndices, 6);
+            s_shapeVAs.push_back(rectangleVA);
+        }
+        
+        return *rectangleVA;
     }
 
     const VertexArray &VertexArray::cube()
     {
-        static VertexArray cubeVA(cubeVertices, 8, 3, cubeIndices, 36);
-        return cubeVA;
+        static VertexArray *cubeVA = nullptr;
+        if (!cubeVA)
+        {
+            cubeVA = new VertexArray(cubeVertices, 8, 3, cubeIndices, 36);
+            s_shapeVAs.push_back(cubeVA);
+        }
+        
+        return *cubeVA;
+    }
+
+    void VertexArray::destroyShapeVAs()
+    {
+        for(const VertexArray *va : s_shapeVAs)
+        {
+            if (va)
+                delete va;
+        }
+        s_shapeVAs.clear();
     }
 } // namespace gamecoe

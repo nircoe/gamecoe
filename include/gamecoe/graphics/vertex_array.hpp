@@ -1,11 +1,14 @@
 #pragma once
 #include <gamecoe/graphics/graphics_buffer.hpp>
 #include <optional>
+#include <vector>
 
 namespace gamecoe
 {
     class VertexArray
     {
+        static std::vector<VertexArray*> s_shapeVAs;
+
         unsigned int m_id;
         GraphicsBuffer m_vertexBuffer;
         std::optional<GraphicsBuffer> m_indexBuffer;
@@ -37,5 +40,6 @@ namespace gamecoe
         static const VertexArray &triangle();
         static const VertexArray &rectangle();
         static const VertexArray &cube();
+        static void destroyShapeVAs();
     };
 } // namespace gamecoe
