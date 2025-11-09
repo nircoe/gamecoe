@@ -2,16 +2,7 @@
 
 namespace gamecoe
 {
-    std::atomic<uint32_t> GameObject::s_currentId{0};
-
-    void GameObject::setUpComponent(std::unique_ptr<ComponentBase> &component)
-    {
-        if (!m_initialized) return;
-        component->initialize();
-
-        if (!m_active) return;
-        component->activate();
-    }
+    std::atomic<std::uint32_t> GameObject::s_currentId = 0;
 
     void GameObject::initialize()
     {
@@ -61,8 +52,8 @@ namespace gamecoe
         
     void GameObject::render()
     {
-        // if (m_renderer)
-        //     m_renderer->render();
+        if (m_renderer)
+            m_renderer->render();
     }
 
     Transform &GameObject::transform()
