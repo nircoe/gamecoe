@@ -1,0 +1,45 @@
+#pragma once
+#include <gamecoe/graphics/graphics_buffer.hpp>
+#include <optional>
+#include <vector>
+
+namespace gamecoe
+{
+    class VertexArray
+    {
+        static std::vector<VertexArray*> s_shapeVAs;
+
+        unsigned int m_id;
+        GraphicsBuffer m_vertexBuffer;
+        std::optional<GraphicsBuffer> m_indexBuffer;
+        size_t m_vertexCount;
+        size_t m_indexCount;
+        // should we add vertexCount, vertexSize, indexCount members?
+
+        VertexArray() = delete;
+        VertexArray(const float *vertices, size_t vertexCount, size_t vertexSize,
+                    const unsigned int *indices = nullptr, size_t indexCount = 0);
+        
+        void setupVertexAttributes();
+
+    public:
+        
+        ~VertexArray();
+        VertexArray(const VertexArray&) = delete;
+        VertexArray &operator=(const VertexArray&) = delete;
+        VertexArray(VertexArray &&other) noexcept;
+        VertexArray &operator=(VertexArray &&other) noexcept;
+
+        void bind() const;
+        void unbind() const;
+
+        size_t vertexCount() const;
+        size_t indexCount() const;
+        bool hasIndices() const;
+
+        static const VertexArray &triangle();
+        static const VertexArray &rectangle();
+        static const VertexArray &cube();
+        static void destroyShapeVAs();
+    };
+} // namespace gamecoe
