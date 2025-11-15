@@ -54,11 +54,11 @@ namespace gamecoe
         if (!s_shader.has_value())
             s_shader.emplace("assets/shaders/shape_renderer.vert", "assets/shaders/shape_renderer.frag");
 
-        const Transform &transform = owner().transform();
+        glm::mat4 model = owner()->transform().modelMatrix();
 
-        // add Camera matrices (view, projection) in the future
-
-        glm::mat4 model = transform.modelMatrix();
+        // auto &camera = owner()->scene()->mainCamera();
+        // glm::mat4 view = camera->viewMatrix();
+        // glm::mat4 projection = camera->projectionMatrix();
 
         s_shader->use();
         s_shader->set("model", model);
