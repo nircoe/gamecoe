@@ -107,4 +107,6 @@ namespace gamecoe
         return !glfwWindowShouldClose(window);
     }
 
+    float Window::aspectRatio() const { return (float)m_width / (float)m_height; }
+
 } // namespace gamecoe

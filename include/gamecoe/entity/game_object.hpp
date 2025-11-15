@@ -9,6 +9,7 @@
 #include <gamecoe/entity/component.hpp>
 #include <gamecoe/entity/transform.hpp>
 #include <gamecoe/entity/renderer/renderer.hpp>
+#include <gamecoe/utils/error_handler.hpp>
 #include <logcoe.hpp>
 
 namespace gamecoe
@@ -29,7 +30,7 @@ namespace gamecoe
         void setUpComponent(std::unique_ptr<T> &component);
 
     public:
-        GameObject(GameObject *parent = nullptr) : m_id(++s_currentId), m_parent(parent), m_transform(this), m_components(), m_initialized(false), m_active(false) { };
+        GameObject(GameObject *parent = nullptr) : m_id(++s_currentId), m_parent(parent), m_transform(this), m_components(), m_initialized(false), m_active(false) { }
         ~GameObject() { m_components.clear(); m_renderer.reset(); m_initialized = m_active = false; };
 
         // Called only once, when initializing the GameObject
@@ -122,25 +123,19 @@ namespace gamecoe
         if (componentType == Transform::staticType())
             return m_transform;
 
-        std::string message = "The Game Object (id " + std::to_string(m_id) + ") does not have a " + 
-                                componentType + " component";
-
         if (std::is_base_of<Renderer, T>())
         {
             if (!m_renderer)
-            {
-                logcoe::error(message);
-                throw std::runtime_error(message);
-            }
+                detail::throwError("The Game Object (id " + std::to_string(m_id) + ") does not have a " + 
+                                    componentType + " component");
+
             return static_cast<T&>(*m_renderer);
         }
             
 
         if (!m_components.contains(componentType))
-        {
-            logcoe::error(message);
-            throw std::runtime_error(message);
-        }
+            detail::throwError("The Game Object (id " + std::to_string(m_id) + ") does not have a " + 
+                                componentType + " component");
             
         return static_cast<T&>(*(m_components.at(componentType)));
     }
@@ -153,24 +148,18 @@ namespace gamecoe
         if (componentType == Transform::staticType())
             return m_transform;
 
-        std::string message = "The Game Object (id " + std::to_string(m_id) + ") does not have a " + 
-                                componentType + " component";
-
         if (std::is_base_of<Renderer, T>())
         {
             if (!m_renderer)
-            {
-                logcoe::error(message);
-                throw std::runtime_error(message);
-            }
+                detail::throwError("The Game Object (id " + std::to_string(m_id) + ") does not have a " + 
+                                    componentType + " component");
+
             return static_cast<const T&>(*m_renderer);
         }
 
         if (!m_components.contains(componentType))
-        {
-            logcoe::error(message);
-            throw std::runtime_error(message);
-        }
+            detail::throwError("The Game Object (id " + std::to_string(m_id) + ") does not have a " + 
+                                componentType + " component");
             
         return static_cast<const T&>(*(m_components.at(componentType)));
     }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <gamecoe/utils/error_handler.hpp>
 
 namespace gamecoe
 {
@@ -13,7 +14,9 @@ namespace gamecoe
 
         virtual void initialize() = 0;
         virtual void begin() = 0;
+        // Do not forget to set m_active = true when override
         virtual void activate() = 0;
+        // Do not forget to set m_active = false when override
         virtual void deactivate() = 0;
         virtual void update() = 0;
     };
@@ -27,7 +30,11 @@ namespace gamecoe
 
     public:
         Component() = delete;
-        Component(GameObject* owner) : m_owner(owner), m_active(false) { };
+        Component(GameObject* owner) : m_owner(owner), m_active(false) 
+        {
+            if (!owner)
+                detail::throwError("Component owner cannot be nullptr");
+        };
         virtual ~Component() = default;
 
         static std::string staticType() { return Derived::TYPE_NAME; };

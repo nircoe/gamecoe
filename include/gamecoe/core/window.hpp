@@ -22,6 +22,8 @@ namespace gamecoe
         Window& operator=(Window&&) = default;
         ~Window();
 
-        bool active(); // instead of the overused name "shouldClose"
+        bool active();
+
+        float aspectRatio() const;
     };
 } // namespace gamecoe
