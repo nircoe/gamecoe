@@ -31,8 +31,8 @@ namespace gamecoe
 
         virtual void initialize() override {}
         virtual void begin() override {}
-        virtual void activate() override {}
-        virtual void deactivate() override {}
+        virtual void activate() override { m_active = true; }
+        virtual void deactivate() override { m_active = false; }
         virtual void update() override {}
         virtual void render() const override;
 

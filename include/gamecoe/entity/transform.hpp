@@ -21,19 +21,17 @@ namespace gamecoe
     public:
         static constexpr const char* TYPE_NAME = "Transform";
 
-        Transform(GameObject *parent) : Component<Transform>(parent), m_position(0.0f), m_rotation(1.0f, 0.0f, 0.0f, 0.0f), m_scale(1.0f) { };
+        Transform(GameObject *parent) : Component<Transform>(parent), m_position(0.0f), m_rotation(1.0f, 0.0f, 0.0f, 0.0f), m_scale(1.0f) { }
         virtual ~Transform() override = default; // default is fine?
 
         // initialize empty for now, maybe will be useful in the future
-        virtual void initialize() override { };
+        virtual void initialize() override { }
         // begin empty for now, maybe will be useful in the future
-        virtual void begin() override { };
-        // can't activate/deactivate Transform - does nothing
-        virtual void activate() override { };
-        // can't activate/deactivate Transform - does nothing
-        virtual void deactivate() override { };
+        virtual void begin() override { }
+        virtual void activate() override { m_active = true; }
+        virtual void deactivate() override { m_active = false; }
         // other related components will update the state of Transform directly
-        virtual void update() override { };
+        virtual void update() override { }
 
         // Gets a float vector 3 for the position in the x,y,z axis
         const glm::vec3 &position() const;
