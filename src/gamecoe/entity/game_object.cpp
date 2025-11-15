@@ -4,6 +4,18 @@ namespace gamecoe
 {
     std::atomic<std::uint32_t> GameObject::s_currentId = 0;
 
+    GameObject::GameObject(const std::string &name, GameObject *parent) :   m_id(++s_currentId), 
+                                                                            m_name(name), 
+                                                                            m_parent(parent), 
+                                                                            m_transform(this), 
+                                                                            m_components(), 
+                                                                            m_initialized(false), 
+                                                                            m_active(false)
+    {
+        if (m_name == "")
+            m_name = "GameObject" + std::to_string(m_id);
+    }
+
     void GameObject::initialize()
     {
         m_initialized = true;
@@ -56,6 +68,16 @@ namespace gamecoe
             m_renderer->render();
     }
 
+    void GameObject::setName(const std::string &name)
+    {
+        m_name = name;
+    }
+
+    const std::string &GameObject::name() const
+    {
+        return m_name;
+    }
+
     Transform &GameObject::transform()
     {
         return m_transform;
@@ -64,6 +86,11 @@ namespace gamecoe
     const Transform &GameObject::transform() const
     {
         return m_transform;
+    }
+
+    void GameObject::setParent(GameObject *parent)
+    {
+        m_parent = parent;
     }
 
     GameObject *GameObject::parent()

@@ -17,7 +17,10 @@ namespace gamecoe
     class GameObject
     {
         static std::atomic<std::uint32_t> s_currentId;
+        
         std::uint32_t m_id;
+        std::string m_name;
+
         GameObject *m_parent;
         Transform m_transform;
         std::unordered_map<std::string, std::unique_ptr<ComponentBase>> m_components;
@@ -30,7 +33,7 @@ namespace gamecoe
         void setUpComponent(std::unique_ptr<T> &component);
 
     public:
-        GameObject(GameObject *parent = nullptr) : m_id(++s_currentId), m_parent(parent), m_transform(this), m_components(), m_initialized(false), m_active(false) { }
+        GameObject(const std::string &name = "", GameObject *parent = nullptr);
         ~GameObject() { m_components.clear(); m_renderer.reset(); m_initialized = m_active = false; };
 
         // Called only once, when initializing the GameObject
@@ -61,9 +64,13 @@ namespace gamecoe
         template<std::derived_from<ComponentBase> T>
         bool hasComponent() const;
 
+        void setName(const std::string &name);
+        const std::string &name() const;
+
         Transform &transform();
         const Transform &transform() const;
 
+        void setParent(GameObject *parent);
         GameObject *parent();
         const GameObject *parent() const;
 
