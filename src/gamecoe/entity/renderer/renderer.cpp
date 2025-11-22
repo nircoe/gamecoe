@@ -2,7 +2,7 @@
 
 namespace gamecoe
 {
-    Renderer::Renderer(GameObject* owner, std::int8_t layer) : Component<Renderer>(owner), m_layer(layer) { }
+    Renderer::Renderer(GameObject &owner, std::int8_t layer) : Component<Renderer>(owner), m_layer(layer) { }
 
     void Renderer::setLayer(std::int8_t layer) { m_layer = layer; }
 

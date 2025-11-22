@@ -5,6 +5,8 @@
 #include <memory>
 #include <atomic>
 #include <concepts>
+#include <optional>
+#include <functional>
 #include <cstdint>
 #include <gamecoe/entity/component.hpp>
 #include <gamecoe/entity/transform.hpp>
@@ -21,7 +23,7 @@ namespace gamecoe
         std::uint32_t m_id;
         std::string m_name;
 
-        GameObject *m_parent;
+        std::optional<std::reference_wrapper<GameObject>> m_parent;
         Transform m_transform;
         std::unordered_map<std::string, std::unique_ptr<ComponentBase>> m_components;
         std::unique_ptr<Renderer> m_renderer;
@@ -33,7 +35,7 @@ namespace gamecoe
         void setUpComponent(std::unique_ptr<T> &component);
 
     public:
-        GameObject(const std::string &name = "", GameObject *parent = nullptr);
+        GameObject(const std::string &name = "", std::optional<std::reference_wrapper<GameObject>> parent = std::nullopt);
         ~GameObject() { m_components.clear(); m_renderer.reset(); m_initialized = m_active = false; };
 
         // Called only once, when initializing the GameObject
@@ -70,9 +72,10 @@ namespace gamecoe
         Transform &transform();
         const Transform &transform() const;
 
-        void setParent(GameObject *parent);
-        GameObject *parent();
-        const GameObject *parent() const;
+        void setParent(std::optional<std::reference_wrapper<GameObject>> parent);
+        std::optional<std::reference_wrapper<GameObject>> parent();
+        std::optional<std::reference_wrapper<const GameObject>> parent() const;
+        bool hasParent() const;
 
         bool active() const;
     };

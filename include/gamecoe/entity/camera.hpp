@@ -25,11 +25,11 @@ namespace gamecoe
     public:
         static constexpr const char* TYPE_NAME = "Camera";
 
-        Camera(GameObject *owner, Window *window); // TODO: maybe remove the window later if I will add a owner->scene()->window() getters
+        Camera(GameObject &owner, Window *window); // TODO: maybe remove the window later if I will add a owner->scene()->window() getters
         Camera(const Camera &other) = delete;
         Camera &operator=(const Camera &other) = delete;
-        Camera(Camera &&other) noexcept;
-        Camera &operator=(Camera &&other) noexcept;
+        Camera(Camera &&other) = delete;
+        Camera &operator=(Camera &&other) = delete;
 
         virtual ~Camera() override { }
 

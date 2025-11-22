@@ -46,10 +46,10 @@ namespace gamecoe
 
     glm::mat4 Transform::modelMatrix() const
     {
-        GameObject *ownerParent = m_owner->parent();
-        if(!ownerParent) return localMatrix();
+        if(!m_owner.hasParent()) return localMatrix();
 
-        return ownerParent->transform().modelMatrix() * localMatrix();
+        GameObject &ownerParent = m_owner.parent()->get();
+        return ownerParent.transform().modelMatrix() * localMatrix();
     }
 
     void Transform::setPosition(const glm::vec3 &position)

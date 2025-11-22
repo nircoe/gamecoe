@@ -25,24 +25,24 @@ namespace gamecoe
     class Component : public ComponentBase
     {
     protected:
-        GameObject* m_owner;
+        GameObject &m_owner;
         bool m_active;
 
     public:
         Component() = delete;
-        Component(GameObject* owner) : m_owner(owner), m_active(false) 
-        {
-            if (!owner)
-                detail::throwError("Component owner cannot be nullptr");
-        };
+        Component(GameObject &owner) : m_owner(owner), m_active(false) { };
+        Component(const Component&) = delete;
+        Component& operator=(const Component&) = delete;
+        Component(Component&&) = delete;
+        Component& operator=(Component&&) = delete;
         virtual ~Component() = default;
 
         static std::string staticType() { return Derived::TYPE_NAME; };
         // Returns the component type in string
         const std::string &type() const { return staticType(); };
 
-        GameObject *owner() { return m_owner; };
-        const GameObject *owner() const { return m_owner; };
+        GameObject &owner() { return m_owner; };
+        const GameObject &owner() const { return m_owner; };
 
         bool active() const { return m_active; };
     };
