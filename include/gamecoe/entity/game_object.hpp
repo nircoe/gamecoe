@@ -16,6 +16,8 @@
 
 namespace gamecoe
 {
+    class Scene;
+
     class GameObject
     {
         static std::atomic<std::uint32_t> s_currentId;
@@ -31,11 +33,13 @@ namespace gamecoe
         bool m_initialized;
         bool m_active;
 
+        Scene &m_scene;
+
         template<std::derived_from<ComponentBase> T>
         void setUpComponent(std::unique_ptr<T> &component);
 
     public:
-        GameObject(const std::string &name = "", std::optional<std::reference_wrapper<GameObject>> parent = std::nullopt);
+        GameObject(Scene &scene, const std::string &name = "", std::optional<std::reference_wrapper<GameObject>> parent = std::nullopt);
         ~GameObject() { m_components.clear(); m_renderer.reset(); m_initialized = m_active = false; };
 
         // Called only once, when initializing the GameObject
@@ -66,6 +70,8 @@ namespace gamecoe
         template<std::derived_from<ComponentBase> T>
         bool hasComponent() const;
 
+        std::uint32_t id() const;
+
         void setName(const std::string &name);
         const std::string &name() const;
 
@@ -78,6 +84,9 @@ namespace gamecoe
         bool hasParent() const;
 
         bool active() const;
+
+        Scene &scene();
+        const Scene &scene() const;
     };
 
     template<std::derived_from<ComponentBase> T>

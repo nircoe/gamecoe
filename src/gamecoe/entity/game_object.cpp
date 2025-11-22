@@ -1,16 +1,19 @@
 #include <gamecoe/entity/game_object.hpp>
+#include <gamecoe/core/scene.hpp>
 
 namespace gamecoe
 {
     std::atomic<std::uint32_t> GameObject::s_currentId = 0;
 
-    GameObject::GameObject(const std::string &name, std::optional<std::reference_wrapper<GameObject>> parent) :   m_id(++s_currentId), 
-                                                                            m_name(name), 
-                                                                            m_parent(parent), 
-                                                                            m_transform(*this), 
-                                                                            m_components(), 
-                                                                            m_initialized(false), 
-                                                                            m_active(false)
+    GameObject::GameObject(Scene &scene, const std::string &name, std::optional<std::reference_wrapper<GameObject>> parent) : 
+        m_id(++s_currentId), 
+        m_name(name), 
+        m_parent(parent), 
+        m_transform(*this), 
+        m_components(), 
+        m_initialized(false), 
+        m_active(false),
+        m_scene(scene)
     {
         if (m_name == "")
             m_name = "GameObject" + std::to_string(m_id);
@@ -68,6 +71,11 @@ namespace gamecoe
             m_renderer->render();
     }
 
+    std::uint32_t GameObject::id() const
+    {
+        return m_id;
+    }
+
     void GameObject::setName(const std::string &name)
     {
         m_name = name;
@@ -113,5 +121,15 @@ namespace gamecoe
     bool GameObject::active() const
     {
         return m_active;
-    }    
+    }
+    
+    Scene &GameObject::scene()
+    {
+        return m_scene;
+    }
+
+    const Scene &GameObject::scene() const
+    {
+        return m_scene;
+    }
 } // namespace gamecoe

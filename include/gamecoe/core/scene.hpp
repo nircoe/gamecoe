@@ -6,6 +6,8 @@
 #include <string>
 #include <atomic>
 #include <memory>
+#include <optional>
+#include <functional>
 #include <cstdint>
 #include <gamecoe/entity/game_object.hpp>
 #include <gamecoe/entity/camera.hpp>
@@ -18,41 +20,49 @@ namespace gamecoe
     {
         static std::atomic<uint32_t> s_currentId;
 
-        uint32_t m_id;
+        std::uint32_t m_id;
         std::string m_name;
-        // Game *m_game;
-        Window *m_window; // TODO: remove when Game class introduced
-        std::unordered_map<uint32_t, std::unique_ptr<GameObject>> m_activeGameObjects;
-        std::unordered_map<uint32_t, std::unique_ptr<GameObject>> m_inactiveGameObjects;
-        std::map<uint8_t, std::vector<GameObject*>> m_renderersByLayer;
-        GameObject m_mainCamera;
+        std::int8_t m_layer;
         bool m_active;
+        
+        std::unordered_map<std::uint32_t, std::unique_ptr<GameObject>> m_activeGameObjects;
+        std::unordered_map<std::uint32_t, std::unique_ptr<GameObject>> m_inactiveGameObjects;
+
+        std::map<std::int8_t, std::vector<GameObject*>> m_renderersByLayer;
+
+        // Game &m_game; // will be added later
 
     public:
-        Scene();
+        Scene(const std::string &name);
         ~Scene();
 
-        void initialize();
-        void begin();
+        void load();
         void activate();
         void deactivate();
+        void unload();
+
         void update();
         void render();
 
-        GameObject* createGameObject(const std::string &name);
-        void addGameObject(std::unique_ptr<GameObject> obj);
+        GameObject &createGameObject(const std::string &name);
+        void removeGameObject(std::uint32_t id);
 
-        void removeGameObject(uint32_t id);
+        void activateGameObject(std::uint32_t id);
+        void deactivateGameObject(std::uint32_t id);
 
+        std::uint32_t id() const;
         const std::string &name() const;
+
+        void setLayer(std::int8_t layer = 0);
+        std::int8_t layer() const;
 
         bool active() const;
 
-        Camera &mainCamera();
+        // Camera &mainCamera(); // will be added later
 
-        GameObject &getGameObject(uint32_t id);
-        GameObject &getGameObject(const std::string &name);
-        const GameObject &getGameObject(uint32_t id) const;
-        const GameObject &getGameObject(const std::string &name) const;
+        std::optional<std::reference_wrapper<GameObject>> findGameObject(std::uint32_t id);
+        std::optional<std::reference_wrapper<GameObject>> findGameObject(const std::string &name);
+        std::optional<std::reference_wrapper<const GameObject>> findGameObject(std::uint32_t id) const;
+        std::optional<std::reference_wrapper<const GameObject>> findGameObject(const std::string &name) const;
     };
 } // namespace gamecoe
