@@ -31,7 +31,7 @@ namespace gamecoe
     std::atomic<uint32_t> ShapeRenderer::s_counter = 0;
     std::optional<Shader> ShapeRenderer::s_shader = std::nullopt;
 
-    ShapeRenderer::ShapeRenderer(GameObject *owner, Shape shape, std::int8_t layer) : 
+    ShapeRenderer::ShapeRenderer(GameObject &owner, Shape shape, std::int8_t layer) : 
         Renderer(owner, layer), 
         m_shape(shape), 
         m_vertexArray(shapeToVertexArray(shape)) 
@@ -54,7 +54,7 @@ namespace gamecoe
         if (!s_shader.has_value())
             s_shader.emplace("assets/shaders/shape_renderer.vert", "assets/shaders/shape_renderer.frag");
 
-        const Transform &transform = owner()->transform();
+        const Transform &transform = owner().transform();
 
         // add Camera matrices (view, projection) in the future
 
@@ -73,17 +73,17 @@ namespace gamecoe
 
     Shape ShapeRenderer::shape() const { return m_shape; }
 
-    std::unique_ptr<ShapeRenderer> ShapeRenderer::triangle(GameObject *owner, std::int8_t layer)
+    std::unique_ptr<ShapeRenderer> ShapeRenderer::triangle(GameObject &owner, std::int8_t layer)
     {
         return std::unique_ptr<ShapeRenderer>(new ShapeRenderer(owner, Shape::Triangle, layer));
     }
 
-    std::unique_ptr<ShapeRenderer> ShapeRenderer::rectangle(GameObject *owner, std::int8_t layer)
+    std::unique_ptr<ShapeRenderer> ShapeRenderer::rectangle(GameObject &owner, std::int8_t layer)
     {
         return std::unique_ptr<ShapeRenderer>(new ShapeRenderer(owner, Shape::Rectangle, layer));
     }
 
-    std::unique_ptr<ShapeRenderer> ShapeRenderer::cube(GameObject *owner, std::int8_t layer)
+    std::unique_ptr<ShapeRenderer> ShapeRenderer::cube(GameObject &owner, std::int8_t layer)
     {
         return std::unique_ptr<ShapeRenderer>(new ShapeRenderer(owner, Shape::Cube, layer));
     }

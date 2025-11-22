@@ -24,9 +24,13 @@ namespace gamecoe
         Shape m_shape;
         const VertexArray &m_vertexArray;
     
-        ShapeRenderer(GameObject *owner, Shape shape, std::int8_t layer = 0);
+        ShapeRenderer(GameObject &owner, Shape shape, std::int8_t layer = 0);
 
     public:
+        ShapeRenderer(const ShapeRenderer&) = delete;
+        ShapeRenderer& operator=(const ShapeRenderer&) = delete;
+        ShapeRenderer(ShapeRenderer&&) = delete;
+        ShapeRenderer& operator=(ShapeRenderer&&) = delete;
         virtual ~ShapeRenderer() override;
 
         virtual void initialize() override {}
@@ -38,9 +42,9 @@ namespace gamecoe
 
         Shape shape() const;
 
-        static std::unique_ptr<ShapeRenderer> triangle(GameObject *owner, std::int8_t layer = 0);
-        static std::unique_ptr<ShapeRenderer> rectangle(GameObject *owner, std::int8_t layer = 0);
-        static std::unique_ptr<ShapeRenderer> cube(GameObject *owner, std::int8_t layer = 0);
+        static std::unique_ptr<ShapeRenderer> triangle(GameObject &owner, std::int8_t layer = 0);
+        static std::unique_ptr<ShapeRenderer> rectangle(GameObject &owner, std::int8_t layer = 0);
+        static std::unique_ptr<ShapeRenderer> cube(GameObject &owner, std::int8_t layer = 0);
     };
 
 } // namespace gamecoe

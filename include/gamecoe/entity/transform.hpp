@@ -21,8 +21,12 @@ namespace gamecoe
     public:
         static constexpr const char* TYPE_NAME = "Transform";
 
-        Transform(GameObject *parent) : Component<Transform>(parent), m_position(0.0f), m_rotation(1.0f, 0.0f, 0.0f, 0.0f), m_scale(1.0f) { }
-        virtual ~Transform() override = default; // default is fine?
+        Transform(GameObject &owner) : Component<Transform>(owner), m_position(0.0f), m_rotation(1.0f, 0.0f, 0.0f, 0.0f), m_scale(1.0f) { }
+        Transform(const Transform&) = delete;
+        Transform& operator=(const Transform&) = delete;
+        Transform(Transform&&) = delete;
+        Transform& operator=(Transform&&) = delete;
+        virtual ~Transform() override = default;
 
         // initialize empty for now, maybe will be useful in the future
         virtual void initialize() override { }

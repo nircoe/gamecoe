@@ -6,7 +6,7 @@
 
 namespace gamecoe
 {
-    Camera::Camera(GameObject *owner, Window *window) : Component(owner), 
+    Camera::Camera(GameObject &owner, Window *window) : Component(owner), 
                                                         m_window(window), 
                                                         m_fov(45.0f),
                                                         m_nearPlane(0.1f),
@@ -18,44 +18,7 @@ namespace gamecoe
         if (!window)
             detail::throwError("Window cannot be nullptr");
     }
-
-    Camera::Camera(Camera &&other) noexcept : Component(other.m_owner), m_window(other.m_window),
-                                              m_fov(other.m_fov), m_nearPlane(other.m_nearPlane),
-                                              m_farPlane(other.m_farPlane), 
-                                              m_orthographicHeight(other.m_orthographicHeight),
-                                              m_perspective(other.m_perspective), 
-                                              m_projectionCached(other.m_projectionCached),
-                                              m_projectionMatrix(other.m_projectionMatrix)
-    {
-        m_active = other.m_active;
-
-        other.m_owner = nullptr;
-        other.m_window = nullptr;
-        other.m_active = false;
-    }
-
-    Camera &Camera::operator=(Camera &&other) noexcept
-    {
-        if (this == &other) return *this;
-
-        m_owner = other.m_owner;
-        m_window = other.m_window;
-        m_active = other.m_active;
-        m_fov = other.m_fov;
-        m_nearPlane = other.m_nearPlane;
-        m_farPlane = other.m_farPlane;
-        m_orthographicHeight = other.m_orthographicHeight;
-        m_perspective = other.m_perspective;
-        m_projectionCached = other.m_projectionCached;
-        m_projectionMatrix = other.m_projectionMatrix;
-
-        other.m_owner = nullptr;
-        other.m_window = nullptr;
-        other.m_active = false;
-
-        return *this;
-    }
-
+    
     void Camera::activate() 
     { 
         m_active = true;
@@ -144,7 +107,7 @@ namespace gamecoe
 
     glm::mat4 Camera::viewMatrix() const 
     { 
-        const auto &transform = m_owner->transform();
+        const auto &transform = m_owner.transform();
         const auto &position = transform.position();
 
         return glm::lookAt(position, position + transform.forward(), transform.up());

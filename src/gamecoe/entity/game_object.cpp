@@ -4,10 +4,10 @@ namespace gamecoe
 {
     std::atomic<std::uint32_t> GameObject::s_currentId = 0;
 
-    GameObject::GameObject(const std::string &name, GameObject *parent) :   m_id(++s_currentId), 
+    GameObject::GameObject(const std::string &name, std::optional<std::reference_wrapper<GameObject>> parent) :   m_id(++s_currentId), 
                                                                             m_name(name), 
                                                                             m_parent(parent), 
-                                                                            m_transform(this), 
+                                                                            m_transform(*this), 
                                                                             m_components(), 
                                                                             m_initialized(false), 
                                                                             m_active(false)
@@ -88,19 +88,26 @@ namespace gamecoe
         return m_transform;
     }
 
-    void GameObject::setParent(GameObject *parent)
+    void GameObject::setParent(std::optional<std::reference_wrapper<GameObject>> parent)
     {
         m_parent = parent;
     }
 
-    GameObject *GameObject::parent()
+    std::optional<std::reference_wrapper<GameObject>> GameObject::parent()
     {
         return m_parent;
     }
 
-    const GameObject *GameObject::parent() const
+    std::optional<std::reference_wrapper<const GameObject>> GameObject::parent() const
     {
-        return m_parent;
+        return m_parent ?
+                std::optional(std::cref(m_parent->get())) : 
+                std::nullopt;
+    }
+
+    bool GameObject::hasParent() const
+    {
+        return m_parent.has_value();
     }
 
     bool GameObject::active() const
