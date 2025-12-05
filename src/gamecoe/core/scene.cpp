@@ -103,6 +103,9 @@ namespace gamecoe
 
     void Scene::removeGameObject(std::uint32_t id)
     {
+        // TODO: Handle parent-child hierarchy - consider either recursive child removal
+        //       or automatic orphaning (set children's parent to std::nullopt) when parent is removed
+
         if (m_activeGameObjects.contains(id))
         {
             m_activeGameObjects[id]->deactivate();
@@ -116,7 +119,7 @@ namespace gamecoe
             return;
         }
 
-        detail::throwError("Scene::removeGameObject: The Game Object (id " + std::to_string(id) + 
+        detail::throwError("Scene::removeGameObject: The Game Object (id " + std::to_string(id) +
                            ") does not exist!");
     }
 
@@ -171,6 +174,28 @@ namespace gamecoe
             m_renderersByLayer.emplace(layer, std::vector<GameObject*>());
         
         m_renderersByLayer[layer].push_back(go);
+    }
+
+    void Scene::removeRenderer(std::int8_t layer, std::uint32_t id)
+    {
+        if (!m_renderersByLayer.contains(layer))
+            detail::throwError("Scene::removeRenderer: The Rendering layer " + std::to_string(layer) + 
+                               " is empty");
+
+        auto &objects = m_renderersByLayer[layer];
+        for (auto it = objects.begin(); it != objects.end(); ++it)
+        {
+            if ((*it)->id() == id)
+            {
+                objects.erase(it);
+                if (objects.empty())
+                    m_renderersByLayer.erase(layer);
+                return;
+            }
+        }
+
+        detail::throwError("Scene::removeRenderer: The GameObject (id " + std::to_string(id) + 
+                            ") is not part of Rendering layer " + std::to_string(layer));
     }
 
     void Scene::changeRendererLayer(std::int8_t oldLayer, std::int8_t newLayer, std::uint32_t id)

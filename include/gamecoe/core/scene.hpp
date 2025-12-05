@@ -52,6 +52,7 @@ namespace gamecoe
         void deactivateGameObject(std::uint32_t id);
 
         void addRenderer(std::int8_t layer, GameObject* go);
+        void removeRenderer(std::int8_t layer, std::uint32_t id);
         void changeRendererLayer(std::int8_t oldLayer, std::int8_t newLayer, std::uint32_t id);
 
         std::uint32_t id() const;

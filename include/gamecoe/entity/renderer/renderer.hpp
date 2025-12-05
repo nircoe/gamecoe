@@ -17,7 +17,7 @@ namespace gamecoe
         Renderer& operator=(const Renderer&) = delete;
         Renderer(Renderer&&) = delete;
         Renderer& operator=(Renderer&&) = delete;
-        virtual ~Renderer() = default;
+        virtual ~Renderer();
 
         virtual void render() const = 0;
         // TODO: add render(Camera &camera) overload when Camera class will be functional

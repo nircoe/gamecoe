@@ -5,7 +5,6 @@
 
 namespace gamecoe
 {
-    class Scene;
     class GameObject;
 
     class ComponentBase 
@@ -42,11 +41,8 @@ namespace gamecoe
         // Returns the component type in string
         const std::string &type() const { return staticType(); };
 
-        GameObject &owner();
-        const GameObject &owner() const;
-
-        Scene &scene();
-        const Scene &scene() const;
+        GameObject &owner() { return m_owner; }
+        const GameObject &owner() const { return m_owner; }
 
         bool active() const { return m_active; };
     };
