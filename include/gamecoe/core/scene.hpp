@@ -33,9 +33,10 @@ namespace gamecoe
         // Game &m_game; // will be added later
 
     public:
-        Scene(const std::string &name);
+        Scene(const std::string &name, std::int8_t layer = 0);
         ~Scene();
 
+        // need to be called after all GameObjects are part of the scene
         void load();
         void activate();
         void deactivate();
@@ -44,11 +45,14 @@ namespace gamecoe
         void update();
         void render();
 
-        GameObject &createGameObject(const std::string &name);
+        GameObject &createGameObject(const std::string &name = "", bool active = true, std::optional<std::reference_wrapper<GameObject>> parent = std::nullopt);
         void removeGameObject(std::uint32_t id);
 
         void activateGameObject(std::uint32_t id);
         void deactivateGameObject(std::uint32_t id);
+
+        void addRenderer(std::int8_t layer, GameObject* go);
+        void changeRendererLayer(std::int8_t oldLayer, std::int8_t newLayer, std::uint32_t id);
 
         std::uint32_t id() const;
         const std::string &name() const;
@@ -59,6 +63,7 @@ namespace gamecoe
         bool active() const;
 
         // Camera &mainCamera(); // will be added later
+        // Game &game(); // will be added later
 
         std::optional<std::reference_wrapper<GameObject>> findGameObject(std::uint32_t id);
         std::optional<std::reference_wrapper<GameObject>> findGameObject(const std::string &name);
