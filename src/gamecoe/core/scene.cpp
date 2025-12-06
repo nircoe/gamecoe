@@ -1,18 +1,18 @@
 #include <gamecoe/core/scene.hpp>
+#include <gamecoe/core/game.hpp>
 #include <logcoe.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 
 namespace gamecoe
 {
-    std::atomic<uint32_t> Scene::s_currentId = 0;
-
-    Scene::Scene(const std::string &name, std::int8_t layer) :  m_id(++s_currentId), 
+    Scene::Scene(Game &game, const std::string &name, std::int8_t layer) :
                                                                 m_name(name), 
                                                                 m_layer(layer), 
                                                                 m_active(false), 
                                                                 m_activeGameObjects(), 
                                                                 m_inactiveGameObjects(), 
-                                                                m_renderersByLayer() { }
+                                                                m_renderersByLayer(),
+                                                                m_game(game) { }
 
     Scene::~Scene()
     {
@@ -88,10 +88,8 @@ namespace gamecoe
     GameObject &Scene::createGameObject(const std::string &name, bool active, std::optional<std::reference_wrapper<GameObject>> parent)
     {
         if (!name.empty() && findGameObject(name) != std::nullopt)
-        {
             detail::throwError("Scene::createGameObject: There is already GameObject named \"" + name + 
                                "\", GameObject name should be unique!");
-        }
 
         std::unique_ptr<GameObject> go = std::make_unique<GameObject>(*this, name, parent);
         std::uint32_t id = go->id();
@@ -229,11 +227,6 @@ namespace gamecoe
         m_renderersByLayer[newLayer].push_back(go);
     }
 
-    std::uint32_t Scene::id() const
-    {
-        return m_id;
-    }
-
     const std::string &Scene::name() const
     {
         return m_name;
@@ -257,13 +250,23 @@ namespace gamecoe
         return m_active;
     }
 
+    Game &Scene::game()
+    {
+        return m_game;
+    }
+
+    const Game &Scene::game() const
+    {
+        return m_game;
+    }
+
     std::optional<std::reference_wrapper<GameObject>> Scene::findGameObject(std::uint32_t id)
     {
-        if (auto it = m_activeGameObjects.find(id); it != m_activeGameObjects.end())
-            return std::ref(*it->second);
-        
-        if (auto it = m_inactiveGameObjects.find(id); it != m_inactiveGameObjects.end())
-            return std::ref(*it->second);
+        if (m_activeGameObjects.contains(id))
+            return std::ref(*m_activeGameObjects[id]);
+
+        if (m_inactiveGameObjects.contains(id))
+            return std::ref(*m_inactiveGameObjects[id]);
 
         return std::nullopt;
     }
@@ -287,11 +290,11 @@ namespace gamecoe
 
     std::optional<std::reference_wrapper<const GameObject>> Scene::findGameObject(std::uint32_t id) const
     {
-        if (auto it = m_activeGameObjects.find(id); it != m_activeGameObjects.end())
-            return std::cref(*it->second);
-        
-        if (auto it = m_inactiveGameObjects.find(id); it != m_inactiveGameObjects.end())
-            return std::cref(*it->second);
+        if (m_activeGameObjects.contains(id))
+            return std::cref(*m_activeGameObjects.at(id));
+
+        if (m_inactiveGameObjects.contains(id))
+            return std::cref(*m_inactiveGameObjects.at(id));
 
         return std::nullopt;
     }

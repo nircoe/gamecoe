@@ -132,4 +132,14 @@ namespace gamecoe
     {
         return m_scene;
     }
+
+    Game &GameObject::game()
+    {
+        return m_scene.game();
+    }
+
+    const Game &GameObject::game() const
+    {
+        return m_scene.game();
+    }
 } // namespace gamecoe

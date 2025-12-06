@@ -17,6 +17,7 @@
 namespace gamecoe
 {
     class Scene;
+    class Game;
 
     class GameObject
     {
@@ -87,6 +88,9 @@ namespace gamecoe
 
         Scene &scene();
         const Scene &scene() const;
+
+        Game &game();
+        const Game &game() const;
     };
 
     template<std::derived_from<ComponentBase> T>
