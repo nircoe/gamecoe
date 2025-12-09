@@ -51,7 +51,6 @@ namespace gamecoe
         
         glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
         m_window = window;
-        gc.m_succeed = true;
     }
 
     Window::~Window()

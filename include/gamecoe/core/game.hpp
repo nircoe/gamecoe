@@ -9,13 +9,12 @@
 #include <functional>
 #include <string>
 #include <cstdint>
+#include <gamecoe/core/window.hpp>
 #include <gamecoe/core/scene.hpp>
 #include <gamecoe/entity/camera.hpp>
 
 namespace gamecoe
-{
-    class Window;
-    
+{    
     class Game
     {
         std::optional<Window> m_mainWindow;

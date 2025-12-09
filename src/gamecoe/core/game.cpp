@@ -43,8 +43,9 @@ namespace gamecoe
         m_internalScene.emplace(*this, "gamecoe::Internal");
 
         auto &cameraGameObject = m_internalScene->createGameObject("MainCamera");
-        cameraGameObject.addComponent<Camera>(std::make_unique<Camera>(cameraGameObject));
-        m_mainCamera = &(cameraGameObject.getComponent<Camera>());
+        auto cameraPtr = std::make_unique<Camera>(cameraGameObject);
+        m_mainCamera = cameraPtr.get();
+        cameraGameObject.addComponent<Camera>(std::move(cameraPtr));
 
         gc.m_succeed = true;
     }
