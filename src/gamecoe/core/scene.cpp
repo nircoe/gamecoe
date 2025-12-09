@@ -7,7 +7,8 @@ namespace gamecoe
 {
     Scene::Scene(Game &game, const std::string &name, std::int8_t layer) :
                                                                 m_name(name), 
-                                                                m_layer(layer), 
+                                                                m_layer(layer),
+                                                                m_loaded(false),
                                                                 m_active(false), 
                                                                 m_activeGameObjects(), 
                                                                 m_inactiveGameObjects(), 
@@ -16,6 +17,11 @@ namespace gamecoe
 
     Scene::~Scene()
     {
+        if (m_active)
+            deactivate();
+        if (m_loaded)    
+            unload();
+
         m_activeGameObjects.clear();
         m_inactiveGameObjects.clear();
         m_renderersByLayer.clear();
@@ -23,6 +29,9 @@ namespace gamecoe
 
     void Scene::load()
     {
+        if (m_loaded) 
+            return logcoe::warning("Scene::load: The scene \"" + m_name + "\" is already loaded");
+
         for (auto &[id, go] : m_activeGameObjects)
         {
             go->initialize();
@@ -32,10 +41,18 @@ namespace gamecoe
         {
             go->initialize();
         }
+
+        m_loaded = true;
     }
 
     void Scene::activate()
     {
+        if (m_active) 
+            return logcoe::warning("Scene::activate: The scene \"" + m_name + "\" is already active");
+
+        if (!m_loaded)
+            detail::throwError("Scene::activate: The scene \"" + m_name + "\" is not loaded, please load it first");
+
         for (auto &[id, go] : m_activeGameObjects)
         {
             go->begin();
@@ -52,6 +69,9 @@ namespace gamecoe
 
     void Scene::deactivate()
     {
+        if (!m_active) 
+            return logcoe::warning("Scene::deactivate: The scene \"" + m_name + "\" is already inactive");
+
         for (auto &[id, go] : m_activeGameObjects)
         {
             go->deactivate();
@@ -62,7 +82,15 @@ namespace gamecoe
 
     void Scene::unload()
     {
+        if (!m_loaded) 
+            return logcoe::warning("Scene::unload: The scene \"" + m_name + "\" is already unloaded");
+
+        if (m_active)
+            detail::throwError("Scene::unload: The scene \"" + m_name + "\" is active, please deactivate it first");
+
         // TODO: Call resource cleanup on GameObjects when resource management is implemented
+
+        m_loaded = false;
     }
 
     void Scene::update()
@@ -132,11 +160,8 @@ namespace gamecoe
         }
 
         if (m_activeGameObjects.contains(id))
-        {
-            logcoe::warning("Scene::activateGameObject: The Game Object " + m_activeGameObjects[id]->name() +
+            return logcoe::warning("Scene::activateGameObject: The Game Object " + m_activeGameObjects[id]->name() +
                           " (id " + std::to_string(id) + ") is already active");
-            return;
-        }
 
         detail::throwError("Scene::activateGameObject: The Game Object (id " + std::to_string(id) + 
                         ") does not exist!");
@@ -153,11 +178,8 @@ namespace gamecoe
         }
 
         if (m_inactiveGameObjects.contains(id))
-        {
-            logcoe::warning("Scene::deactivateGameObject: The Game Object " + m_inactiveGameObjects[id]->name() +
+            return logcoe::warning("Scene::deactivateGameObject: The Game Object " + m_inactiveGameObjects[id]->name() +
                           " (id " + std::to_string(id) + ") is already inactive");
-            return;
-        }
 
         detail::throwError("Scene::deactivateGameObject: The Game Object (id " + std::to_string(id) + 
                            ") does not exist!");     
@@ -243,6 +265,11 @@ namespace gamecoe
     std::int8_t Scene::layer() const
     {
         return m_layer;
+    }
+
+    bool Scene::loaded() const
+    {
+        return m_loaded;
     }
 
     bool Scene::active() const

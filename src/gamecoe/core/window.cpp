@@ -1,18 +1,21 @@
 #include <gamecoe/core/window.hpp>
 #include <gamecoe/core/time.hpp>
 #include <logcoe.hpp>
-#include <glad/gl.h>
-#include <GLFW/glfw3.h>
-#include <gamecoe_config.h>
 #include <gamecoe/utils/error_handler.hpp>
 #include <cassert>
 #include <cstdlib>
+#include <gamecoe_config.h>
 
-using namespace gamecoe::detail;
+#if GAMECOE_USE_OPENGL
+    #include <glad/gl.h>      
+#endif
+
+#include <GLFW/glfw3.h>
+#include <gamecoe/utils/consts.hpp>
 
 namespace gamecoe
 {
-    static void framebufferSizeCallback(GLFWwindow *window, int width, int height) // should be static?
+    static void framebufferSizeCallback(GLFWwindow *window, int width, int height)
     {
         glViewport(0, 0, width, height);
     }
@@ -21,24 +24,6 @@ namespace gamecoe
 
     Window::Window(size_t width, size_t height, const std::string &title) : m_window(nullptr), m_width(width), m_height(height), m_title(title), m_firstFrame(true), m_lastFrameTime(0.0f)
     {
-        struct GarbageCollector
-        {
-            bool m_succeed = false;
-            ~GarbageCollector()
-            {
-                if(m_succeed) return;
-                
-                // Window creation failed
-                logcoe::shutdown();
-                glfwTerminate();
-            }
-        } gc;
-
-        logcoe::initialize(logcoe::LogLevel::INFO, "gamecoe"); // maybe move to "Game" class later?
-
-        if(!glfwInit()) // maybe move to "Game" class later?
-            throwError("Failed to initialize glfw");
-
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GAMECOE_GRAPHICS_VERSION_MAJOR);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GAMECOE_GRAPHICS_VERSION_MINOR);
         
@@ -52,7 +37,7 @@ namespace gamecoe
         GLFWwindow *current = glfwGetCurrentContext();
         GLFWwindow *window = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, current);
         if(!window)
-            throwError("Failed to create glfw window");
+            detail::throwError("Failed to create glfw window");
 
         if(!current)
         {
@@ -60,7 +45,7 @@ namespace gamecoe
 
             #if GAMECOE_USE_OPENGL
                 if(!gladLoadGL(glfwGetProcAddress))
-                    throwError("Failed to initialize glad");
+                    detail::throwError("Failed to initialize glad");
             #endif
         }
         
@@ -75,8 +60,6 @@ namespace gamecoe
 
         GLFWwindow *window = static_cast<GLFWwindow*>(m_window);
         glfwDestroyWindow(window);
-        logcoe::shutdown(); // move to "Game" class later?
-        glfwTerminate(); // move to a "Game" class (that will manage the game loop?)
     }
 
     bool Window::active()

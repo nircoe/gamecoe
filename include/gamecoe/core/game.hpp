@@ -18,8 +18,8 @@ namespace gamecoe
     
     class Game
     {
-        Window m_mainWindow;
-        Scene m_engineScene;
+        std::optional<Window> m_mainWindow;
+        std::optional<Scene> m_internalScene;
         Camera *m_mainCamera;
 
         std::unordered_map<std::string, std::unique_ptr<Scene>> m_activeScenes;
@@ -47,7 +47,7 @@ namespace gamecoe
         void unloadScene(const std::string &scene);
 
         std::map<std::int8_t, std::vector<std::reference_wrapper<Scene>>> getActiveSceneLayers() const;
-        bool setSceneLayer(const std::string &scene, std::int8_t layer);
+        void setSceneLayer(const std::string &scene, std::int8_t layer);
 
         Camera &mainCamera();
         const Camera &mainCamera() const;

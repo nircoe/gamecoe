@@ -19,6 +19,7 @@ namespace gamecoe
     {
         std::string m_name;
         std::int8_t m_layer;
+        bool m_loaded;
         bool m_active;
         
         std::unordered_map<std::uint32_t, std::unique_ptr<GameObject>> m_activeGameObjects;
@@ -56,6 +57,7 @@ namespace gamecoe
         void setLayer(std::int8_t layer = 0);
         std::int8_t layer() const;
 
+        bool loaded() const;
         bool active() const;
 
         Game &game();
