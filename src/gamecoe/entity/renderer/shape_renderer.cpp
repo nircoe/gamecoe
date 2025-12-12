@@ -1,6 +1,8 @@
 #include <gamecoe/entity/renderer/shape_renderer.hpp>
 #include <gamecoe/entity/game_object.hpp>
 #include <gamecoe/entity/transform.hpp>
+#include <gamecoe/entity/camera.hpp>
+#include <gamecoe/core/game.hpp>
 #include <cassert>
 #include <optional>
 #include <glad/gl.h>
@@ -51,17 +53,21 @@ namespace gamecoe
 
     void ShapeRenderer::render() const
     {
-        if (!s_shader.has_value())
+        if (!m_active) return;
+        
+        if (!s_shader)
             s_shader.emplace("assets/shaders/shape_renderer.vert", "assets/shaders/shape_renderer.frag");
 
-        const Transform &transform = owner().transform();
+        auto &camera = owner().game().mainCamera();
 
-        // add Camera matrices (view, projection) in the future
-
-        glm::mat4 model = transform.modelMatrix();
+        glm::mat4 model = owner().transform().modelMatrix();
+        glm::mat4 view = camera.viewMatrix();
+        glm::mat4 projection = camera.projectionMatrix();
 
         s_shader->use();
         s_shader->set("model", model);
+        s_shader->set("view", view);
+        s_shader->set("projection", projection);
 
         m_vertexArray.bind();
 
