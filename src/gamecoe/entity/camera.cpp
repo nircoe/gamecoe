@@ -1,23 +1,20 @@
 #include <gamecoe/entity/camera.hpp>
 #include <gamecoe/entity/game_object.hpp>
+#include <gamecoe/core/game.hpp>
+#include <gamecoe/core/window.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 #include <logcoe.hpp>
 #include <glad/gl.h>
 
 namespace gamecoe
 {
-    Camera::Camera(GameObject &owner, Window *window) : Component(owner), 
-                                                        m_window(window), 
-                                                        m_fov(45.0f),
-                                                        m_nearPlane(0.1f),
-                                                        m_farPlane(100.0f),
-                                                        m_orthographicHeight(-1.0f),
-                                                        m_perspective(true),
-                                                        m_projectionCached(false)
-    { 
-        if (!window)
-            detail::throwError("Window cannot be nullptr");
-    }
+    Camera::Camera(GameObject &owner) : Component(owner), 
+                                        m_fov(45.0f),
+                                        m_nearPlane(0.1f),
+                                        m_farPlane(100.0f),
+                                        m_orthographicHeight(-1.0f),
+                                        m_perspective(true),
+                                        m_projectionCached(false) { }
     
     void Camera::activate() 
     { 
@@ -117,12 +114,13 @@ namespace gamecoe
     { 
         if (!m_projectionCached)
         {
+            float aspectRatio = m_owner.game().mainWindow().aspectRatio();
             if (m_perspective)
-                m_projectionMatrix = glm::perspective(glm::radians(m_fov), m_window->aspectRatio(), m_nearPlane, m_farPlane);
+                m_projectionMatrix = glm::perspective(glm::radians(m_fov), aspectRatio, m_nearPlane, m_farPlane);
             else
             {
                 float halfHeight = m_orthographicHeight / 2.0f;
-                float halfWidth = halfHeight * m_window->aspectRatio();
+                float halfWidth = halfHeight * aspectRatio;
                 m_projectionMatrix = glm::ortho(-halfWidth, halfWidth, 
                                                 -halfHeight, halfHeight,
                                                 m_nearPlane, m_farPlane);

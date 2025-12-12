@@ -1,21 +1,27 @@
 #include <gamecoe/core/scene.hpp>
+#include <gamecoe/core/game.hpp>
 #include <logcoe.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 
 namespace gamecoe
 {
-    std::atomic<uint32_t> Scene::s_currentId = 0;
-
-    Scene::Scene(const std::string &name, std::int8_t layer) :  m_id(++s_currentId), 
+    Scene::Scene(Game &game, const std::string &name, std::int8_t layer) :
                                                                 m_name(name), 
-                                                                m_layer(layer), 
+                                                                m_layer(layer),
+                                                                m_loaded(false),
                                                                 m_active(false), 
                                                                 m_activeGameObjects(), 
                                                                 m_inactiveGameObjects(), 
-                                                                m_renderersByLayer() { }
+                                                                m_renderersByLayer(),
+                                                                m_game(game) { }
 
     Scene::~Scene()
     {
+        if (m_active)
+            deactivate();
+        if (m_loaded)    
+            unload();
+
         m_activeGameObjects.clear();
         m_inactiveGameObjects.clear();
         m_renderersByLayer.clear();
@@ -23,6 +29,9 @@ namespace gamecoe
 
     void Scene::load()
     {
+        if (m_loaded) 
+            return logcoe::warning("Scene::load: The scene \"" + m_name + "\" is already loaded");
+
         for (auto &[id, go] : m_activeGameObjects)
         {
             go->initialize();
@@ -32,10 +41,18 @@ namespace gamecoe
         {
             go->initialize();
         }
+
+        m_loaded = true;
     }
 
     void Scene::activate()
     {
+        if (m_active) 
+            return logcoe::warning("Scene::activate: The scene \"" + m_name + "\" is already active");
+
+        if (!m_loaded)
+            detail::throwError("Scene::activate: The scene \"" + m_name + "\" is not loaded, please load it first");
+
         for (auto &[id, go] : m_activeGameObjects)
         {
             go->begin();
@@ -52,6 +69,9 @@ namespace gamecoe
 
     void Scene::deactivate()
     {
+        if (!m_active) 
+            return logcoe::warning("Scene::deactivate: The scene \"" + m_name + "\" is already inactive");
+
         for (auto &[id, go] : m_activeGameObjects)
         {
             go->deactivate();
@@ -62,7 +82,15 @@ namespace gamecoe
 
     void Scene::unload()
     {
+        if (!m_loaded) 
+            return logcoe::warning("Scene::unload: The scene \"" + m_name + "\" is already unloaded");
+
+        if (m_active)
+            detail::throwError("Scene::unload: The scene \"" + m_name + "\" is active, please deactivate it first");
+
         // TODO: Call resource cleanup on GameObjects when resource management is implemented
+
+        m_loaded = false;
     }
 
     void Scene::update()
@@ -88,10 +116,8 @@ namespace gamecoe
     GameObject &Scene::createGameObject(const std::string &name, bool active, std::optional<std::reference_wrapper<GameObject>> parent)
     {
         if (!name.empty() && findGameObject(name) != std::nullopt)
-        {
             detail::throwError("Scene::createGameObject: There is already GameObject named \"" + name + 
                                "\", GameObject name should be unique!");
-        }
 
         std::unique_ptr<GameObject> go = std::make_unique<GameObject>(*this, name, parent);
         std::uint32_t id = go->id();
@@ -134,11 +160,8 @@ namespace gamecoe
         }
 
         if (m_activeGameObjects.contains(id))
-        {
-            logcoe::warning("Scene::activateGameObject: The Game Object " + m_activeGameObjects[id]->name() +
+            return logcoe::warning("Scene::activateGameObject: The Game Object " + m_activeGameObjects[id]->name() +
                           " (id " + std::to_string(id) + ") is already active");
-            return;
-        }
 
         detail::throwError("Scene::activateGameObject: The Game Object (id " + std::to_string(id) + 
                         ") does not exist!");
@@ -155,11 +178,8 @@ namespace gamecoe
         }
 
         if (m_inactiveGameObjects.contains(id))
-        {
-            logcoe::warning("Scene::deactivateGameObject: The Game Object " + m_inactiveGameObjects[id]->name() +
+            return logcoe::warning("Scene::deactivateGameObject: The Game Object " + m_inactiveGameObjects[id]->name() +
                           " (id " + std::to_string(id) + ") is already inactive");
-            return;
-        }
 
         detail::throwError("Scene::deactivateGameObject: The Game Object (id " + std::to_string(id) + 
                            ") does not exist!");     
@@ -229,11 +249,6 @@ namespace gamecoe
         m_renderersByLayer[newLayer].push_back(go);
     }
 
-    std::uint32_t Scene::id() const
-    {
-        return m_id;
-    }
-
     const std::string &Scene::name() const
     {
         return m_name;
@@ -252,18 +267,33 @@ namespace gamecoe
         return m_layer;
     }
 
+    bool Scene::loaded() const
+    {
+        return m_loaded;
+    }
+
     bool Scene::active() const
     {
         return m_active;
     }
 
+    Game &Scene::game()
+    {
+        return m_game;
+    }
+
+    const Game &Scene::game() const
+    {
+        return m_game;
+    }
+
     std::optional<std::reference_wrapper<GameObject>> Scene::findGameObject(std::uint32_t id)
     {
-        if (auto it = m_activeGameObjects.find(id); it != m_activeGameObjects.end())
-            return std::ref(*it->second);
-        
-        if (auto it = m_inactiveGameObjects.find(id); it != m_inactiveGameObjects.end())
-            return std::ref(*it->second);
+        if (m_activeGameObjects.contains(id))
+            return std::ref(*m_activeGameObjects[id]);
+
+        if (m_inactiveGameObjects.contains(id))
+            return std::ref(*m_inactiveGameObjects[id]);
 
         return std::nullopt;
     }
@@ -287,11 +317,11 @@ namespace gamecoe
 
     std::optional<std::reference_wrapper<const GameObject>> Scene::findGameObject(std::uint32_t id) const
     {
-        if (auto it = m_activeGameObjects.find(id); it != m_activeGameObjects.end())
-            return std::cref(*it->second);
-        
-        if (auto it = m_inactiveGameObjects.find(id); it != m_inactiveGameObjects.end())
-            return std::cref(*it->second);
+        if (m_activeGameObjects.contains(id))
+            return std::cref(*m_activeGameObjects.at(id));
+
+        if (m_inactiveGameObjects.contains(id))
+            return std::cref(*m_inactiveGameObjects.at(id));
 
         return std::nullopt;
     }

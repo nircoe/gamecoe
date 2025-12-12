@@ -17,6 +17,7 @@
 namespace gamecoe
 {
     class Scene;
+    class Game;
 
     class GameObject
     {
@@ -87,6 +88,9 @@ namespace gamecoe
 
         Scene &scene();
         const Scene &scene() const;
+
+        Game &game();
+        const Game &game() const;
     };
 
     template<std::derived_from<ComponentBase> T>
@@ -108,7 +112,7 @@ namespace gamecoe
             logcoe::warning("The Game Object (id " + std::to_string(m_id) + ") already have a " + componentType + " component");
             return false;
         }
-        else if (std::is_base_of<Renderer, T>())
+        else if constexpr (std::is_base_of_v<Renderer, T>)
         {
             if(m_renderer)
             {
@@ -142,7 +146,7 @@ namespace gamecoe
         if (componentType == Transform::staticType())
             return m_transform;
 
-        if (std::is_base_of<Renderer, T>())
+        if (std::is_base_of_v<Renderer, T>)
         {
             if (!m_renderer)
                 detail::throwError("The Game Object (id " + std::to_string(m_id) + ") does not have a " + 
@@ -167,7 +171,7 @@ namespace gamecoe
         if (componentType == Transform::staticType())
             return m_transform;
 
-        if (std::is_base_of<Renderer, T>())
+        if (std::is_base_of_v<Renderer, T>)
         {
             if (!m_renderer)
                 detail::throwError("The Game Object (id " + std::to_string(m_id) + ") does not have a " + 
@@ -191,7 +195,7 @@ namespace gamecoe
         if (componentType == Transform::staticType())
             return true;
 
-        if (std::is_base_of<Renderer, T>())
+        if (std::is_base_of_v<Renderer, T>)
             return m_renderer != nullptr;
 
         return m_components.contains(componentType);
