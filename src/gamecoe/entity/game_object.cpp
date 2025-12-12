@@ -26,6 +26,11 @@ namespace gamecoe
         {
             component->initialize();
         }
+
+        m_transform.initialize();
+
+        if (m_renderer)
+            m_renderer->initialize();
     }
 
     void GameObject::begin()
@@ -34,6 +39,11 @@ namespace gamecoe
         {
             component->begin();
         }
+
+        m_transform.begin();
+        
+        if (m_renderer)
+            m_renderer->begin();
     }
       
     void GameObject::activate()
@@ -43,6 +53,11 @@ namespace gamecoe
         {
             component->activate();
         }
+
+        m_transform.activate();
+        
+        if (m_renderer)
+            m_renderer->activate();
     }
         
     void GameObject::deactivate()
@@ -51,6 +66,11 @@ namespace gamecoe
         {
             component->deactivate();
         }
+
+        m_transform.deactivate();
+        
+        if (m_renderer)
+            m_renderer->deactivate();
 
         m_active = false;
     }
@@ -62,7 +82,10 @@ namespace gamecoe
             component->update();
         }
 
-        // m_renderer->update(); is it needed?
+        m_transform.update();
+        
+        if (m_renderer)
+            m_renderer->update();
     }
         
     void GameObject::render()

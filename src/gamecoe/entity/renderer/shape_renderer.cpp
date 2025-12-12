@@ -55,7 +55,7 @@ namespace gamecoe
     {
         if (!m_active) return;
         
-        if (!s_shader.has_value())
+        if (!s_shader)
             s_shader.emplace("assets/shaders/shape_renderer.vert", "assets/shaders/shape_renderer.frag");
 
         auto &camera = owner().game().mainCamera();
