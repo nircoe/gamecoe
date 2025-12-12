@@ -71,6 +71,23 @@ namespace gamecoe
             m_renderer->render();
     }
 
+    void GameObject::setRenderer(std::unique_ptr<Renderer> renderer, bool replace)
+    {
+        if (!renderer)
+            detail::throwError("GameObject::setRenderer: renderer is null");
+
+        if (m_renderer && !replace)
+            detail::throwError("GameObject::setRenderer: The GameObject \"" + m_name + 
+                               "\" already has a Renderer, please pass replace=true to replace the Renderer");
+
+        // The GameObject does not have a Renderer
+        // OR
+        // The GameObject already has a Renderer, but the gamedev explicitly asked to replace it.
+
+        m_renderer = std::move(renderer);
+        setUpComponent(m_renderer);
+    }
+
     std::uint32_t GameObject::id() const
     {
         return m_id;

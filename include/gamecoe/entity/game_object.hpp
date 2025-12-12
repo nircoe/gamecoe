@@ -71,6 +71,8 @@ namespace gamecoe
         template<std::derived_from<ComponentBase> T>
         bool hasComponent() const;
 
+        void setRenderer(std::unique_ptr<Renderer> renderer, bool replace = false);
+
         std::uint32_t id() const;
 
         void setName(const std::string &name);
