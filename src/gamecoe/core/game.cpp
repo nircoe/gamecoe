@@ -39,7 +39,13 @@ namespace gamecoe
         if(!glfwInit())
             detail::throwError("Game::Game: Failed to initialize glfw");
         
-        m_mainWindow.emplace(width, height, title);
+        m_mainWindow.emplace(title, width, height);
+
+#if GAMECOE_USE_OPENGL
+        if(!gladLoadGL(glfwGetProcAddress))
+            detail::throwError("Game::Game: Failed to initialize glad");
+#endif
+
         m_internalScene.emplace(*this, "gamecoe::Internal");
 
         auto &cameraGameObject = m_internalScene->createGameObject("MainCamera");

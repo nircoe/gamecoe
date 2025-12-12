@@ -96,7 +96,7 @@ struct GarbageCollector
 
 int main()
 {
-    gamecoe::Window window(WINDOW_WIDTH, WINDOW_HEIGHT, "gamecoe");
+    gamecoe::Window window("gamecoe", WINDOW_WIDTH, WINDOW_HEIGHT);
 
 
     // glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);

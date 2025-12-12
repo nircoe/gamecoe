@@ -20,9 +20,9 @@ namespace gamecoe
         glViewport(0, 0, width, height);
     }
 
-    Window::Window() : Window(800, 600, "gamecoe") { }
+    Window::Window() : Window("gamecoe", 800, 600) { }
 
-    Window::Window(size_t width, size_t height, const std::string &title) : m_window(nullptr), m_width(width), m_height(height), m_title(title), m_firstFrame(true), m_lastFrameTime(0.0f)
+    Window::Window(const std::string &title, std::uint32_t width, std::uint32_t height) : m_window(nullptr), m_title(title), m_width(width), m_height(height), m_firstFrame(true), m_lastFrameTime(0.0f)
     {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GAMECOE_GRAPHICS_VERSION_MAJOR);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GAMECOE_GRAPHICS_VERSION_MINOR);
@@ -37,17 +37,10 @@ namespace gamecoe
         GLFWwindow *current = glfwGetCurrentContext();
         GLFWwindow *window = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, current);
         if(!window)
-            detail::throwError("Failed to create glfw window");
+            detail::throwError("Window::Window: Failed to create glfw window");
 
-        if(!current)
-        {
+        if(!current) // multi-window support
             glfwMakeContextCurrent(window);
-
-            #if GAMECOE_USE_OPENGL
-                if(!gladLoadGL(glfwGetProcAddress))
-                    detail::throwError("Failed to initialize glad");
-            #endif
-        }
         
         glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
         m_window = window;
