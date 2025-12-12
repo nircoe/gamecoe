@@ -111,6 +111,19 @@ namespace gamecoe
         setUpComponent(m_renderer);
     }
 
+    void GameObject::removeRenderer()
+    {
+        if (!m_renderer)
+            return logcoe::warning("GameObject::removeRenderer: The Game Object \"" + m_name + "\" does not have a Renderer");
+
+        m_renderer.reset();
+    }
+    
+    bool GameObject::hasRenderer() const
+    {
+        return m_renderer != nullptr;
+    }
+
     std::uint32_t GameObject::id() const
     {
         return m_id;
@@ -134,6 +147,22 @@ namespace gamecoe
     const Transform &GameObject::transform() const
     {
         return m_transform;
+    }
+
+    Renderer &GameObject::renderer()
+    {
+        if (!m_renderer)
+            detail::throwError("GameObject::renderer: The Game Object \"" + m_name + "\" does not have a Renderer");
+
+        return *m_renderer;
+    }
+
+    const Renderer &GameObject::renderer() const
+    {
+        if (!m_renderer)
+            detail::throwError("GameObject::renderer: The Game Object \"" + m_name + "\" does not have a Renderer");
+
+        return *m_renderer;
     }
 
     void GameObject::setParent(std::optional<std::reference_wrapper<GameObject>> parent)
