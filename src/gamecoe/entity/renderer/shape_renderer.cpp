@@ -36,7 +36,7 @@ namespace gamecoe
     ShapeRenderer::ShapeRenderer(GameObject &owner, Shape shape, const Color &color, std::int8_t layer) : 
         Renderer(owner, layer), 
         m_shape(shape),
-        m_color(color), // maybe move it? should add move semantics for Color for it? or there is default behavior?
+        m_color(color),
         m_vertexArray(shapeToVertexArray(shape)) 
     { 
         ++s_counter;
@@ -82,13 +82,13 @@ namespace gamecoe
             glDrawArrays(GL_TRIANGLES, 0, m_vertexArray.vertexCount());
     }
 
-    Shape ShapeRenderer::shape() const          { return m_shape; }
+    Shape ShapeRenderer::shape() const { return m_shape; }
 
-    const Color &ShapeRenderer::color() const   { return m_color; }
+    Color ShapeRenderer::color() const { return m_color; }
 
     void ShapeRenderer::setColor(const Color &color)
     {
-        m_color = color; // maybe move it? should add move semantics for Color for it? or there is default behavior?
+        m_color = color;
     }
 
     std::unique_ptr<ShapeRenderer> ShapeRenderer::triangle(GameObject &owner, const Color &color, std::int8_t layer)

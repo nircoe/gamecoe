@@ -26,7 +26,7 @@ namespace gamecoe
         Color m_color;
         const VertexArray &m_vertexArray;
     
-        ShapeRenderer(GameObject &owner, Shape shape, const Color &color, std::int8_t layer = 0); // should it be const Color& ?
+        ShapeRenderer(GameObject &owner, Shape shape, const Color &color, std::int8_t layer = 0);
 
     public:
         ShapeRenderer(const ShapeRenderer&) = delete;
@@ -43,7 +43,7 @@ namespace gamecoe
         virtual void render() const override;
 
         Shape shape() const;
-        const Color &color() const;
+        Color color() const;
 
         void setColor(const Color &color);
 
