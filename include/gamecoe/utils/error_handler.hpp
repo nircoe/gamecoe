@@ -8,7 +8,7 @@ namespace gamecoe
 {
     namespace detail
     {
-        static inline void throwError(const std::string &message)
+        [[noreturn]] static inline void throwError(const std::string &message)
         {
             logcoe::error(message);
             throw std::runtime_error(message);

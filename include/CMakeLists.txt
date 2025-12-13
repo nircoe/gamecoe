@@ -13,12 +13,7 @@ target_link_libraries(gamecoe_headers
 )
 
 install(
-    FILES ${CMAKE_CURRENT_SOURCE_DIR}/gamecoe.hpp
-    DESTINATION include   
-)
-
-install(
-    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/gamecoe
-    DESTINATION include/gamecoe
+    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/
+    DESTINATION include
     FILES_MATCHING PATTERN "*.hpp"
 )
