@@ -20,8 +20,10 @@ namespace gamecoe
             throw std::invalid_argument(message);
         }
 
+        // Checks for API error and throws if exists (currently only OpenGL supported)
         void checkAndThrowError(const std::string &method);
 
+        // Clears any existing API errors (currently only OpenGL supported)
         void clearError();
     } // namespace detail
 } // namespace gamecoe
