@@ -97,7 +97,7 @@ namespace gamecoe
     void GameObject::setRenderer(std::unique_ptr<Renderer> renderer, bool replace)
     {
         if (!renderer)
-            detail::throwError("GameObject::setRenderer: renderer is null");
+            detail::invalidArgument("GameObject::setRenderer: renderer cannot be null");
 
         if (m_renderer && !replace)
             detail::throwError("GameObject::setRenderer: The GameObject \"" + m_name + 

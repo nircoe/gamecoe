@@ -56,14 +56,14 @@ namespace gamecoe
     Color Color::fromHex(const std::string &hex)
     {
         if (!hex.starts_with('#') || (hex.length() != 7 && hex.length() != 9))
-            detail::throwError("Color::fromHex: The string argument should be in format of \"#RRGGBBAA\" or \"#RRGGBB\" in hexadecimal");
+            detail::invalidArgument("Color::fromHex: The string argument should be in format of \"#RRGGBBAA\" or \"#RRGGBB\" in hexadecimal");
 
         auto parseHexDigit = [](char c) -> std::uint8_t {
             if ('0' <= c && c <= '9')       return c - '0';
             else if ('A' <= c && c <= 'F')  return 10U + (c - 'A');
             else if ('a' <= c && c <= 'f')  return 10U + (c - 'a');
 
-            detail::throwError("Color::fromHex: The string argument should be in format of \"#RRGGBBAA\" or \"#RRGGBB\" in hexadecimal");
+            detail::invalidArgument("Color::fromHex: The string argument should be in format of \"#RRGGBBAA\" or \"#RRGGBB\" in hexadecimal");
         };
         
         std::array<std::uint8_t, 4> values = { 0U, 0U, 0U, 255U };

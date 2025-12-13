@@ -119,7 +119,7 @@ namespace gamecoe
                                componentType + " component");
         
         if (componentType == Transform::staticType())
-            detail::throwError("GameObject::addComponent: GameObject have built-in Transform Component");
+            detail::invalidArgument("GameObject::addComponent: GameObject have built-in Transform Component");
         
         if constexpr (std::is_base_of_v<Renderer, T>)
         {
@@ -137,7 +137,7 @@ namespace gamecoe
         static const std::string componentType = T::staticType();
 
         if (componentType == Transform::staticType())
-            detail::throwError("GameObject::removeComponent: You cannot remove Transform from any GameObject");
+            detail::invalidArgument("GameObject::removeComponent: You cannot remove Transform from any GameObject");
         
         if constexpr (std::is_base_of_v<Renderer, T>)
         {

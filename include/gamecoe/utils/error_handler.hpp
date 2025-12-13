@@ -14,7 +14,13 @@ namespace gamecoe
             throw std::runtime_error(message);
         }
 
-        void checkAndThrowError();
+        [[noreturn]] static inline void invalidArgument(const std::string &message)
+        {
+            logcoe::error(message);
+            throw std::invalid_argument(message);
+        }
+
+        void checkAndThrowError(const std::string &method);
 
         void clearError();
     } // namespace detail

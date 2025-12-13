@@ -164,7 +164,7 @@ namespace gamecoe
                           " (id " + std::to_string(id) + ") is already active");
 
         detail::throwError("Scene::activateGameObject: The Game Object (id " + std::to_string(id) + 
-                        ") does not exist!");
+                            ") does not exist!");
     }
 
     void Scene::deactivateGameObject(std::uint32_t id)
@@ -188,7 +188,7 @@ namespace gamecoe
     void Scene::addRenderer(std::int8_t layer, GameObject* go)
     {
         if (!go)
-            detail::throwError("Scene::addRenderer: The Game Object argument is nullptr");
+            detail::invalidArgument("Scene::addRenderer: The GameObject* argument cannot be null");
         
         if (!m_renderersByLayer.contains(layer))
             m_renderersByLayer.emplace(layer, std::vector<GameObject*>());

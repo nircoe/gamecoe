@@ -9,12 +9,12 @@ namespace gamecoe
 {
     namespace detail
     {
-        void checkAndThrowError()
+        void checkAndThrowError(const std::string &method)
         {
 #if GAMECOE_USE_OPENGL
             GLenum error = glGetError();
             if(error != GL_NO_ERROR) 
-                throwError("OpenGL error: " + std::to_string(error));
+                throwError(method + " OpenGL error: " + std::to_string(error));
 #endif
         }
 
