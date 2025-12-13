@@ -70,7 +70,7 @@ namespace gamecoe
     {
         if (m_inactiveScenes.contains(name) || m_activeScenes.contains(name))
             detail::throwError("Game::createScene: Scene with the name \"" + name + 
-                               "\" already exists, scene name must be unique!");
+                                    "\" already exists, scene name must be unique!");
         
         std::unique_ptr<Scene> scene = std::make_unique<Scene>(*this, name, layer);
         m_inactiveScenes.emplace(name, std::move(scene));

@@ -29,7 +29,7 @@ namespace gamecoe
     void Camera::setFov(float fov) 
     {
         if (fov <= 0.0f || 180.0f <= fov)
-            detail::throwError("FOV must be between 0 and 180 degrees");
+            detail::invalidArgument("Camera::setFov: FOV must be between 0 and 180 degrees");
 
         m_fov = fov;
         m_projectionCached = false;
@@ -38,9 +38,10 @@ namespace gamecoe
     void Camera::setNearPlane(float nearPlane) 
     {
         if (nearPlane <= 0.0f)
-            detail::throwError("Near plane must be positive");
+            detail::invalidArgument("Camera::setNearPlane: Near plane must be positive");
         if (nearPlane >= m_farPlane)
-            detail::throwError("Far plane must be greater than the near plane");
+            detail::throwError("Camera::setNearPlane: Far plane (" + std::to_string(m_farPlane) + 
+                               ") must be greater than the near plane (" + std::to_string(nearPlane) + ")");
 
         m_nearPlane = nearPlane; 
         m_projectionCached = false;
@@ -49,9 +50,10 @@ namespace gamecoe
     void Camera::setFarPlane(float farPlane) 
     {
         if (farPlane <= 0.0f)
-            detail::throwError("Far plane must be positive");
+            detail::invalidArgument("Camera::setFarPlane: Far plane must be positive");
         if (farPlane <= m_nearPlane)
-            detail::throwError("Far plane must be greater than the near plane");
+            detail::throwError("Camera::setFarPlane: Far plane (" + std::to_string(farPlane) + 
+                               ") must be greater than the near plane (" + std::to_string(m_nearPlane) + ")");
 
         m_farPlane = farPlane;
         m_projectionCached = false;
@@ -60,9 +62,9 @@ namespace gamecoe
     void Camera::setPlanes(float nearPlane, float farPlane)
     {
         if (nearPlane <= 0.0f || farPlane <= 0.0f)
-            detail::throwError("Both planes must be positive");
+            detail::invalidArgument("Camera::setPlanes: Both planes must be positive");
         if (nearPlane >= farPlane)
-            detail::throwError("Far plane must be greater than the near plane");
+            detail::throwError("Camera::setPlanes: Far plane must be greater than the near plane");
 
         m_nearPlane = nearPlane;
         m_farPlane = farPlane;
@@ -83,7 +85,7 @@ namespace gamecoe
         if (!m_perspective) return;
 
         if (orthographicSize <= 0.0f) 
-            detail::throwError("Orthographic size must be positive");
+            detail::invalidArgument("Camera::setOrthographicMode: Orthographic size must be positive");
 
         m_orthographicHeight = orthographicSize;
         m_projectionCached = false;

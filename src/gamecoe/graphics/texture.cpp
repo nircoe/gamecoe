@@ -9,8 +9,6 @@
     #include <glad/gl.h>
 #endif
 
-using namespace gamecoe::detail;
-
 namespace gamecoe
 {
     Texture::Texture(const std::string &image, bool flipVertically, bool generateMipmap)
@@ -29,13 +27,13 @@ namespace gamecoe
         stbi_set_flip_vertically_on_load(flipVertically);
         unsigned char *data = stbi_load(image.c_str(), &width, &height, &nrChannels, 0);
         if(!data)
-            throwError("Texture::Texture(): Failed to load texture: " + image);
+            detail::throwError("Texture::Texture(): Failed to load texture: " + image);
         gb.m_data = data;
         
 #if GAMECOE_USE_OPENGL
         glGenTextures(1, &m_id);
         if(m_id == 0)
-            throwError("Texture::Texture(): Failed to generate OpenGL texture");
+            detail::throwError("Texture::Texture(): Failed to generate OpenGL texture");
         
         m_dimension = GL_TEXTURE_2D;
         glBindTexture(m_dimension, m_id);
@@ -46,18 +44,18 @@ namespace gamecoe
                      (nrChannels == 4) ? GL_RGBA : 
                      0;
         if(format == 0)
-            throwError("Texture::Texture(): Unsupported image channel count");
+            detail::throwError("Texture::Texture(): Unsupported image channel count");
 
         glTexImage2D(m_dimension, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-        checkAndThrowError();
+        detail::checkAndThrowError("Texture::Texture():");
         if(generateMipmap) 
         {
             glGenerateMipmap(m_dimension);
-            checkAndThrowError();
+            detail::checkAndThrowError("Texture::Texture():");
         }
 
         glBindTexture(m_dimension, 0);
-        clearError();
+        detail::clearError();
 #endif
     }
 
@@ -184,7 +182,7 @@ namespace gamecoe
         glTexParameteri(m_dimension, GL_TEXTURE_WRAP_T, glWrapT);
         glTexParameteri(m_dimension, GL_TEXTURE_MIN_FILTER, glMinFilter);
         glTexParameteri(m_dimension, GL_TEXTURE_MAG_FILTER, glMagFilter);
-        try { checkAndThrowError(); }
+        try { detail::checkAndThrowError("Texture::setParameters:"); }
         catch(...) { return false; }
 
         return true;
