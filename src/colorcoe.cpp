@@ -3,11 +3,6 @@
 
 namespace gamecoe
 {
-    constexpr Color::Color() : m_red(0U), m_green(0U), m_blue(0U), m_alpha(255U) { }
-
-    constexpr Color::Color(std::uint8_t red, std::uint8_t green, std::uint8_t blue, std::uint8_t alpha)
-        : m_red(red), m_green(green), m_blue(blue), m_alpha(alpha) { }
-
     bool Color::operator==(const Color &other) const
     { 
         return m_red == other.m_red && m_green == other.m_green && m_blue == other.m_blue && m_alpha == other.m_alpha;

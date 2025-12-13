@@ -14,8 +14,9 @@ namespace gamecoe
         std::uint8_t m_alpha;
 
     public:
-        constexpr Color();
-        constexpr Color(std::uint8_t red, std::uint8_t green, std::uint8_t blue, std::uint8_t alpha = 255U);
+        constexpr Color() : m_red(0U), m_green(0U), m_blue(0U), m_alpha(255U) { };
+        constexpr Color(std::uint8_t red, std::uint8_t green, std::uint8_t blue, std::uint8_t alpha = 255U) : 
+                        m_red(red), m_green(green), m_blue(blue), m_alpha(alpha) { };
         
         Color(const Color &color) = default;
         Color &operator=(const Color &color) = default;
