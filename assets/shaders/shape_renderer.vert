@@ -1,6 +1,6 @@
 #version 330 core
 layout (location = 0) in vec3 aPos;
-// texture, color, etc, in the future
+// texture, etc... in the future
 
 uniform mat4 model;
 uniform mat4 view;

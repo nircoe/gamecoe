@@ -33,9 +33,10 @@ namespace gamecoe
     std::atomic<uint32_t> ShapeRenderer::s_counter = 0;
     std::optional<Shader> ShapeRenderer::s_shader = std::nullopt;
 
-    ShapeRenderer::ShapeRenderer(GameObject &owner, Shape shape, std::int8_t layer) : 
+    ShapeRenderer::ShapeRenderer(GameObject &owner, Shape shape, const Color &color, std::int8_t layer) : 
         Renderer(owner, layer), 
-        m_shape(shape), 
+        m_shape(shape),
+        m_color(color),
         m_vertexArray(shapeToVertexArray(shape)) 
     { 
         ++s_counter;
@@ -64,10 +65,14 @@ namespace gamecoe
         glm::mat4 view = camera.viewMatrix();
         glm::mat4 projection = camera.projectionMatrix();
 
+        auto colorNormalized = m_color.normalized();
+        glm::vec4 color = { colorNormalized[0], colorNormalized[1], colorNormalized[2], colorNormalized[3] };
+
         s_shader->use();
         s_shader->set("model", model);
         s_shader->set("view", view);
         s_shader->set("projection", projection);
+        s_shader->set("color", color);
 
         m_vertexArray.bind();
 
@@ -79,18 +84,25 @@ namespace gamecoe
 
     Shape ShapeRenderer::shape() const { return m_shape; }
 
-    std::unique_ptr<ShapeRenderer> ShapeRenderer::triangle(GameObject &owner, std::int8_t layer)
+    Color ShapeRenderer::color() const { return m_color; }
+
+    void ShapeRenderer::setColor(const Color &color)
     {
-        return std::unique_ptr<ShapeRenderer>(new ShapeRenderer(owner, Shape::Triangle, layer));
+        m_color = color;
     }
 
-    std::unique_ptr<ShapeRenderer> ShapeRenderer::rectangle(GameObject &owner, std::int8_t layer)
+    std::unique_ptr<ShapeRenderer> ShapeRenderer::triangle(GameObject &owner, const Color &color, std::int8_t layer)
     {
-        return std::unique_ptr<ShapeRenderer>(new ShapeRenderer(owner, Shape::Rectangle, layer));
+        return std::unique_ptr<ShapeRenderer>(new ShapeRenderer(owner, Shape::Triangle, color, layer));
     }
 
-    std::unique_ptr<ShapeRenderer> ShapeRenderer::cube(GameObject &owner, std::int8_t layer)
+    std::unique_ptr<ShapeRenderer> ShapeRenderer::rectangle(GameObject &owner, const Color &color, std::int8_t layer)
     {
-        return std::unique_ptr<ShapeRenderer>(new ShapeRenderer(owner, Shape::Cube, layer));
+        return std::unique_ptr<ShapeRenderer>(new ShapeRenderer(owner, Shape::Rectangle, color, layer));
+    }
+
+    std::unique_ptr<ShapeRenderer> ShapeRenderer::cube(GameObject &owner, const Color &color, std::int8_t layer)
+    {
+        return std::unique_ptr<ShapeRenderer>(new ShapeRenderer(owner, Shape::Cube, color, layer));
     }
 } // namespace gamecoe

@@ -3,6 +3,7 @@
 #include <gamecoe/entity/renderer/renderer.hpp>
 #include <gamecoe/graphics/vertex_array.hpp>
 #include <gamecoe/graphics/shader.hpp>
+#include <colorcoe.hpp>
 #include <memory>
 #include <atomic>
 
@@ -22,9 +23,10 @@ namespace gamecoe
         static std::optional<Shader> s_shader;
         
         Shape m_shape;
+        Color m_color;
         const VertexArray &m_vertexArray;
     
-        ShapeRenderer(GameObject &owner, Shape shape, std::int8_t layer = 0);
+        ShapeRenderer(GameObject &owner, Shape shape, const Color &color, std::int8_t layer = 0);
 
     public:
         ShapeRenderer(const ShapeRenderer&) = delete;
@@ -41,10 +43,13 @@ namespace gamecoe
         virtual void render() const override;
 
         Shape shape() const;
+        Color color() const;
 
-        static std::unique_ptr<ShapeRenderer> triangle(GameObject &owner, std::int8_t layer = 0);
-        static std::unique_ptr<ShapeRenderer> rectangle(GameObject &owner, std::int8_t layer = 0);
-        static std::unique_ptr<ShapeRenderer> cube(GameObject &owner, std::int8_t layer = 0);
+        void setColor(const Color &color);
+
+        static std::unique_ptr<ShapeRenderer> triangle(GameObject &owner, const Color &color, std::int8_t layer = 0);
+        static std::unique_ptr<ShapeRenderer> rectangle(GameObject &owner, const Color &color, std::int8_t layer = 0);
+        static std::unique_ptr<ShapeRenderer> cube(GameObject &owner, const Color &color, std::int8_t layer = 0);
     };
 
 } // namespace gamecoe

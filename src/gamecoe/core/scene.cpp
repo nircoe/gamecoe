@@ -258,8 +258,6 @@ namespace gamecoe
     {
         std::int8_t oldLayer = m_layer;
         m_layer = layer;
-
-        // TODO: Game logic to update Scene layer in Game's relevant collections.
     }
 
     std::int8_t Scene::layer() const
