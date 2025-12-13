@@ -1,5 +1,5 @@
 #include <gamecoe/core/window.hpp>
-#include <gamecoe/core/time.hpp>
+#include <timecoe.hpp>
 #include <logcoe.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 #include <cassert>
