@@ -1,4 +1,4 @@
-#include <gamecoe/core/time.hpp>
+#include <timecoe.hpp>
 
 namespace
 {
