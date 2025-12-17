@@ -12,6 +12,7 @@
 #include <gamecoe/core/window.hpp>
 #include <gamecoe/core/scene.hpp>
 #include <gamecoe/entity/camera.hpp>
+#include <colorcoe.hpp>
 
 namespace gamecoe
 {    
@@ -24,12 +25,14 @@ namespace gamecoe
         std::unordered_map<std::string, std::unique_ptr<Scene>> m_activeScenes;
         std::unordered_map<std::string, std::unique_ptr<Scene>> m_inactiveScenes;
 
+        Color m_backgroundColor;
+
         // TODO: For games with multiply windows - optional
         // std::vector<std::unique_ptr<Window>> m_additionalWindows;
 
     public:
         Game(); // Default title "gamecoe", screen size 800x600 pixels
-        Game(const std::string &title, uint32_t width, uint32_t height);
+        Game(const std::string &title, uint32_t width, uint32_t height, const Color &backgroundColor = colorcoe::darkSlateGray());
         ~Game();
 
         /*
@@ -53,6 +56,9 @@ namespace gamecoe
 
         Window &mainWindow();
         const Window &mainWindow() const;
+
+        void setBackgroundColor(const Color &backgroundColor);
+        const Color &backgroundColor() const;
 
         std::optional<std::reference_wrapper<Scene>> findScene(const std::string &scene);
         std::optional<std::reference_wrapper<const Scene>> findScene(const std::string &scene) const;
