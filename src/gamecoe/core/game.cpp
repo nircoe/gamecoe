@@ -15,11 +15,12 @@ namespace gamecoe
 {
     Game::Game() : Game("gamecoe", 800, 600) { }
 
-    Game::Game(const std::string &title, uint32_t width, uint32_t height) :
+    Game::Game(const std::string &title, uint32_t width, uint32_t height, const Color &backgroundColor) :
                     m_mainWindow(std::nullopt),
                     m_internalScene(std::nullopt),
                     m_activeScenes(),
-                    m_inactiveScenes()
+                    m_inactiveScenes(),
+                    m_backgroundColor(backgroundColor)
     {
         struct GarbageCollector
         {
@@ -186,6 +187,16 @@ namespace gamecoe
         return *m_mainWindow;
     }
 
+    void Game::setBackgroundColor(const Color &backgroundColor)
+    {
+        m_backgroundColor = backgroundColor;
+    }
+
+    const Color &Game::backgroundColor() const
+    {
+        return m_backgroundColor;
+    }
+
     std::optional<std::reference_wrapper<Scene>> Game::findScene(const std::string &scene)
     {
         if (m_activeScenes.contains(scene))
@@ -213,11 +224,14 @@ namespace gamecoe
         while (m_mainWindow->active())
         {
             // TODO: processInput(); - Handle keyboard/mouse input at first
+            
+            auto bgColor = m_backgroundColor.normalized();
 
 #if GAMECOE_USE_OPENGL
-            glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // TODO: Introduce gamecoe::Color or something like that... and add Color class member and parameter for the constructor or setter...
+            glClearColor(bgColor[0], bgColor[1], bgColor[2], bgColor[3]);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // TODO: check if we need those bits anytime, or let the gamedevs decide somehow
 #endif
+
             auto scenesByLayers = getActiveSceneLayers();
 
             for (auto &[layer, scenes] : scenesByLayers)
