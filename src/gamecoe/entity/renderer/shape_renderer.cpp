@@ -8,6 +8,8 @@
 #include <glad/gl.h>
 #include <glm/glm.hpp>
 
+
+
 namespace
 {
     const gamecoe::VertexArray& shapeToVertexArray(gamecoe::Shape shape)
