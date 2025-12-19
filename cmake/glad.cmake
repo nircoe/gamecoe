@@ -77,7 +77,7 @@ function(generate_glad)
 
     # Generate config header
     configure_file(
-        ${CMAKE_SOURCE_DIR}/cmake/gamecoe_config.h.in
+        ${GAMECOE_SOURCE_ROOT_DIR}/cmake/gamecoe_config.h.in
         ${GAMECOE_CONFIG_DIR}/gamecoe_config.h
         @ONLY
     )

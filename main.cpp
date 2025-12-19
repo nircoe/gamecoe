@@ -18,6 +18,7 @@ int main()
     // shape.transform().rotate({0.0f, 0.0f, 45.0f});
     // shape.transform().translate({0.25f, 0.3f, 0.0f});
 
+
     game.loadScene("tester");
     game.activateScene("tester");
 

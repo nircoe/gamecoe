@@ -31,17 +31,17 @@ add_subdirectory(include)
 add_subdirectory(src)
 
 # gamecoe tester executable
-add_executable(tester main.cpp)
+# add_executable(tester main.cpp)
 
-target_link_libraries(tester
-    PRIVATE
-        gamecoe
-)
+# target_link_libraries(tester
+#     PRIVATE
+#         gamecoe
+# )
 
-copy_directory_to_build_root(tester "assets")
+# copy_gamecoe_assets_to_build_root(tester)
 
-if(MSVC)
-    target_compile_options(tester PRIVATE /W4)
-else()
-    target_compile_options(tester PRIVATE -Wall -Wextra -Wpedantic)
-endif()
+# if(MSVC)
+#     target_compile_options(tester PRIVATE /W4)
+# else()
+#     target_compile_options(tester PRIVATE -Wall -Wextra -Wpedantic)
+# endif()
