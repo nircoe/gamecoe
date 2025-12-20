@@ -3,10 +3,13 @@
 #include <gamecoe/entity/transform.hpp>
 #include <gamecoe/entity/camera.hpp>
 #include <gamecoe/core/game.hpp>
+#include <gamecoe/utils/paths.hpp>
 #include <cassert>
 #include <optional>
 #include <glad/gl.h>
 #include <glm/glm.hpp>
+
+
 
 namespace
 {
@@ -57,7 +60,10 @@ namespace gamecoe
         if (!m_active) return;
         
         if (!s_shader)
-            s_shader.emplace("assets/shaders/shape_renderer.vert", "assets/shaders/shape_renderer.frag");
+            s_shader.emplace(
+                resolvePath("gamecoe/shaders/shape_renderer.vert"), 
+                resolvePath("gamecoe/shaders/shape_renderer.frag")
+            );
 
         auto &camera = owner().game().mainCamera();
 
