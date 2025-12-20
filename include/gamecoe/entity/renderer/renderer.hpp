@@ -20,7 +20,6 @@ namespace gamecoe
         virtual ~Renderer();
 
         virtual void render() const = 0;
-        // TODO: add render(Camera &camera) overload when Camera class will be functional
 
         void setLayer(std::int8_t layer = 0);
         std::int8_t layer() const;

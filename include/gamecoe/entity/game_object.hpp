@@ -45,11 +45,11 @@ namespace gamecoe
 
         // Called only once, when initializing the GameObject
         void initialize();
-        // Called once every beginning of a Scene that the GameObject is a part of
+        // Called once every beginning of a Scene containing the GameObject
         void begin();
-        // Called every time the GameObject is been activated
+        // Called every time the GameObject is activated
         void activate();
-        // Called every time the GameObject is been deactivated
+        // Called every time the GameObject is deactivated
         void deactivate();
         // Called once per frame while the GameObject is active
         void update();
