@@ -13,7 +13,6 @@ namespace gamecoe
         std::uint32_t m_width;
         std::uint32_t m_height;
         bool m_firstFrame;
-        float m_lastFrameTime;
 
     public:
         Window();

@@ -22,7 +22,7 @@ namespace gamecoe
 
     Window::Window() : Window("gamecoe", 800, 600) { }
 
-    Window::Window(const std::string &title, std::uint32_t width, std::uint32_t height) : m_window(nullptr), m_title(title), m_width(width), m_height(height), m_firstFrame(true), m_lastFrameTime(0.0f)
+    Window::Window(const std::string &title, std::uint32_t width, std::uint32_t height) : m_window(nullptr), m_title(title), m_width(width), m_height(height), m_firstFrame(true)
     {
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GAMECOE_GRAPHICS_VERSION_MAJOR);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GAMECOE_GRAPHICS_VERSION_MINOR);
@@ -57,15 +57,10 @@ namespace gamecoe
     bool Window::active()
     {
         assert(m_window);
-
-        float time = glfwGetTime();
         GLFWwindow* window = static_cast<GLFWwindow*>(m_window);
 
         if(m_firstFrame)
-        {
-            m_lastFrameTime = time; // deltaTime == 0 in the first frame
             m_firstFrame = false;
-        }
         else
         {
             #if GAMECOE_USE_OPENGL
@@ -73,11 +68,6 @@ namespace gamecoe
             #endif
             glfwPollEvents();
         }
-
-        float deltaTime = time - m_lastFrameTime;
-        detail::updateDeltaTime(deltaTime);
-        assert(timecoe::deltaTime() == deltaTime);
-        m_lastFrameTime = time;
 
         return !glfwWindowShouldClose(window);
     }
