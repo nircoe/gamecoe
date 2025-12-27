@@ -1,5 +1,6 @@
 #include <gamecoe/core/game.hpp>
 #include <gamecoe/core/window.hpp>
+#include <timecoe.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 #include <logcoe.hpp>
 #include <cassert>
@@ -223,6 +224,7 @@ namespace gamecoe
     {
         while (m_mainWindow->active())
         {
+            timecoe::detail::update();
             // TODO: processInput(); - Handle keyboard/mouse input at first
             
             auto bgColor = m_backgroundColor.normalized();

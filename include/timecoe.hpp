@@ -1,14 +1,11 @@
 #pragma once
 
-namespace gamecoe
+namespace timecoe
 {
     namespace detail
     {
-        void updateDeltaTime(float deltaTime);
+        void update();
     } // namespace detail
-} // namespace gamecoe
 
-namespace timecoe
-{
     float deltaTime() noexcept;
 } // namespace timecoe
