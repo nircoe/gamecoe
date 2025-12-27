@@ -256,7 +256,6 @@ namespace gamecoe
 
     void Scene::setLayer(std::int8_t layer)
     {
-        std::int8_t oldLayer = m_layer;
         m_layer = layer;
     }
 

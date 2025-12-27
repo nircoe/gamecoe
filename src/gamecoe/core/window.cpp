@@ -15,7 +15,7 @@
 
 namespace gamecoe
 {
-    static void framebufferSizeCallback(GLFWwindow *window, int width, int height)
+    static void framebufferSizeCallback([[maybe_unused]] GLFWwindow *window, int width, int height)
     {
         glViewport(0, 0, width, height);
     }
