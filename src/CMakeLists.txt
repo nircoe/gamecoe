@@ -31,4 +31,10 @@ target_compile_features(gamecoe
         cxx_std_20
 )
 
+if(MSVC)
+    target_compile_options(gamecoe PRIVATE /W4 /WX)
+else()
+    target_compile_options(gamecoe PRIVATE -Werror -Wall -Wextra -Wpedantic)
+endif()
+
 add_dependencies(gamecoe glad)
