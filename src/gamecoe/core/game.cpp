@@ -1,6 +1,7 @@
 #include <gamecoe/core/game.hpp>
 #include <gamecoe/core/window.hpp>
 #include <timecoe.hpp>
+#include <inputcoe.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 #include <logcoe.hpp>
 #include <cassert>
@@ -35,7 +36,7 @@ namespace gamecoe
             }
         } gc;
 
-        logcoe::initialize(logcoe::LogLevel::INFO, title);
+        logcoe::initialize(logcoe::LogLevel::DEBUG, title);
         // TODO: more initializations, datacoe, soundcoe, etc...
 
         if(!glfwInit())
@@ -225,7 +226,7 @@ namespace gamecoe
         while (m_mainWindow->active())
         {
             timecoe::detail::update();
-            // TODO: processInput(); - Handle keyboard/mouse input at first
+            inputcoe::detail::update();
             
             auto bgColor = m_backgroundColor.normalized();
 
