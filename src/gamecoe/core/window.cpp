@@ -1,5 +1,6 @@
 #include <gamecoe/core/window.hpp>
 #include <timecoe.hpp>
+#include <inputcoe.hpp>
 #include <logcoe.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 #include <cassert>
@@ -15,9 +16,14 @@
 
 namespace gamecoe
 {
-    static void framebufferSizeCallback([[maybe_unused]] GLFWwindow *window, int width, int height)
+    void Window::framebufferSizeCallback([[maybe_unused]] GLFWwindow *window, int width, int height)
     {
-        glViewport(0, 0, width, height);
+        m_width = width;
+        m_height = height;
+
+        #if GAMECOE_USE_OPENGL
+            glViewport(0, 0, width, height);
+        #endif
     }
 
     Window::Window() : Window("gamecoe", 800, 600) { }
@@ -42,7 +48,17 @@ namespace gamecoe
         if(!current) // multi-window support
             glfwMakeContextCurrent(window);
         
-        glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+        glfwSetWindowUserPointer(window, this);
+
+        glfwSetFramebufferSizeCallback(window, [](GLFWwindow *window, int width, int height) {
+            Window *windowPtr = static_cast<Window*>(glfwGetWindowUserPointer(window));
+            assert(windowPtr);
+            windowPtr->framebufferSizeCallback(window, width, height);
+        });
+        glfwSetCursorPosCallback(window, inputcoe::detail::mousePositionCallback);
+        glfwSetKeyCallback(window, inputcoe::detail::keyCallback);
+        glfwSetMouseButtonCallback(window, inputcoe::detail::mouseButtonCallback);
+
         m_window = window;
     }
 
@@ -50,26 +66,24 @@ namespace gamecoe
     {
         if(!m_window) return;
 
-        GLFWwindow *window = static_cast<GLFWwindow*>(m_window);
-        glfwDestroyWindow(window);
+        glfwSetWindowUserPointer(m_window, nullptr);
+        glfwDestroyWindow(m_window);
     }
 
     bool Window::active()
     {
         assert(m_window);
-        GLFWwindow* window = static_cast<GLFWwindow*>(m_window);
 
         if(m_firstFrame)
             m_firstFrame = false;
         else
         {
             #if GAMECOE_USE_OPENGL
-                glfwSwapBuffers(window);
+                glfwSwapBuffers(m_window);
             #endif
-            glfwPollEvents();
         }
 
-        return !glfwWindowShouldClose(window);
+        return !glfwWindowShouldClose(m_window);
     }
 
     float Window::aspectRatio() const { return (float)m_width / (float)m_height; }
