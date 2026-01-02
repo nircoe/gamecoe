@@ -21,8 +21,8 @@ namespace
             return gamecoe::VertexArray::triangle();
         case gamecoe::Shape::Rectangle:
             return gamecoe::VertexArray::rectangle();
-        case gamecoe::Shape::Cube:
-            return gamecoe::VertexArray::cube();
+        case gamecoe::Shape::Box:
+            return gamecoe::VertexArray::box();
         
         default:
             assert(false && "Need to add support for a new Shape");
@@ -107,8 +107,8 @@ namespace gamecoe
         return std::unique_ptr<ShapeRenderer>(new ShapeRenderer(owner, Shape::Rectangle, color, layer));
     }
 
-    std::unique_ptr<ShapeRenderer> ShapeRenderer::cube(GameObject &owner, const Color &color, std::int8_t layer)
+    std::unique_ptr<ShapeRenderer> ShapeRenderer::box(GameObject &owner, const Color &color, std::int8_t layer)
     {
-        return std::unique_ptr<ShapeRenderer>(new ShapeRenderer(owner, Shape::Cube, color, layer));
+        return std::unique_ptr<ShapeRenderer>(new ShapeRenderer(owner, Shape::Box, color, layer));
     }
 } // namespace gamecoe

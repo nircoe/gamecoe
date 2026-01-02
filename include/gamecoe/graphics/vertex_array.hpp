@@ -39,7 +39,7 @@ namespace gamecoe
 
         static const VertexArray &triangle();
         static const VertexArray &rectangle();
-        static const VertexArray &cube();
+        static const VertexArray &box();
         static void destroyShapeVAs();
     };
 } // namespace gamecoe
