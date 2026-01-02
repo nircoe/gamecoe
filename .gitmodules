@@ -1,3 +1,0 @@
-[submodule "tools/gencoe"]
-	path = tools/gencoe
-	url = git@github.com:nircoe/gencoe.git
