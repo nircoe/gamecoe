@@ -13,7 +13,7 @@ int main()
 
     auto &scene = game.createScene("tester");
     auto &shape = scene.createGameObject("shape");
-    shape.setRenderer(gamecoe::ShapeRenderer::cube(shape, colorcoe::maroon()));
+    shape.setRenderer(gamecoe::ShapeRenderer::box(shape, colorcoe::maroon()));
     // shape.transform().setScale({0.5f, 0.5f, 0.5f});
     // shape.transform().rotate({0.0f, 0.0f, 45.0f});
     // shape.transform().translate({0.25f, 0.3f, 0.0f});

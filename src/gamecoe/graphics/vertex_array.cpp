@@ -20,7 +20,7 @@ namespace
         2, 3, 0
     };
 
-    constexpr float cubeVertices[] = {
+    constexpr float boxVertices[] = {
         -0.5f, -0.5f,  0.5f,
          0.5f, -0.5f,  0.5f,
          0.5f,  0.5f,  0.5f,
@@ -30,7 +30,7 @@ namespace
          0.5f,  0.5f, -0.5f,
         -0.5f,  0.5f, -0.5f
     };
-    constexpr unsigned int cubeIndices[] = {
+    constexpr unsigned int boxIndices[] = {
         0, 1, 2, 2, 3, 0,
         4, 5, 6, 6, 7, 4,
         7, 3, 0, 0, 4, 7,
@@ -167,16 +167,16 @@ namespace gamecoe
         return *rectangleVA;
     }
 
-    const VertexArray &VertexArray::cube()
+    const VertexArray &VertexArray::box()
     {
-        static VertexArray *cubeVA = nullptr;
-        if (!cubeVA)
+        static VertexArray *boxVA = nullptr;
+        if (!boxVA)
         {
-            cubeVA = new VertexArray(cubeVertices, 8, 3, cubeIndices, 36);
-            s_shapeVAs.push_back(cubeVA);
+            boxVA = new VertexArray(boxVertices, 8, 3, boxIndices, 36);
+            s_shapeVAs.push_back(boxVA);
         }
         
-        return *cubeVA;
+        return *boxVA;
     }
 
     void VertexArray::destroyShapeVAs()

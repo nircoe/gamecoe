@@ -13,7 +13,7 @@ namespace gamecoe
     {
         Triangle,
         Rectangle,
-        Cube,
+        Box,
         // TODO: Support more primitive shapes
     };
 
@@ -49,7 +49,7 @@ namespace gamecoe
 
         static std::unique_ptr<ShapeRenderer> triangle(GameObject &owner, const Color &color, std::int8_t layer = 0);
         static std::unique_ptr<ShapeRenderer> rectangle(GameObject &owner, const Color &color, std::int8_t layer = 0);
-        static std::unique_ptr<ShapeRenderer> cube(GameObject &owner, const Color &color, std::int8_t layer = 0);
+        static std::unique_ptr<ShapeRenderer> box(GameObject &owner, const Color &color, std::int8_t layer = 0);
     };
 
 } // namespace gamecoe
