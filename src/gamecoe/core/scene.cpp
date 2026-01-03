@@ -1,7 +1,7 @@
 #include <gamecoe/core/scene.hpp>
 #include <gamecoe/core/game.hpp>
 #include <gamecoe/utils/error_handler.hpp>
-#include <gamecoe_config.h>
+#include <gamecoe_config.hpp>
 
 #if GAMECOE_USE_LOGCOE
     #include <logcoe.hpp>

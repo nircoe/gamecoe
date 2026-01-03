@@ -1,6 +1,6 @@
 #include <gamecoe/graphics/texture.hpp>
 #include <gamecoe/utils/error_handler.hpp>
-#include <gamecoe_config.h>
+#include <gamecoe_config.hpp>
 #include <stb/stb_image.h>
 #include <cassert>
 

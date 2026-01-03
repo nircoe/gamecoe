@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gamecoe_config.h>
+#include <gamecoe_config.hpp>
 
 // This header needs to be include after glfw (and glad before that)
 

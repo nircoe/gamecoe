@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gamecoe_config.h>
+#include <gamecoe_config.hpp>
 
 // gamecoe headers
 #include <gamecoe/core/game.hpp>
