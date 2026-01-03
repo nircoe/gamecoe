@@ -97,10 +97,10 @@ namespace gamecoe
     void GameObject::setRenderer(std::unique_ptr<Renderer> renderer, bool replace)
     {
         if (!renderer)
-            detail::invalidArgument("GameObject::setRenderer: renderer cannot be null");
+            detail::invalidArgument("GameObject::setRenderer(): renderer cannot be null");
 
         if (m_renderer && !replace)
-            detail::throwError("GameObject::setRenderer: The GameObject \"" + m_name + 
+            detail::throwError("GameObject::setRenderer(): The GameObject \"" + m_name + 
                                "\" already has a Renderer, please pass replace=true to replace the Renderer");
 
         // The GameObject does not have a Renderer
@@ -114,7 +114,13 @@ namespace gamecoe
     void GameObject::removeRenderer()
     {
         if (!m_renderer)
-            return logcoe::warning("GameObject::removeRenderer: The Game Object \"" + m_name + "\" does not have a Renderer");
+        {
+#if GAMECOE_USE_LOGCOE
+            return logcoe::warning("GameObject::removeRenderer(): The Game Object \"" + m_name + "\" does not have a Renderer");
+#else
+            return;
+#endif
+        }
 
         m_renderer.reset();
     }
@@ -152,7 +158,7 @@ namespace gamecoe
     Renderer &GameObject::renderer()
     {
         if (!m_renderer)
-            detail::throwError("GameObject::renderer: The Game Object \"" + m_name + "\" does not have a Renderer");
+            detail::throwError("GameObject::renderer(): The Game Object \"" + m_name + "\" does not have a Renderer");
 
         return *m_renderer;
     }
@@ -160,7 +166,7 @@ namespace gamecoe
     const Renderer &GameObject::renderer() const
     {
         if (!m_renderer)
-            detail::throwError("GameObject::renderer: The Game Object \"" + m_name + "\" does not have a Renderer");
+            detail::throwError("GameObject::renderer(): The Game Object \"" + m_name + "\" does not have a Renderer");
 
         return *m_renderer;
     }

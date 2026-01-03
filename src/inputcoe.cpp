@@ -2,6 +2,11 @@
 #include <gamecoe/core/game.hpp>
 #include <GLFW/glfw3.h>
 #include <unordered_map>
+#include <gamecoe_config.h>
+
+#if GAMECOE_USE_LOGCOE
+    #include <logcoe.hpp>
+#endif
 
 namespace
 {
@@ -104,8 +109,13 @@ namespace inputcoe
         void keyCallback([[maybe_unused]] GLFWwindow *window, int key, [[maybe_unused]] int scancode, int action, [[maybe_unused]] int mods)
         {
             if (!g_glfwToKey.contains(key))
-                logcoe::warning("inputcoe: Unsupported key, look at inputcoe.hpp for supported keys");
-
+            {
+#if GAMECOE_USE_LOGCOE
+                return logcoe::warning("inputcoe: Unsupported key, look at inputcoe.hpp for supported keys");
+#else
+                return;
+#endif
+            }
             
             g_currentPressedKeys[g_glfwToKey[key]] = (action == GLFW_PRESS || action == GLFW_REPEAT); // false if GLFW_RELEASE
         }
@@ -113,7 +123,13 @@ namespace inputcoe
         void mouseButtonCallback([[maybe_unused]] GLFWwindow *window, int button, int action, [[maybe_unused]] int mods)
         {
             if (!g_glfwToMouseButton.contains(button))
-                logcoe::warning("inputcoe: Unsupported mouse button, look at inputcoe.hpp for supported mouse buttons");
+            {
+#if GAMECOE_USE_LOGCOE
+                return logcoe::warning("inputcoe: Unsupported mouse button, look at inputcoe.hpp for supported mouse buttons");
+#else
+                return;
+#endif
+            }
 
             g_currentPressedMouseButtons[g_glfwToMouseButton[button]] = action == GLFW_PRESS; // false if GLFW_RELEASE
         }

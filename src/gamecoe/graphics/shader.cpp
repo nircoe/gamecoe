@@ -4,22 +4,12 @@
 #include <sstream>
 #include <iostream>
 #include <exception>
-#include <logcoe.hpp>
+#include <gamecoe/utils/error_handler.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 namespace gamecoe
 {
-    void Shader::logIfCreationFailed(const std::string &operation, unsigned int id)
-    {
-        if (id != 0)
-            return;
-
-        std::string error = "failed to create " + operation;
-        logcoe::error(error);
-        throw std::runtime_error(error);
-    }
-
-    void Shader::logIfCompileOrLinkFailed(const std::string &operation, unsigned int id, bool isProgram)
+    void Shader::logIfCompileOrLinkFailed(const std::string &operation, unsigned int id, bool isProgram) // do I really need that method?
     {
         GLint success;
         isProgram ? glGetProgramiv(id, GL_LINK_STATUS, &success) : glGetShaderiv(id, GL_COMPILE_STATUS, &success);
@@ -37,9 +27,7 @@ namespace gamecoe
         isProgram ? glGetProgramInfoLog(id, logLength, nullptr, &(log[0])) : glGetShaderInfoLog(id, logLength, nullptr, &(log[0]));
         log.pop_back();
 
-        log = operation + ": " + log;
-        logcoe::error(log);
-        throw std::runtime_error(log);
+        detail::throwError("Shader::Shader(): " + operation + ": " + log);
     }
 
     int Shader::getUniformLocation(const std::string &name) const
@@ -49,7 +37,7 @@ namespace gamecoe
             return it->second;
 
         int location = glGetUniformLocation(m_id, name.c_str());
-        if(location < 0) logcoe::warning("undefined uniform: " + name);
+        if(location < 0) detail::throwError("Shader::set(): Undefined Uniform: " + name);
         m_uniformLocation[name] = location;
         return location;
     }
@@ -92,9 +80,7 @@ namespace gamecoe
         }
         catch (const std::ifstream::failure &f)
         {
-            std::string error = "failed to read Shader file: " + std::string(f.what());
-            logcoe::error(error);
-            throw std::runtime_error(error);
+            detail::throwError("Shader::Shader(): Failed to read shader file: " + std::string(f.what()));
         }
 
         std::string vertexSource = vertexStream.str();
@@ -106,15 +92,15 @@ namespace gamecoe
         // vertex Shader
         unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
         gc.m_vertex = vertexShader;
-        logIfCreationFailed("vertex Shader", vertexShader);
+        detail::checkAndThrowError("Shader::Shader(): Vertex Shader:");
         glShaderSource(vertexShader, 1, &vertexCode, nullptr);
         glCompileShader(vertexShader);
-        logIfCompileOrLinkFailed("vertex Shader compilation failed", vertexShader, false);
+        logIfCompileOrLinkFailed("vertex Shader compilation failed", vertexShader, false); // do I really need all of those logIFCompileOrLinkFailed() calls? glGetError() in detail::checkAndThrowError() won't handle it the right way?
 
         // fragment Shader
         unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
         gc.m_fragment = fragmentShader;
-        logIfCreationFailed("fragment Shader", fragmentShader);
+        detail::checkAndThrowError("Shader::Shader(): Fragment Shader:");
         glShaderSource(fragmentShader, 1, &fragmentCode, nullptr);
         glCompileShader(fragmentShader);
         logIfCompileOrLinkFailed("fragment Shader compilation failed", fragmentShader, false);
@@ -122,7 +108,7 @@ namespace gamecoe
         // Shader program
         unsigned int program = glCreateProgram();
         gc.m_program = program;
-        logIfCreationFailed("Shader program", program);
+        detail::checkAndThrowError("Shader::Shader(): Shader Program:");
         glAttachShader(program, vertexShader);
         glAttachShader(program, fragmentShader);
         glLinkProgram(program);
@@ -215,7 +201,7 @@ namespace gamecoe
 
     void Shader::set(const std::string &name, const glm::mat4 &value) const
     {
-        glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value)); // should we do like this or glm::value_ptr(value) ?
+        glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
     }
 
     void Shader::set(const std::string &name, const glm::quat &value) const

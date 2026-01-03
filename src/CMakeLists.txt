@@ -13,13 +13,13 @@ target_include_directories(gamecoe
 )
 
 target_link_libraries(gamecoe
-    PRIVATE        
+    PRIVATE
         glm::glm-header-only
-    PUBLIC    
+        glfw
+        stb
+    PUBLIC
         gamecoe_headers
-        logcoe
-        stb # TODO: should be moved to PRIVATE later on!
-        glfw # TODO: should be moved to PRIVATE later on!
+        $<$<BOOL:${GAMECOE_USE_LOGCOE}>:logcoe> # how to link it only if GAMECOE_USE_LOGCOE?
         # soundcoe
         # datacoe
         # poolcoe

@@ -2,7 +2,6 @@
 #include <gamecoe/utils/error_handler.hpp>
 #include <gamecoe_config.h>
 #include <stb/stb_image.h>
-#include <logcoe.hpp>
 #include <cassert>
 
 #if GAMECOE_USE_OPENGL
@@ -95,7 +94,7 @@ namespace gamecoe
 #if GAMECOE_USE_OPENGL
         if(m_id == 0)
         {
-            logcoe::warning("Texture::bind(): Cannot bind moved texture");
+            assert(false && "Texture::bind(): Cannot bind moved texture");
             return false;
         }
 
@@ -148,7 +147,7 @@ namespace gamecoe
 #if GAMECOE_USE_OPENGL
         if(m_id == 0)
         {
-            logcoe::warning("Texture::setParameters(): Cannot set parameters on moved texture");
+            assert(false && "Texture::setParameters(): Cannot set parameters on moved texture");
             return false;
         }
 
@@ -182,7 +181,7 @@ namespace gamecoe
         glTexParameteri(m_dimension, GL_TEXTURE_WRAP_T, glWrapT);
         glTexParameteri(m_dimension, GL_TEXTURE_MIN_FILTER, glMinFilter);
         glTexParameteri(m_dimension, GL_TEXTURE_MAG_FILTER, glMagFilter);
-        try { detail::checkAndThrowError("Texture::setParameters:"); }
+        try { detail::checkAndThrowError("Texture::setParameters():"); }
         catch(...) { return false; }
 
         return true;

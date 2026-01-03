@@ -11,7 +11,6 @@ namespace gamecoe
         unsigned int m_id;
         mutable std::unordered_map<std::string, int> m_uniformLocation;
 
-        static void logIfCreationFailed(const std::string &operation, unsigned int id);
         static void logIfCompileOrLinkFailed(const std::string &operation, unsigned int id, bool isProgram = true);
 
         int getUniformLocation(const std::string &name) const;
