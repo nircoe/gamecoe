@@ -16,15 +16,13 @@ add_subdirectory(external)
 
 include(FetchContent)
 
-# Fetching libraries for gamecoe:
-# glfw
-fetch_glfw()
-# glad
-generate_glad()
-# glm
-fetch_glm()
-# logcoe
+# Fetching gamecoe toolkit libraries:
 fetch_logcoe()
+
+# Fetching external libraries for gamecoe:
+fetch_glfw()
+generate_glad()
+fetch_glm()
 
 message(STATUS "[gamecoe] Building gamecoe library...")
 add_subdirectory(include)

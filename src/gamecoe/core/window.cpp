@@ -1,7 +1,6 @@
 #include <gamecoe/core/window.hpp>
 #include <timecoe.hpp>
 #include <inputcoe.hpp>
-#include <logcoe.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 #include <cassert>
 #include <cstdlib>
@@ -43,7 +42,7 @@ namespace gamecoe
         GLFWwindow *current = glfwGetCurrentContext();
         GLFWwindow *window = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, current);
         if(!window)
-            detail::throwError("Window::Window: Failed to create glfw window");
+            detail::throwError("Window::Window(): Failed to create glfw window");
 
         if(!current) // multi-window support
             glfwMakeContextCurrent(window);

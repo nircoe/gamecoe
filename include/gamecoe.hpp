@@ -1,5 +1,7 @@
 #pragma once
 
+#include <gamecoe_config.h>
+
 // gamecoe headers
 #include <gamecoe/core/game.hpp>
 #include <gamecoe/core/window.hpp>
@@ -16,6 +18,9 @@
 // gamecoe toolkit libraries headers
 #include <colorcoe.hpp>
 #include <timecoe.hpp>
-#include <logcoe.hpp>
+
+#if GAMECOE_USE_LOGCOE
+    #include <logcoe.hpp>
+#endif
 
 // more to come...

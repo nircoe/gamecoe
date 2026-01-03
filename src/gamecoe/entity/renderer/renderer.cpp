@@ -1,7 +1,7 @@
 #include <gamecoe/entity/renderer/renderer.hpp>
 #include <gamecoe/entity/game_object.hpp>
 #include <gamecoe/core/scene.hpp>
-#include <logcoe.hpp>
+#include <gamecoe/utils/error_handler.hpp>
 #include <exception>
 
 namespace gamecoe
@@ -14,7 +14,7 @@ namespace gamecoe
     Renderer::~Renderer()
     {
         try { m_owner.scene().removeRenderer(m_layer ,m_owner.id()); }
-        catch (const std::exception &e) { logcoe::error("Renderer::~Renderer: " + std::string(e.what())); }
+        catch (const std::exception &e) { detail::throwError("Renderer::~Renderer(): " + std::string(e.what())); }
     }
 
     void Renderer::setLayer(std::int8_t layer) 
