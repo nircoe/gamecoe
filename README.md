@@ -1,4 +1,4 @@
-# gamecoe - A small but modern C++ Code-Only Game Engine
+# gamecoe - A small C++ Code-Only Game Engine
 
 ## Current State - Work in Progress
 
@@ -34,7 +34,7 @@ if (inputcoe::released(inputcoe::MouseButton::Left)) { /* do something */ }
 ## Build Requirements
 
 - **C++20**
-- **CMake 3.14+**
+- **CMake 3.20+**
 - **Python3**: for GLAD2 generation
 
 ## Platform Support

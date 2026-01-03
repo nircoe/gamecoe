@@ -37,25 +37,60 @@ function(generate_glad)
     ensure_jinja2()
 
     # User-configurable options
-    set(GAMECOE_GRAPHICS_API "gl" CACHE STRING "Graphics API (gl, vulkan)")
-    set(GAMECOE_GRAPHICS_VERSION_MAJOR "3" CACHE STRING "Graphics API version major")
-    set(GAMECOE_GRAPHICS_VERSION_MINOR "3" CACHE STRING "Graphics API version minor")
-    set(GAMECOE_GRAPHICS_PROFILE "core" CACHE STRING "Graphics profile (core, compatibility)")
+    if(NOT DEFINED GAMECOE_GRAPHICS_API)
+        set(GAMECOE_GRAPHICS_API "OpenGL")
+        message(STATUS "[gamecoe] Using default graphics API - ${GAMECOE_GRAPHICS_API}")
+        message(STATUS "[gamecoe] Can be changed with \"set(GAMECOE_GRAPHICS_API <API>)\"")
+        message(STATUS "[gamecoe] Options are \"OpenGL\" (\"Vulkan\" not supported yet)")
+    endif()
+    
+    set(DEFAULT_VERSION_MAJOR OFF)
+    if(NOT DEFINED GAMECOE_GRAPHICS_VERSION_MAJOR)
+        set(DEFAULT_VERSION_MAJOR ON)
+        set(GAMECOE_GRAPHICS_VERSION_MAJOR 3)
+        set(GAMECOE_GRAPHICS_VERSION_MAJOR 3 PARENT_SCOPE)
+    endif()
 
-    if(GAMECOE_GRAPHICS_API STREQUAL "gl")
-        set(GAMECOE_USE_OPENGL 1)
-        set(GAMECOE_USE_VULKAN 0)
-    elseif(GAMECOE_GRAPHICS_API STREQUAL "vulkan")
-        set(GAMECOE_USE_OPENGL 0)
-        set(GAMECOE_USE_VULKAN 1)
+    set(DEFAULT_VERSION_MINOR OFF)
+    if(NOT DEFINED GAMECOE_GRAPHICS_VERSION_MINOR)
+        set(DEFAULT_VERSION_MINOR ON)
+        set(GAMECOE_GRAPHICS_VERSION_MINOR 3)
+        set(GAMECOE_GRAPHICS_VERSION_MINOR 3 PARENT_SCOPE)
+    endif()
+    
+    if(DEFAULT_VERSION_MAJOR OR DEFAULT_VERSION_MINOR)
+        message(STATUS "[gamecoe] Using default version ${GAMECOE_GRAPHICS_VERSION_MAJOR}.${GAMECOE_GRAPHICS_VERSION_MINOR}")
+        message(STATUS "[gamecoe] Can be changed with \"set(GAMECOE_GRAPHICS_VERSION_MAJOR <major>)\" and \"set(GAMECOE_GRAPHICS_VERSION_MINOR <minor>)\"")
+        message(STATUS "[gamecoe] Currently supported: OpenGL 3.3+") # TODO: Add more in the future
+    endif()
+
+    if(NOT DEFINED GAMECOE_GRAPHICS_PROFILE)
+        set(GAMECOE_GRAPHICS_PROFILE "core")
+        message(STATUS "[gamecoe] Using default profile: ${GAMECOE_GRAPHICS_PROFILE}")
+        message(STATUS "[gamecoe] Can be changed with \"set(GAMECOE_GRAPHICS_PROFILE <profile>)\"")
+        message(STATUS "[gamecoe] Options are \"core\" and \"compatibility\"")
+    endif()
+
+    if(GAMECOE_GRAPHICS_API STREQUAL "OpenGL")
+        set(GAMECOE_GRAPHICS_API "gl") # for GLAD generator
+        set(GAMECOE_USE_OPENGL 1 PARENT_SCOPE)
+        set(GAMECOE_USE_VULKAN 0 PARENT_SCOPE)
+    elseif(GAMECOE_GRAPHICS_API STREQUAL "Vulkan")
+        message(FATAL_ERROR "[gamecoe] Vulkan is not supported yet")
+        # Uncomment when Vulkan will be supported
+        # set(GAMECOE_GRAPHICS_API "vulkan") # for GLAD generator
+        # set(GAMECOE_USE_OPENGL 0 PARENT_SCOPE)
+        # set(GAMECOE_USE_VULKAN 1 PARENT_SCOPE)
+    else()
+        message(FATAL_ERROR "[gamecoe] ${GAMECOE_GRAPHICS_API} is not a supported graphics API")
     endif()
 
     if(GAMECOE_GRAPHICS_PROFILE STREQUAL "core")
-        set(GAMECOE_PROFILE_CORE 1)
-        set(GAMECOE_PROFILE_COMPAT 0)
+        set(GAMECOE_PROFILE_CORE 1 PARENT_SCOPE)
+        set(GAMECOE_PROFILE_COMPAT 0 PARENT_SCOPE)
     elseif(GAMECOE_GRAPHICS_PROFILE STREQUAL "compatibility")
-        set(GAMECOE_PROFILE_CORE 0)
-        set(GAMECOE_PROFILE_COMPAT 1)
+        set(GAMECOE_PROFILE_CORE 0 PARENT_SCOPE)
+        set(GAMECOE_PROFILE_COMPAT 1 PARENT_SCOPE)
     endif()
 
     # GLAD paths
@@ -68,21 +103,16 @@ function(generate_glad)
     set(GAMECOE_GLAD_SOURCES "${GAMECOE_GLAD_SOURCES}" PARENT_SCOPE)
     set(GAMECOE_GLAD_HEADERS "${GAMECOE_GLAD_HEADERS}" PARENT_SCOPE)
 
-    # config header path
-    set(GAMECOE_CONFIG_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated/config")
-    set(GAMECOE_CONFIG_DIR "${GAMECOE_CONFIG_DIR}" PARENT_SCOPE)
-
     file(MAKE_DIRECTORY ${GAMECOE_GLAD_OUTPUT_DIR})
-    file(MAKE_DIRECTORY ${GAMECOE_CONFIG_DIR})
 
-    # Generate config header
-    configure_file(
-        ${GAMECOE_SOURCE_ROOT_DIR}/cmake/gamecoe_config.h.in
-        ${GAMECOE_CONFIG_DIR}/gamecoe_config.h
-        @ONLY
-    )
+    option(GAMECOE_GLAD_QUIET "Quiet GLAD2 generation output" ON)
+    if(GAMECOE_GLAD_QUIET)
+        message(STATUS "[gamecoe] GLAD2 generation output: QUIET")
+        message(STATUS "[gamecoe] To show verbose output: \"set(GAMECOE_GLAD_QUIET OFF)\" before fetching gamecoe")
+    else()
+        message(STATUS "[gamecoe] GLAD2 generation output: VERBOSE")
+    endif()
 
-    option(GAMECOE_GLAD_QUIET "Quiet GLAD2 generation output" OFF)
     set(GLAD_COMMAND_ARGS
         --api=${GAMECOE_GRAPHICS_API}:${GAMECOE_GRAPHICS_PROFILE}=${GAMECOE_GRAPHICS_VERSION_MAJOR}.${GAMECOE_GRAPHICS_VERSION_MINOR}
         --out-path=${GAMECOE_GLAD_OUTPUT_DIR}

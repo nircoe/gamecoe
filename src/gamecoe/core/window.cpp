@@ -4,7 +4,7 @@
 #include <gamecoe/utils/error_handler.hpp>
 #include <cassert>
 #include <cstdlib>
-#include <gamecoe_config.h>
+#include <gamecoe_config.hpp>
 
 #if GAMECOE_USE_OPENGL
     #include <glad/gl.h>      

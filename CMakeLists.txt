@@ -24,6 +24,9 @@ fetch_glfw()
 generate_glad()
 fetch_glm()
 
+# Generate gamecoe_config.hpp
+generate_config_header()
+
 message(STATUS "[gamecoe] Building gamecoe library...")
 add_subdirectory(include)
 add_subdirectory(src)

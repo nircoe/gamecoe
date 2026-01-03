@@ -2,7 +2,7 @@
 
 #include <string>
 #include <stdexcept>
-#include <gamecoe_config.h>
+#include <gamecoe_config.hpp>
 
 #if GAMECOE_USE_LOGCOE
     #include <logcoe.hpp>

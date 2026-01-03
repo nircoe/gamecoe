@@ -2,7 +2,7 @@
 #include <gamecoe/core/game.hpp>
 #include <GLFW/glfw3.h>
 #include <unordered_map>
-#include <gamecoe_config.h>
+#include <gamecoe_config.hpp>
 
 #if GAMECOE_USE_LOGCOE
     #include <logcoe.hpp>
