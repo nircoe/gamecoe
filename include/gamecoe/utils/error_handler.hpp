@@ -14,17 +14,13 @@ namespace gamecoe
     {
         [[noreturn]] static inline void throwError(const std::string &message)
         {
-#if GAMECOE_USE_LOGCOE
             logcoe::error(message);
-#endif
             throw std::runtime_error(message);
         }
 
         [[noreturn]] static inline void invalidArgument(const std::string &message)
         {
-#if GAMECOE_USE_LOGCOE
             logcoe::error(message);
-#endif
             throw std::invalid_argument(message);
         }
 

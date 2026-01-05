@@ -127,9 +127,7 @@ namespace gamecoe
         
         if constexpr (std::is_base_of_v<Renderer, T>)
         {
-#if GAMECOE_USE_LOGCOE
             logcoe::debug("GameObject::addComponent(): Adding Renderer via setRenderer() (prefer setRenderer() for clarity)");
-#endif
             return setRenderer(std::move(component));
         }
 
@@ -147,9 +145,7 @@ namespace gamecoe
         
         if constexpr (std::is_base_of_v<Renderer, T>)
         {
-#if GAMECOE_USE_LOGCOE
             logcoe::debug("GameObject::removeComponent(): Removing Renderer via removeRenderer() (prefer removeRenderer() for clarity)");
-#endif
             return removeRenderer();
         }
 
@@ -167,9 +163,7 @@ namespace gamecoe
 
         if (componentType == Transform::staticType())
         {
-#if GAMECOE_USE_LOGCOE
             logcoe::debug("GameObject::getComponent(): Returning Transform (prefer transform() for direct access)");
-#endif
             return m_transform;
         }
 
@@ -178,9 +172,7 @@ namespace gamecoe
             if (!m_renderer)
                 detail::throwError("GameObject::getComponent(): The Game Object \"" + m_name + "\" does not have a Renderer");
 
-#if GAMECOE_USE_LOGCOE
             logcoe::debug("GameObject::getComponent(): Returning Renderer (prefer renderer() for direct access)");
-#endif
             return static_cast<T&>(*m_renderer);
         }
 
@@ -199,9 +191,7 @@ namespace gamecoe
 
         if (componentType == Transform::staticType())
         {
-#if GAMECOE_USE_LOGCOE
             logcoe::debug("GameObject::getComponent(): Returning Transform (prefer transform() for direct access)");
-#endif
             return m_transform;
         }
 
@@ -210,9 +200,7 @@ namespace gamecoe
             if (!m_renderer)
                 detail::throwError("GameObject::getComponent(): The Game Object \"" + m_name + "\" does not have a Renderer");
 
-#if GAMECOE_USE_LOGCOE
             logcoe::debug("GameObject::getComponent(): Returning Renderer (prefer renderer() for direct access)");
-#endif
             return static_cast<const T&>(*m_renderer);
         }
 

@@ -1,4 +1,4 @@
-// Auto-generated Graphics Configuration - DO NOT EDIT
+// Auto-generated gamecoe configuration - DO NOT EDIT
 #pragma once
 
 #define GAMECOE_USE_OPENGL @GAMECOE_USE_OPENGL@
@@ -11,3 +11,32 @@
 
 // gamecoe toolkit
 #define GAMECOE_USE_LOGCOE @GAMECOE_USE_LOGCOE@
+
+// gamecoe toolkit empty methods
+#if !GAMECOE_USE_LOGCOE
+    #include <string>
+    namespace logcoe
+    {
+        enum class LogLevel { DEBUG, INFO, WARNING, ERROR, NONE };
+
+        inline void initialize([[maybe_unused]] LogLevel level = LogLevel::DEBUG,
+                                [[maybe_unused]] const std::string& defaultSource = "",
+                                [[maybe_unused]] bool enableConsole = true,
+                                [[maybe_unused]] bool enableFile = false,
+                                [[maybe_unused]] const std::string &filename = "logcoe.log") { }
+
+        inline void shutdown() { }
+        inline void debug([[maybe_unused]] const std::string &message, 
+                            [[maybe_unused]] const std::string &source = "",
+                            [[maybe_unused]] bool flush = true) { }
+        inline void info([[maybe_unused]] const std::string &message, 
+                            [[maybe_unused]] const std::string &source = "", 
+                            [[maybe_unused]] bool flush = true) { }
+        inline void warning([[maybe_unused]] const std::string &message, 
+                            [[maybe_unused]] const std::string &source = "", 
+                            [[maybe_unused]] bool flush = true) { }
+        inline void error([[maybe_unused]] const std::string &message, 
+                            [[maybe_unused]] const std::string &source = "", 
+                            [[maybe_unused]] bool flush = true) { }
+    } // namespace logcoe
+#endif
