@@ -3,6 +3,7 @@
 #include <timecoe.hpp>
 #include <inputcoe.hpp>
 #include <gamecoe/utils/error_handler.hpp>
+#include <gamecoe/utils/paths.hpp>
 #include <cassert>
 #include <gamecoe_config.hpp>
 
@@ -46,7 +47,7 @@ namespace gamecoe
         // Add some logging for the path we expect? let the user pass argument? or stick with the gencoe structure?
         // Currently soundcoe returns bool instead of throw like we do in gamecoe, what should I do? update soundcoe to throw as well?
         // if initialize failed, something seriously wrong, and we can't play the game... maybe assert on that return bool value?
-        assert(soundcoe::initialize("assets/audio/")); // gencoe structure
+        assert(soundcoe::initialize(resolvePath("assets/audio/"))); // gencoe structure
 
         // TODO: more initializations, datacoe, etc...
 

@@ -3,8 +3,8 @@ add_library(gamecoe_headers INTERFACE)
 target_include_directories(gamecoe_headers
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+        $<BUILD_INTERFACE:${GAMECOE_CONFIG_DIR}>
         $<INSTALL_INTERFACE:include>
-        "${GAMECOE_CONFIG_DIR}"
 )
 
 target_link_libraries(gamecoe_headers

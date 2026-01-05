@@ -1,4 +1,4 @@
-function(generate_config_header)
+function(generate_gamecoe_config_header)
     set(GAMECOE_CONFIG_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated/config")
     set(GAMECOE_CONFIG_DIR ${GAMECOE_CONFIG_DIR} PARENT_SCOPE)
 
