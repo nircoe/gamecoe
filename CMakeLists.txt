@@ -18,6 +18,7 @@ include(FetchContent)
 
 # Fetching gamecoe toolkit libraries:
 fetch_logcoe()
+fetch_soundcoe()
 
 # Fetching external libraries for gamecoe:
 fetch_glfw()

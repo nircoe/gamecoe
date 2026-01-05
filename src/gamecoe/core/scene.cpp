@@ -4,7 +4,10 @@
 #include <gamecoe_config.hpp>
 
 #if GAMECOE_USE_LOGCOE
-    #include <logcoe.hpp>
+#include <logcoe.hpp>
+#endif
+#if GAMECOE_USE_SOUNDCOE
+#include <soundcoe.hpp>
 #endif
 
 namespace gamecoe
@@ -35,6 +38,8 @@ namespace gamecoe
     {
         if (m_loaded)
             return logcoe::warning("Scene::load(): The scene \"" + m_name + "\" is already loaded");
+
+        soundcoe::preloadScene(m_name);
 
         for (auto &[id, go] : m_activeGameObjects)
         {
@@ -93,6 +98,7 @@ namespace gamecoe
             detail::throwError("Scene::unload(): The scene \"" + m_name + "\" is active, please deactivate it first");
 
         // TODO: Call resource cleanup on GameObjects when resource management is implemented
+        soundcoe::unloadScene(m_name);
 
         m_loaded = false;
     }

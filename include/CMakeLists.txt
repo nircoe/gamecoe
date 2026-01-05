@@ -11,6 +11,7 @@ target_link_libraries(gamecoe_headers
     INTERFACE
         glm::glm-header-only
         $<$<BOOL:${GAMECOE_USE_LOGCOE}>:logcoe>
+        $<$<BOOL:${GAMECOE_USE_SOUNDCOE}>:soundcoe>
 )
 
 install(
