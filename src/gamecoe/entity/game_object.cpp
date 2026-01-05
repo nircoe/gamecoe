@@ -114,13 +114,7 @@ namespace gamecoe
     void GameObject::removeRenderer()
     {
         if (!m_renderer)
-        {
-#if GAMECOE_USE_LOGCOE
             return logcoe::warning("GameObject::removeRenderer(): The Game Object \"" + m_name + "\" does not have a Renderer");
-#else
-            return;
-#endif
-        }
 
         m_renderer.reset();
     }

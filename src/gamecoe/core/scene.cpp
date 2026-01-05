@@ -34,13 +34,7 @@ namespace gamecoe
     void Scene::load()
     {
         if (m_loaded)
-        {
-#if GAMECOE_USE_LOGCOE
             return logcoe::warning("Scene::load(): The scene \"" + m_name + "\" is already loaded");
-#else
-            return;
-#endif
-        }
 
         for (auto &[id, go] : m_activeGameObjects)
         {
@@ -58,13 +52,7 @@ namespace gamecoe
     void Scene::activate()
     {
         if (m_active)
-        {
-#if GAMECOE_USE_LOGCOE
             return logcoe::warning("Scene::activate(): The scene \"" + m_name + "\" is already active");
-#else
-            return;
-#endif
-        }
 
         if (!m_loaded)
             detail::throwError("Scene::activate(): The scene \"" + m_name + "\" is not loaded, please load it first");
@@ -86,13 +74,7 @@ namespace gamecoe
     void Scene::deactivate()
     {
         if (!m_active)
-        {
-#if GAMECOE_USE_LOGCOE
             return logcoe::warning("Scene::deactivate(): The scene \"" + m_name + "\" is already inactive");
-#else
-            return;
-#endif
-        }
 
         for (auto &[id, go] : m_activeGameObjects)
         {
@@ -105,13 +87,7 @@ namespace gamecoe
     void Scene::unload()
     {
         if (!m_loaded)
-        {
-#if GAMECOE_USE_LOGCOE
             return logcoe::warning("Scene::unload(): The scene \"" + m_name + "\" is already unloaded");
-#else
-            return;
-#endif
-        }
 
         if (m_active)
             detail::throwError("Scene::unload(): The scene \"" + m_name + "\" is active, please deactivate it first");
@@ -188,14 +164,8 @@ namespace gamecoe
         }
 
         if (m_activeGameObjects.contains(id))
-        {
-#if GAMECOE_USE_LOGCOE
             return logcoe::warning("Scene::activateGameObject(): The Game Object " + m_activeGameObjects[id]->name() +
                           " (id " + std::to_string(id) + ") is already active");
-#else
-            return;
-#endif
-        }
 
         detail::throwError("Scene::activateGameObject(): The Game Object (id " + std::to_string(id) + 
                             ") does not exist!");
@@ -212,14 +182,8 @@ namespace gamecoe
         }
 
         if (m_inactiveGameObjects.contains(id))
-        {
-#if GAMECOE_USE_LOGCOE
             return logcoe::warning("Scene::deactivateGameObject(): The Game Object " + m_inactiveGameObjects[id]->name() +
                           " (id " + std::to_string(id) + ") is already inactive");
-#else
-            return;
-#endif
-        }
 
         detail::throwError("Scene::deactivateGameObject(): The Game Object (id " + std::to_string(id) + 
                            ") does not exist!");     

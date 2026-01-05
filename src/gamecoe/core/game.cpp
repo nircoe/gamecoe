@@ -35,15 +35,11 @@ namespace gamecoe
                 if(m_succeed) return;
                 
                 glfwTerminate();
-#if GAMECOE_USE_LOGCOE
                 logcoe::shutdown();
-#endif
             }
         } gc;
 
-#if GAMECOE_USE_LOGCOE
         logcoe::initialize(logcoe::LogLevel::DEBUG, title);
-#endif
         // TODO: more initializations, datacoe, soundcoe, etc...
 
         if(!glfwInit())
@@ -73,9 +69,7 @@ namespace gamecoe
 
         // TODO: more shutdowns, datacoe, soundcoe, etc...
         glfwTerminate();
-#if GAMECOE_USE_LOGCOE
         logcoe::shutdown();
-#endif
     }
 
     Scene &Game::createScene(const std::string &name, std::int8_t layer)
@@ -93,25 +87,13 @@ namespace gamecoe
     void Game::loadScene(const std::string &scene)
     {
         if (m_activeScenes.contains(scene))
-        {
-#if GAMECOE_USE_LOGCOE
             return logcoe::warning("Game::loadScene(): The scene \"" + scene + "\" is already loaded and active");
-#else
-            return;
-#endif
-        }
 
         if (!m_inactiveScenes.contains(scene))
             detail::throwError("Game::loadScene(): The scene \"" + scene + "\" does not exist");
         
         if (m_inactiveScenes[scene]->loaded())
-        {
-#if GAMECOE_USE_LOGCOE
             return logcoe::warning("Game::loadScene(): The scene \"" + scene + "\" is already loaded");
-#else
-            return;
-#endif
-        }
 
         m_inactiveScenes[scene]->load();
     }
@@ -119,13 +101,7 @@ namespace gamecoe
     void Game::activateScene(const std::string &scene)
     {
         if (m_activeScenes.contains(scene))
-        {
-#if GAMECOE_USE_LOGCOE
             return logcoe::warning("Game::activateScene(): The scene \"" + scene + "\" is already active");
-#else
-            return;
-#endif
-        }
 
         if (!m_inactiveScenes.contains(scene))
             detail::throwError("Game::activateScene(): The scene \"" + scene + "\" does not exist");
@@ -141,13 +117,8 @@ namespace gamecoe
     void Game::deactivateScene(const std::string &scene)
     {
         if (m_inactiveScenes.contains(scene))
-        {
-#if GAMECOE_USE_LOGCOE
             return logcoe::warning("Game::deactivateScene(): The scene \"" + scene + "\" is already inactive");
-#else
-            return;
-#endif
-        }
+
         if (!m_activeScenes.contains(scene))
             detail::throwError("Game::deactivateScene(): The Scene \"" + scene + "\" does not exist");
 
@@ -165,13 +136,8 @@ namespace gamecoe
             detail::throwError("Game::unloadScene(): The scene \"" + scene + "\" does not exist");
 
         if (!m_inactiveScenes[scene]->loaded())
-        {
-#if GAMECOE_USE_LOGCOE
             return logcoe::warning("Game::unloadScene(): The scene \"" + scene + "\" is already unloaded");
-#else
-            return;
-#endif
-        }
+
         m_inactiveScenes[scene]->unload();
     }
 
