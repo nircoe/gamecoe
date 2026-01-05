@@ -6,10 +6,8 @@ target_sources(gamecoe PRIVATE ${GAMECOE_GLAD_SOURCES})
 
 target_include_directories(gamecoe
     PRIVATE
-        "${GAMECOE_CONFIG_DIR}"
-    PUBLIC
-        "${GAMECOE_SOURCE_ROOT_DIR}/external" # TODO: should be moved to PRIVATE later on!
-        "${GAMECOE_GLAD_OUTPUT_DIR}/include" # TODO: should be moved to PRIVATE later on!
+        "${GAMECOE_SOURCE_ROOT_DIR}/external"
+        "${GAMECOE_GLAD_OUTPUT_DIR}/include"
 )
 
 target_link_libraries(gamecoe
@@ -19,8 +17,8 @@ target_link_libraries(gamecoe
         stb
     PUBLIC
         gamecoe_headers
-        $<$<BOOL:${GAMECOE_USE_LOGCOE}>:logcoe> # how to link it only if GAMECOE_USE_LOGCOE?
-        # soundcoe
+        $<$<BOOL:${GAMECOE_USE_LOGCOE}>:logcoe>
+        $<$<BOOL:${GAMECOE_USE_SOUNDCOE}>:soundcoe>
         # datacoe
         # poolcoe
         # testcoe

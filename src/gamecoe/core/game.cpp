@@ -3,15 +3,19 @@
 #include <timecoe.hpp>
 #include <inputcoe.hpp>
 #include <gamecoe/utils/error_handler.hpp>
+#include <gamecoe/utils/paths.hpp>
 #include <cassert>
 #include <gamecoe_config.hpp>
 
 #if GAMECOE_USE_LOGCOE
-    #include <logcoe.hpp>
+#include <logcoe.hpp>
+#endif
+#if GAMECOE_USE_SOUNDCOE
+#include <soundcoe.hpp>
 #endif
 
 #if GAMECOE_USE_OPENGL
-    #include <glad/gl.h>      
+#include <glad/gl.h>      
 #endif
 
 #include <GLFW/glfw3.h>
@@ -40,7 +44,12 @@ namespace gamecoe
         } gc;
 
         logcoe::initialize(logcoe::LogLevel::DEBUG, title);
-        // TODO: more initializations, datacoe, soundcoe, etc...
+        // Add some logging for the path we expect? let the user pass argument? or stick with the gencoe structure?
+        // Currently soundcoe returns bool instead of throw like we do in gamecoe, what should I do? update soundcoe to throw as well?
+        // if initialize failed, something seriously wrong, and we can't play the game... maybe assert on that return bool value?
+        assert(soundcoe::initialize(resolvePath("assets/audio/"))); // gencoe structure
+
+        // TODO: more initializations, datacoe, etc...
 
         if(!glfwInit())
             detail::throwError("Game::Game(): Failed to initialize glfw");
@@ -70,6 +79,7 @@ namespace gamecoe
         // TODO: more shutdowns, datacoe, soundcoe, etc...
         glfwTerminate();
         logcoe::shutdown();
+        soundcoe::shutdown();
     }
 
     Scene &Game::createScene(const std::string &name, std::int8_t layer)
@@ -254,7 +264,7 @@ namespace gamecoe
                     scene.get().render();
             }
 
-            // TODO: soundcoe::update();
+            soundcoe::update();
         }
     }
 

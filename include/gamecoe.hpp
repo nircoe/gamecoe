@@ -18,9 +18,11 @@
 // gamecoe toolkit libraries headers
 #include <colorcoe.hpp>
 #include <timecoe.hpp>
-
 #if GAMECOE_USE_LOGCOE
-    #include <logcoe.hpp>
+#include <logcoe.hpp>
+#endif
+#if GAMECOE_USE_SOUNDCOE
+#include <soundcoe.hpp>
 #endif
 
 // more to come...

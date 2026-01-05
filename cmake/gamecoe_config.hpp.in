@@ -11,9 +11,16 @@
 
 // gamecoe toolkit
 #define GAMECOE_USE_LOGCOE @GAMECOE_USE_LOGCOE@
+#define GAMECOE_USE_SOUNDCOE @GAMECOE_USE_SOUNDCOE@
+
+#if GAMECOE_USE_SOUNDCOE
+#include <soundcoe_config.hpp>
+#endif
 
 // gamecoe toolkit empty methods
-#if !GAMECOE_USE_LOGCOE
+
+// if we are using soundcoe but not logcoe, soundcoe will create the empty methods for logcoe...
+#if !GAMECOE_USE_LOGCOE && !GAMECOE_USE_SOUNDCOE
     #include <string>
     namespace logcoe
     {
@@ -39,4 +46,23 @@
                             [[maybe_unused]] const std::string &source = "", 
                             [[maybe_unused]] bool flush = true) { }
     } // namespace logcoe
+#endif
+
+#if !GAMECOE_USE_SOUNDCOE
+    #include <string>
+    namespace soundcoe
+    {
+        enum class LogLevel { DEBUG, INFO, WARNING, ERROR, NONE };
+
+        inline bool initialize([[maybe_unused]] const std::string &audioRootDirectory, 
+                                [[maybe_unused]] size_t maxSources = 32,
+                                [[maybe_unused]] size_t maxCacheSizeMB = 64, 
+                                [[maybe_unused]] const std::string &soundSubdir = "sfx",
+                                [[maybe_unused]] const std::string &musicSubdir = "music", 
+                                [[maybe_unused]] LogLevel level = LogLevel::INFO) { return true; }
+        inline void shutdown() { }
+        inline bool preloadScene([[maybe_unused]] const std::string &sceneName) { return true; }
+        inline bool unloadScene([[maybe_unused]] const std::string &sceneName) { return true; }
+        inline void update() { }
+    } // namespace soundcoe
 #endif

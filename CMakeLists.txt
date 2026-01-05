@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(gamecoe LANGUAGES C CXX)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -18,6 +19,7 @@ include(FetchContent)
 
 # Fetching gamecoe toolkit libraries:
 fetch_logcoe()
+fetch_soundcoe()
 
 # Fetching external libraries for gamecoe:
 fetch_glfw()
@@ -25,7 +27,7 @@ generate_glad()
 fetch_glm()
 
 # Generate gamecoe_config.hpp
-generate_config_header()
+generate_gamecoe_config_header()
 
 message(STATUS "[gamecoe] Building gamecoe library...")
 add_subdirectory(include)
