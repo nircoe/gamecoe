@@ -55,8 +55,8 @@
                                 [[maybe_unused]] const std::string &musicSubdir = "music", 
                                 [[maybe_unused]] LogLevel level = LogLevel::INFO) { return true; }
         inline void shutdown() { }
-        inline bool preloadScene([[maybe_unused]] const std::string &sceneName) { }
-        inline bool unloadScene([[maybe_unused]] const std::string &sceneName) { }
+        inline bool preloadScene([[maybe_unused]] const std::string &sceneName) { return true; }
+        inline bool unloadScene([[maybe_unused]] const std::string &sceneName) { return true }
         inline void update() { }
     } // namespace soundcoe
 #endif

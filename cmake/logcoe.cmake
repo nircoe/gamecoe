@@ -6,7 +6,7 @@ function(fetch_logcoe)
     if(GAMECOE_USE_LOGCOE)
         message(STATUS "[gamecoe] Using logcoe for logging")
         message(STATUS "[gamecoe] To disable: \"set(GAMECOE_USE_LOGCOE OFF)\" before fetching gamecoe")
-        set(GAMECOE_USE_LOGCOE 1 CACHE INTERNAL "" FORCE)
+        set(GAMECOE_USE_LOGCOE 1 PARENT_SCOPE)
 
         message(STATUS "[gamecoe] Fetching logcoe from source...")
 
@@ -19,7 +19,7 @@ function(fetch_logcoe)
     else()
         message(STATUS "[gamecoe] logcoe disabled")
         message(STATUS "[gamecoe] To enable: \"set(GAMECOE_USE_LOGCOE ON)\" before fetching gamecoe")
-        set(GAMECOE_USE_LOGCOE 0 CACHE INTERNAL "" FORCE)
+        set(GAMECOE_USE_LOGCOE 0 PARENT_SCOPE)
     endif()
     
 endfunction()
