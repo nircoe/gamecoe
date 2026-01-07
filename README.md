@@ -10,10 +10,15 @@ initialize->begin->activate->update+render (repeat once a frame while active)->d
 - **Scene Life Cycle**: load->activate->update+render (repeat once a frame while active)->deactivate->unload
 - **Multi Active Scene Support**: Want to build a bigger world with more than 1 active Scene at a time? Want to make the pause menu a separated Scene so your code will be more organized? gamecoe supports it!
 - **Components**: Currently our built-in Components: Transform, Renderer, ShapeRenderer, Camera
-- **logcoe**: Feel free to use our in-house [logcoe](https://github.com/nircoe/logcoe) as your logger during development, logcoe comes built-in with gamecoe!
+- **logcoe**: Feel free to use our in-house tool [logcoe](https://github.com/nircoe/logcoe) as your logger during development, logcoe comes built-in with gamecoe!
 ```cpp
 logcoe::debug("Player got 1 coin!");
 logcoe::error("Enemy has negative HP!");
+```
+- **soundcoe**: Feel free use our in-house tool [soundcoe](https://github.com/nircoe/soundcoe) for your game sound management, soundcoe comes built-in with gamecoe!
+```cpp
+soundcoe::playMusic("boss_fight.wav");
+soundcoe::playSound("hit.mp3");
 ```
 - **timecoe**: Track the time between frames: 
 ```cpp
@@ -88,7 +93,8 @@ gencoe component Monster -n Enemies
 - **[GLFW](https://github.com/glfw/glfw)**: Window and Input handling
 - **[GLAD](https://github.com/Dav1dde/glad)**: OpenGL Context
 - **[GLM](https://github.com/g-truc/glm)**: Math library
-- **[logcoe](https://github.com/nircoe/logcoe)**: In-house logger
+- **[logcoe](https://github.com/nircoe/logcoe)**: In-house logger (Optional)
+- **[soundcoe](https://github.com/nircoe/soundcoe)**: In-house sound manager (Optional)
 
 ## Roadmap
 
@@ -97,7 +103,6 @@ gencoe component Monster -n Enemies
 - **Support for Modern OpenGL**: Introduce support for OpenGL4.6 features
 - **Batch Rendering**: Introduce batch rendering system for better performance
 - **SpriteRenderer**: New Renderer Component for Sprite rendering
-- **soundcoe**: Integrate [soundcoe](https://github.com/nircoe/soundcoe) for sound effects and music management
 - **datacoe**: Integrate [datacoe](https://github.com/nircoe/datacoe) for save/load data management system with optional encryption
 - **Example Projects**: Add small games created with gamecoe as examples
 - **Thread Safety**: Make gamecoe thread-safe and benefit from parallel performance enhancement
