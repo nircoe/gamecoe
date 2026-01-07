@@ -1,15 +1,16 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
 namespace gamecoe
 {
     class GraphicsBuffer 
     {
-        unsigned int m_id;
-        unsigned int m_target;
+        std::uint32_t m_id;
+        std::uint32_t m_target;
 
-        GraphicsBuffer(unsigned int target);
+        GraphicsBuffer(std::uint32_t target);
 
     public:
         ~GraphicsBuffer();
@@ -22,6 +23,9 @@ namespace gamecoe
         void unbind() const;
         
         void uploadData(const void* data, size_t size);
+
+        std::uint32_t id() const;
+        std::uint32_t target() const;
 
         static GraphicsBuffer createVertexBuffer();
         static GraphicsBuffer createIndexBuffer();

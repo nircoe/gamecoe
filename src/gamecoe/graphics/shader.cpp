@@ -1,15 +1,19 @@
 #include <gamecoe/graphics/shader.hpp>
-#include <glad/gl.h>
+#include <gamecoe/utils/error_handler.hpp>
+#include <gamecoe_config.hpp>
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <exception>
-#include <gamecoe/utils/error_handler.hpp>
 #include <glm/gtc/type_ptr.hpp>
+
+#if GAMECOE_USE_OPENGL
+#include <glad/gl.h>
+#endif
 
 namespace gamecoe
 {
-    void Shader::logIfCompileOrLinkFailed(const std::string &operation, unsigned int id, bool isProgram) // do I really need that method?
+    void Shader::logIfCompileOrLinkFailed(const std::string &operation, std::uint32_t id, bool isProgram) // do I really need that method?
     {
         GLint success;
         isProgram ? glGetProgramiv(id, GL_LINK_STATUS, &success) : glGetShaderiv(id, GL_COMPILE_STATUS, &success);
@@ -30,13 +34,13 @@ namespace gamecoe
         detail::throwError("Shader::Shader(): " + operation + ": " + log);
     }
 
-    int Shader::getUniformLocation(const std::string &name) const
+    std::int32_t Shader::getUniformLocation(const std::string &name) const
     {
         auto it = m_uniformLocation.find(name);
         if (it != m_uniformLocation.end())
             return it->second;
 
-        int location = glGetUniformLocation(m_id, name.c_str());
+        std::int32_t location = glGetUniformLocation(m_id, name.c_str());
         if(location < 0) detail::throwError("Shader::set(): Undefined Uniform: " + name);
         m_uniformLocation[name] = location;
         return location;
@@ -46,7 +50,7 @@ namespace gamecoe
     {
         struct garbage_collector
         {
-            unsigned int m_vertex = 0, m_fragment = 0, m_program = 0;
+            std::uint32_t m_vertex = 0, m_fragment = 0, m_program = 0;
 
             garbage_collector() { }
             garbage_collector(const garbage_collector &) = delete;
@@ -90,7 +94,7 @@ namespace gamecoe
         const char *fragmentCode = fragmentSource.c_str();
 
         // vertex Shader
-        unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
+        std::uint32_t vertexShader = glCreateShader(GL_VERTEX_SHADER);
         gc.m_vertex = vertexShader;
         detail::checkAndThrowError("Shader::Shader(): Vertex Shader:");
         glShaderSource(vertexShader, 1, &vertexCode, nullptr);
@@ -98,7 +102,7 @@ namespace gamecoe
         logIfCompileOrLinkFailed("vertex Shader compilation failed", vertexShader, false); // do I really need all of those logIFCompileOrLinkFailed() calls? glGetError() in detail::checkAndThrowError() won't handle it the right way?
 
         // fragment Shader
-        unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+        std::uint32_t fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
         gc.m_fragment = fragmentShader;
         detail::checkAndThrowError("Shader::Shader(): Fragment Shader:");
         glShaderSource(fragmentShader, 1, &fragmentCode, nullptr);
@@ -106,7 +110,7 @@ namespace gamecoe
         logIfCompileOrLinkFailed("fragment Shader compilation failed", fragmentShader, false);
 
         // Shader program
-        unsigned int program = glCreateProgram();
+        std::uint32_t program = glCreateProgram();
         gc.m_program = program;
         detail::checkAndThrowError("Shader::Shader(): Shader Program:");
         glAttachShader(program, vertexShader);
@@ -141,71 +145,138 @@ namespace gamecoe
 
     void Shader::use()
     {
+#if !GAMECOE_HAS_DSA
         glUseProgram(m_id);
+#endif
     }
 
     void Shader::set(const std::string &name, bool value) const
     {
-        glUniform1i(getUniformLocation(name), value);
+        std::int32_t location = getUniformLocation(name);
+#if GAMECOE_HAS_DSA
+        glProgramUniform1i(m_id, location, value);
+#else
+        glUniform1i(location, value);
+#endif
     }
 
     void Shader::set(const std::string &name, int value) const
     {
-        glUniform1i(getUniformLocation(name), value);
+        std::int32_t location = getUniformLocation(name);
+#if GAMECOE_HAS_DSA
+        glProgramUniform1i(m_id, location, value);
+#else
+        glUniform1i(location, value);
+#endif
     }
 
     void Shader::set(const std::string &name, float value) const
     {
-        glUniform1f(getUniformLocation(name), value);
+        std::int32_t location = getUniformLocation(name);
+#if GAMECOE_HAS_DSA
+        glProgramUniform1f(m_id, location, value);
+#else
+        glUniform1f(location, value);
+#endif
     }
 
     void Shader::set(const std::string &name, const glm::vec2 &value) const
     {
-        glUniform2fv(getUniformLocation(name), 1, glm::value_ptr(value));
+        std::int32_t location = getUniformLocation(name);
+#if GAMECOE_HAS_DSA
+        glProgramUniform2fv(m_id, location, 1, glm::value_ptr(value));
+#else
+        glUniform2fv(location, 1, glm::value_ptr(value));
+#endif
     }
 
     void Shader::set(const std::string &name, const glm::vec3 &value) const
     {
-        glUniform3fv(getUniformLocation(name), 1, glm::value_ptr(value));
+        std::int32_t location = getUniformLocation(name);
+#if GAMECOE_HAS_DSA
+        glProgramUniform3fv(m_id, location, 1, glm::value_ptr(value));
+#else
+        glUniform3fv(location, 1, glm::value_ptr(value));
+#endif
     }
 
     void Shader::set(const std::string &name, const glm::vec4 &value) const
     {
-        glUniform4fv(getUniformLocation(name), 1, glm::value_ptr(value));
+        std::int32_t location = getUniformLocation(name);
+#if GAMECOE_HAS_DSA
+        glProgramUniform4fv(m_id, location, 1, glm::value_ptr(value));
+#else
+        glUniform4fv(location, 1, glm::value_ptr(value));
+#endif
     }
 
     void Shader::set(const std::string &name, const glm::ivec2 &value) const
     {
-        glUniform2iv(getUniformLocation(name), 1, glm::value_ptr(value));
+        std::int32_t location = getUniformLocation(name);
+#if GAMECOE_HAS_DSA
+        glProgramUniform2iv(m_id, location, 1, glm::value_ptr(value));
+#else
+        glUniform2iv(location, 1, glm::value_ptr(value));
+#endif
     }
 
     void Shader::set(const std::string &name, const glm::ivec3 &value) const
     {
-        glUniform3iv(getUniformLocation(name), 1, glm::value_ptr(value));
+        std::int32_t location = getUniformLocation(name);
+#if GAMECOE_HAS_DSA
+        glProgramUniform3iv(m_id, location, 1, glm::value_ptr(value));
+#else
+        glUniform3iv(location, 1, glm::value_ptr(value));
+#endif
     }
 
     void Shader::set(const std::string &name, const glm::ivec4 &value) const
     {
-        glUniform4iv(getUniformLocation(name), 1, glm::value_ptr(value));
+        std::int32_t location = getUniformLocation(name);
+#if GAMECOE_HAS_DSA
+        glProgramUniform4iv(m_id, location, 1, glm::value_ptr(value));
+#else
+        glUniform4iv(location, 1, glm::value_ptr(value));
+#endif
     }
 
     void Shader::set(const std::string &name, const glm::mat2 &value) const
     {
-        glUniformMatrix2fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+        std::int32_t location = getUniformLocation(name);
+#if GAMECOE_HAS_DSA
+        glProgramUniformMatrix2fv(m_id, location, 1, GL_FALSE, glm::value_ptr(value));
+#else
+        glUniformMatrix2fv(location, 1, GL_FALSE, glm::value_ptr(value));
+#endif
     }
 
     void Shader::set(const std::string &name, const glm::mat3 &value) const
     {
-        glUniformMatrix3fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+        std::int32_t location = getUniformLocation(name);
+#if GAMECOE_HAS_DSA
+        glProgramUniformMatrix3fv(m_id, location, 1, GL_FALSE, glm::value_ptr(value));
+#else
+        glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(value));
+#endif
     }
 
     void Shader::set(const std::string &name, const glm::mat4 &value) const
     {
-        glUniformMatrix4fv(getUniformLocation(name), 1, GL_FALSE, glm::value_ptr(value));
+        std::int32_t location = getUniformLocation(name);
+#if GAMECOE_HAS_DSA
+        glProgramUniformMatrix4fv(m_id, location, 1, GL_FALSE, glm::value_ptr(value));
+#else
+        glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(value));
+#endif
     }
 
     void Shader::set(const std::string &name, const glm::quat &value) const
     {
-        glUniform4fv(getUniformLocation(name), 1, glm::value_ptr(value));
+        std::int32_t location = getUniformLocation(name);
+#if GAMECOE_HAS_DSA
+        glProgramUniform4fv(m_id, location, 1, glm::value_ptr(value));
+#else
+        glUniform4fv(location, 1, glm::value_ptr(value));
+#endif
     }
 } // namespace gamecoe

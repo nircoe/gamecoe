@@ -1,11 +1,11 @@
 #include <gamecoe/core/game.hpp>
 #include <gamecoe/core/window.hpp>
-#include <timecoe.hpp>
-#include <inputcoe.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 #include <gamecoe/utils/paths.hpp>
-#include <cassert>
 #include <gamecoe_config.hpp>
+#include <timecoe.hpp>
+#include <inputcoe.hpp>
+#include <cassert>
 
 #if GAMECOE_USE_LOGCOE
 #include <logcoe.hpp>

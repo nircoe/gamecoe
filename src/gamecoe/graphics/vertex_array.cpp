@@ -1,5 +1,9 @@
 #include <gamecoe/graphics/vertex_array.hpp>
+#include <gamecoe_config.hpp>
+
+#if GAMECOE_USE_OPENGL
 #include <glad/gl.h>
+#endif
 
 namespace 
 {
@@ -49,7 +53,11 @@ namespace gamecoe
                                                                                 m_vertexBuffer(VertexBuffer()), 
                                                                                 m_vertexCount(vertexCount)
     {
+#if GAMECOE_HAS_DSA
+        glCreateVertexArrays(1, &m_id);
+#else
         glGenVertexArrays(1, &m_id);
+#endif
 
         if (indices)
         {
@@ -57,26 +65,41 @@ namespace gamecoe
             m_indexCount = indexCount;
         }
 
+#if !GAMECOE_HAS_DSA
         bind();
         m_vertexBuffer.bind();
+#endif
         m_vertexBuffer.uploadData(vertices, vertexCount * vertexSize * sizeof(float));
 
         if (m_indexBuffer)
         {
+#if !GAMECOE_HAS_DSA
             m_indexBuffer->bind();
+#endif
             m_indexBuffer->uploadData(indices, indexCount * sizeof(unsigned int));
         }
 
         setupVertexAttributes();
+#if !GAMECOE_HAS_DSA
         m_vertexBuffer.unbind();
         unbind();
+#endif
     }
 
     void VertexArray::setupVertexAttributes()
     {
+#if GAMECOE_HAS_DSA
+        glVertexArrayVertexBuffer(m_id, 0, m_vertexBuffer.id(), 0, 3 * sizeof(float));
+        glVertexArrayAttribFormat(m_id, 0, 3, GL_FLOAT, GL_FALSE, 0);
+        glVertexArrayAttribBinding(m_id, 0, 0);
+        glEnableVertexArrayAttrib(m_id, 0);
+
+        if (m_indexBuffer)
+            glVertexArrayElementBuffer(m_id, m_indexBuffer->id());
+#else
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
-        // TODO: add support for other attributes such as color, texture, etc..
+#endif
     }
 
     VertexArray::~VertexArray()
@@ -140,8 +163,6 @@ namespace gamecoe
     {
         return m_indexBuffer.has_value();
     }
-
-    // TODO: Add support for textured/colored primitives (currently position only)
 
     const VertexArray &VertexArray::triangle()
     {

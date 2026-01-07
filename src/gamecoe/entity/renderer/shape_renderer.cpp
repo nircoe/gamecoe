@@ -4,12 +4,14 @@
 #include <gamecoe/entity/camera.hpp>
 #include <gamecoe/core/game.hpp>
 #include <gamecoe/utils/paths.hpp>
+#include <gamecoe_config.hpp>
 #include <cassert>
 #include <optional>
-#include <glad/gl.h>
 #include <glm/glm.hpp>
 
-
+#if GAMECOE_USE_OPENGL
+    #include <glad/gl.h>      
+#endif
 
 namespace
 {
@@ -74,7 +76,9 @@ namespace gamecoe
         auto colorNormalized = m_color.normalized();
         glm::vec4 color = { colorNormalized[0], colorNormalized[1], colorNormalized[2], colorNormalized[3] };
 
+#if !GAMECOE_HAS_DSA
         s_shader->use();
+#endif
         s_shader->set("model", model);
         s_shader->set("view", view);
         s_shader->set("projection", projection);
