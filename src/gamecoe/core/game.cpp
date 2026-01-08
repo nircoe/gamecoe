@@ -256,6 +256,8 @@ namespace gamecoe
                     scene.get().update();
             }
 
+            m_internalScene->update();
+
             // TODO: Physics/Collision system
 
             for (auto &[layer, scenes] : scenesByLayers)

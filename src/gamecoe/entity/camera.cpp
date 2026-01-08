@@ -12,7 +12,12 @@ namespace gamecoe
                                         m_farPlane(100.0f),
                                         m_orthographicHeight(-1.0f),
                                         m_perspective(true),
-                                        m_projectionCached(false) { }
+                                        m_projectionCached(false)
+    {
+#if GAMECOE_HAS_UBO
+        m_uniformBuffer.emplace(UniformBuffer());
+#endif
+    }
     
     void Camera::activate() 
     { 
@@ -22,6 +27,21 @@ namespace gamecoe
     void Camera::deactivate() 
     { 
         m_active = false;
+    }
+
+    void Camera::update()
+    {
+#if GAMECOE_HAS_UBO
+        struct CameraUniformData
+        {
+            alignas(16) glm::mat4 m_view;
+            alignas(16) glm::mat4 m_projection;
+        } data;
+        data.m_view = viewMatrix();
+        data.m_projection = projectionMatrix();
+
+        m_uniformBuffer->uploadData(&data, sizeof(data)); // when should I call bindBase?
+#endif
     }
 
     void Camera::setFov(float fov) 

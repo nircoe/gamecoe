@@ -1,9 +1,15 @@
 #pragma once
 
 #include <gamecoe/entity/component.hpp>
+#include <gamecoe_config.hpp>
 #include <utility>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+#if GAMECOE_HAS_UBO
+#include <gamecoe/graphics/graphics_buffer.hpp>
+#include <optional>
+#endif
 
 namespace gamecoe
 {
@@ -18,6 +24,10 @@ namespace gamecoe
         mutable bool m_projectionCached;
 
         mutable glm::mat4 m_projectionMatrix;
+
+#if GAMECOE_HAS_UBO
+        std::optional<GraphicsBuffer> m_uniformBuffer;
+#endif
 
     public:
         static constexpr const char* TYPE_NAME = "Camera";
@@ -34,7 +44,7 @@ namespace gamecoe
         virtual void begin() override { }
         virtual void activate() override;
         virtual void deactivate() override;
-        virtual void update() override { }
+        virtual void update() override;
 
         void setFov(float fov);
         void setNearPlane(float nearPlane);

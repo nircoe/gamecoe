@@ -67,21 +67,14 @@ namespace gamecoe
 
 #if !GAMECOE_HAS_DSA
         bind();
-        m_vertexBuffer.bind();
 #endif
         m_vertexBuffer.uploadData(vertices, vertexCount * vertexSize * sizeof(float));
 
         if (m_indexBuffer)
-        {
-#if !GAMECOE_HAS_DSA
-            m_indexBuffer->bind();
-#endif
             m_indexBuffer->uploadData(indices, indexCount * sizeof(unsigned int));
-        }
 
         setupVertexAttributes();
 #if !GAMECOE_HAS_DSA
-        m_vertexBuffer.unbind();
         unbind();
 #endif
     }

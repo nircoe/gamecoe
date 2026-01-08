@@ -61,6 +61,7 @@ namespace gamecoe
     {
         if (!m_active) return;
         
+        // maybe two different shaders? one for UBO support and the other without UBO support?
         if (!s_shader)
             s_shader.emplace(
                 resolvePath("gamecoe/shaders/shape_renderer.vert"), 
@@ -80,8 +81,11 @@ namespace gamecoe
         s_shader->use();
 #endif
         s_shader->set("model", model);
+        // TODO: replace the view and projection uniforms set with the UBO
+#if !GAMECOE_HAS_UBO
         s_shader->set("view", view);
         s_shader->set("projection", projection);
+#endif
         s_shader->set("color", color);
 
         m_vertexArray.bind();

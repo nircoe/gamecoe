@@ -9,8 +9,12 @@ namespace gamecoe
     {
         std::uint32_t m_id;
         std::uint32_t m_target;
+        std::uint32_t m_usage;
 
         GraphicsBuffer(std::uint32_t target);
+
+        void bind() const;
+        void unbind() const;
 
     public:
         ~GraphicsBuffer();
@@ -19,9 +23,9 @@ namespace gamecoe
         GraphicsBuffer(GraphicsBuffer &&other) noexcept;
         GraphicsBuffer &operator=(GraphicsBuffer &&other) noexcept;
 
-        void bind() const;
-        void unbind() const;
-        
+        // Relevant only for Uniform Buffers
+        void bindBase(std::uint32_t bindingPoint) const;
+
         void uploadData(const void* data, size_t size);
 
         std::uint32_t id() const;
@@ -29,8 +33,10 @@ namespace gamecoe
 
         static GraphicsBuffer createVertexBuffer();
         static GraphicsBuffer createIndexBuffer();
+        static GraphicsBuffer createUniformBuffer();
     };
 
     inline GraphicsBuffer VertexBuffer() { return GraphicsBuffer::createVertexBuffer(); }
     inline GraphicsBuffer IndexBuffer() { return GraphicsBuffer::createIndexBuffer(); }
+    inline GraphicsBuffer UniformBuffer() { return GraphicsBuffer::createUniformBuffer(); }
 } // namespace gamecoe

@@ -58,7 +58,7 @@ namespace gamecoe
 
 #if GAMECOE_HAS_DSA
         int levels = generateMipmap ? (1 + std::floor(std::log2(std::max(width, height)))) : 1;
-        glTextureStorage2D(m_id, levels, format, width, height);
+        glTextureStorage2D(m_id, levels, internalFormat, width, height);
         glTextureSubImage2D(m_id, 0, 0, 0, width, height, format, GL_UNSIGNED_BYTE, data);
 #else
         glTexImage2D(m_dimension, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
