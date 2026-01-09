@@ -3,9 +3,11 @@
 #include <gamecoe/entity/renderer/renderer.hpp>
 #include <gamecoe/graphics/vertex_array.hpp>
 #include <gamecoe/graphics/shader.hpp>
+#include <gamecoe_config.hpp>
 #include <colorcoe.hpp>
 #include <memory>
 #include <atomic>
+#include <cstdint>
 
 namespace gamecoe
 {
@@ -19,8 +21,11 @@ namespace gamecoe
 
     class ShapeRenderer : public Renderer
     {
-        static std::atomic<uint32_t> s_counter;
+        static std::atomic<std::uint32_t> s_counter;
         static std::optional<Shader> s_shader;
+#if GAMECOE_HAS_UBO
+        static std::uint32_t s_cameraUniformBlockIndex;
+#endif
         
         Shape m_shape;
         Color m_color;

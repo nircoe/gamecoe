@@ -4,12 +4,14 @@
 #include <gamecoe/entity/camera.hpp>
 #include <gamecoe/core/game.hpp>
 #include <gamecoe/utils/paths.hpp>
+#include <gamecoe/utils/consts.hpp>
 #include <cassert>
 #include <optional>
-#include <glad/gl.h>
 #include <glm/glm.hpp>
 
-
+#if GAMECOE_USE_OPENGL
+    #include <glad/gl.h>      
+#endif
 
 namespace
 {
@@ -33,8 +35,11 @@ namespace
 
 namespace gamecoe
 {
-    std::atomic<uint32_t> ShapeRenderer::s_counter = 0;
+    std::atomic<std::uint32_t> ShapeRenderer::s_counter = 0;
     std::optional<Shader> ShapeRenderer::s_shader = std::nullopt;
+#if GAMECOE_HAS_UBO
+    std::uint32_t ShapeRenderer::s_cameraUniformBlockIndex = 0;
+#endif
 
     ShapeRenderer::ShapeRenderer(GameObject &owner, Shape shape, const Color &color, std::int8_t layer) : 
         Renderer(owner, layer), 
@@ -60,25 +65,33 @@ namespace gamecoe
         if (!m_active) return;
         
         if (!s_shader)
+        {
+            // TODO: Support passing macros into Shader class 
+            // In order to unite those 2 vertex shaders with #ifdef statements
+#if GAMECOE_HAS_UBO
+            s_shader.emplace(
+                resolvePath("gamecoe/shaders/shape_renderer_ubo.vert"), 
+                resolvePath("gamecoe/shaders/shape_renderer.frag")
+            );
+            s_cameraUniformBlockIndex = glGetUniformBlockIndex(s_shader->id(), "CameraMatrices");
+            glUniformBlockBinding(s_shader->id(), s_cameraUniformBlockIndex, constcoe::CAMERA_UBO_BINDING_POINT);
+#else
             s_shader.emplace(
                 resolvePath("gamecoe/shaders/shape_renderer.vert"), 
                 resolvePath("gamecoe/shaders/shape_renderer.frag")
             );
-
-        auto &camera = owner().game().mainCamera();
-
-        glm::mat4 model = owner().transform().modelMatrix();
-        glm::mat4 view = camera.viewMatrix();
-        glm::mat4 projection = camera.projectionMatrix();
-
-        auto colorNormalized = m_color.normalized();
-        glm::vec4 color = { colorNormalized[0], colorNormalized[1], colorNormalized[2], colorNormalized[3] };
+#endif
+        }
 
         s_shader->use();
-        s_shader->set("model", model);
-        s_shader->set("view", view);
-        s_shader->set("projection", projection);
-        s_shader->set("color", color);
+        
+#if !GAMECOE_HAS_UBO
+        auto &camera = owner().game().mainCamera();
+        s_shader->set("view", camera.viewMatrix());
+        s_shader->set("projection", camera.projectionMatrix());
+#endif
+        s_shader->set("model", owner().transform().modelMatrix());
+        s_shader->set("color", m_color.normalized());
 
         m_vertexArray.bind();
 

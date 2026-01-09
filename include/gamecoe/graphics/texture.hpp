@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <cstdint>
 
 namespace gamecoe
 {
@@ -24,8 +25,8 @@ namespace gamecoe
     
     class Texture
     {
-        unsigned int m_id;
-        int m_dimension;
+        std::uint32_t m_id;
+        std::int32_t m_dimension;
 
     public:
         Texture() = delete;
@@ -40,8 +41,11 @@ namespace gamecoe
 
         ~Texture();
 
-        bool bind();
+        void bind();
         void unbind();
+
+        std::uint32_t id() const;
+        std::int32_t dimension() const;
 
         bool setParameters(TextureWrap wrapS, TextureWrap wrapT, TextureFilter minFilter, TextureFilter magFilter);
     };

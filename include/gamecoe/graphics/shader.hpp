@@ -2,18 +2,19 @@
 
 #include <string>
 #include <unordered_map>
+#include <cstdint>
 #include <glm/glm.hpp>
 
 namespace gamecoe
 {
     class Shader
     {
-        unsigned int m_id;
-        mutable std::unordered_map<std::string, int> m_uniformLocation;
+        std::uint32_t m_id;
+        mutable std::unordered_map<std::string, std::int32_t> m_uniformLocation;
 
-        static void logIfCompileOrLinkFailed(const std::string &operation, unsigned int id, bool isProgram = true);
+        static void logIfCompileOrLinkFailed(const std::string &operation, std::uint32_t id, bool isProgram = true);
 
-        int getUniformLocation(const std::string &name) const;
+        std::int32_t getUniformLocation(const std::string &name) const;
 
     public:
         Shader() = delete;
@@ -24,10 +25,12 @@ namespace gamecoe
         Shader &operator=(Shader &&other) noexcept;
         ~Shader();
 
+        std::uint32_t id() const;
+
         void use();
 
         void set(const std::string &name, bool value) const;
-        void set(const std::string &name, int value) const;
+        void set(const std::string &name, std::int32_t value) const;
         void set(const std::string &name, float value) const;
 
         void set(const std::string &name, const glm::vec2 &value) const;

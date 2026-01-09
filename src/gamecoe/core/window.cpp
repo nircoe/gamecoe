@@ -1,10 +1,10 @@
 #include <gamecoe/core/window.hpp>
+#include <gamecoe/utils/error_handler.hpp>
+#include <gamecoe_config.hpp>
 #include <timecoe.hpp>
 #include <inputcoe.hpp>
-#include <gamecoe/utils/error_handler.hpp>
 #include <cassert>
 #include <cstdlib>
-#include <gamecoe_config.hpp>
 
 #if GAMECOE_USE_OPENGL
     #include <glad/gl.h>      
@@ -20,9 +20,9 @@ namespace gamecoe
         m_width = width;
         m_height = height;
 
-        #if GAMECOE_USE_OPENGL
-            glViewport(0, 0, width, height);
-        #endif
+#if GAMECOE_USE_OPENGL
+        glViewport(0, 0, width, height);
+#endif
     }
 
     Window::Window() : Window("gamecoe", 800, 600) { }
@@ -32,12 +32,12 @@ namespace gamecoe
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GAMECOE_GRAPHICS_VERSION_MAJOR);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GAMECOE_GRAPHICS_VERSION_MINOR);
         
-        #if GAMECOE_USE_OPENGL
-            glfwWindowHint(GLFW_OPENGL_PROFILE, GAMECOE_GRAPHICS_PROFILE);
-            #ifdef __APPLE__
-                glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-            #endif
-        #endif
+#if GAMECOE_OPENGL_VERSION_AT_LEAST(3, 2)
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GAMECOE_GRAPHICS_PROFILE);
+#if defined(__APPLE__) && GAMECOE_OPENGL_VERSION_AT_LEAST(3, 0)
+        glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+#endif
 
         GLFWwindow *current = glfwGetCurrentContext();
         GLFWwindow *window = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, current);
@@ -77,9 +77,9 @@ namespace gamecoe
             m_firstFrame = false;
         else
         {
-            #if GAMECOE_USE_OPENGL
-                glfwSwapBuffers(m_window);
-            #endif
+#if GAMECOE_USE_OPENGL
+            glfwSwapBuffers(m_window);
+#endif
         }
 
         return !glfwWindowShouldClose(m_window);

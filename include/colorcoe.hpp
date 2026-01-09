@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include <array>
 #include <string>
+#include <glm/glm.hpp>
 
 namespace gamecoe
 {
@@ -30,7 +30,7 @@ namespace gamecoe
         std::uint8_t blue() const;
         std::uint8_t alpha() const;
         
-        std::array<float, 4> normalized() const;
+        glm::vec4 normalized() const;
 
         std::uint32_t rgba() const;
 

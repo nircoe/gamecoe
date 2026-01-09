@@ -3,6 +3,7 @@
 #include <gamecoe/core/game.hpp>
 #include <gamecoe/core/window.hpp>
 #include <gamecoe/utils/error_handler.hpp>
+#include <gamecoe/utils/consts.hpp>
 
 namespace gamecoe
 {
@@ -12,7 +13,12 @@ namespace gamecoe
                                         m_farPlane(100.0f),
                                         m_orthographicHeight(-1.0f),
                                         m_perspective(true),
-                                        m_projectionCached(false) { }
+                                        m_projectionCached(false)
+    {
+#if GAMECOE_HAS_UBO
+        m_uniformBuffer.emplace(UniformBuffer(constcoe::CAMERA_UBO_BINDING_POINT));
+#endif
+    }
     
     void Camera::activate() 
     { 
@@ -22,6 +28,21 @@ namespace gamecoe
     void Camera::deactivate() 
     { 
         m_active = false;
+    }
+
+    void Camera::update()
+    {
+#if GAMECOE_HAS_UBO
+        struct CameraUniformData
+        {
+            glm::mat4 m_projection;
+            glm::mat4 m_view;
+        } data;
+        data.m_projection = projectionMatrix();
+        data.m_view = viewMatrix();
+
+        m_uniformBuffer->uploadData(&data, sizeof(data));
+#endif
     }
 
     void Camera::setFov(float fov) 

@@ -1,11 +1,11 @@
 #include <gamecoe/core/game.hpp>
 #include <gamecoe/core/window.hpp>
-#include <timecoe.hpp>
-#include <inputcoe.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 #include <gamecoe/utils/paths.hpp>
-#include <cassert>
 #include <gamecoe_config.hpp>
+#include <timecoe.hpp>
+#include <inputcoe.hpp>
+#include <cassert>
 
 #if GAMECOE_USE_LOGCOE
 #include <logcoe.hpp>
@@ -75,8 +75,10 @@ namespace gamecoe
     {
         m_activeScenes.clear();
         m_inactiveScenes.clear();
+        m_internalScene.reset();
+        m_mainWindow.reset();
 
-        // TODO: more shutdowns, datacoe, soundcoe, etc...
+        // TODO: more shutdowns, datacoe, etc...
         glfwTerminate();
         logcoe::shutdown();
         soundcoe::shutdown();
@@ -244,7 +246,7 @@ namespace gamecoe
             auto bgColor = m_backgroundColor.normalized();
 
 #if GAMECOE_USE_OPENGL
-            glClearColor(bgColor[0], bgColor[1], bgColor[2], bgColor[3]);
+            glClearColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // TODO: check if we need those bits anytime, or let the gamedevs decide somehow
 #endif
 
@@ -255,6 +257,8 @@ namespace gamecoe
                 for (auto &scene : scenes)
                     scene.get().update();
             }
+
+            m_internalScene->update();
 
             // TODO: Physics/Collision system
 
