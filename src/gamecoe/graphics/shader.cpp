@@ -13,7 +13,7 @@
 
 namespace gamecoe
 {
-    void Shader::logIfCompileOrLinkFailed(const std::string &operation, std::uint32_t id, bool isProgram) // do I really need that method?
+    void Shader::logIfCompileOrLinkFailed(const std::string &operation, std::uint32_t id, bool isProgram)
     {
         GLint success;
         isProgram ? glGetProgramiv(id, GL_LINK_STATUS, &success) : glGetShaderiv(id, GL_COMPILE_STATUS, &success);
@@ -99,7 +99,7 @@ namespace gamecoe
         detail::checkAndThrowError("Shader::Shader(): Vertex Shader:");
         glShaderSource(vertexShader, 1, &vertexCode, nullptr);
         glCompileShader(vertexShader);
-        logIfCompileOrLinkFailed("vertex Shader compilation failed", vertexShader, false); // do I really need all of those logIFCompileOrLinkFailed() calls? glGetError() in detail::checkAndThrowError() won't handle it the right way?
+        logIfCompileOrLinkFailed("vertex Shader compilation failed", vertexShader, false);
 
         // fragment Shader
         std::uint32_t fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);

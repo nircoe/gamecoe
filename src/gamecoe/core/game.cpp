@@ -78,7 +78,7 @@ namespace gamecoe
         m_internalScene.reset();
         m_mainWindow.reset();
 
-        // TODO: more shutdowns, datacoe, soundcoe, etc...
+        // TODO: more shutdowns, datacoe, etc...
         glfwTerminate();
         logcoe::shutdown();
         soundcoe::shutdown();

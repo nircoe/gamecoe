@@ -3,7 +3,7 @@
 #include <gamecoe_config.hpp>
 #include <cstdint>
 
-// This header needs to be include after glfw (and glad before that)
+// This header needs to be included after glfw (and glad before that)
 
 // macros
 #if GAMECOE_USE_OPENGL
@@ -20,7 +20,7 @@
     #define GAMECOE_VULKAN_API_VERSION VK_MAKE_VERSION(GAMECOE_GRAPHICS_VERSION_MAJOR, GAMECOE_GRAPHICS_VERSION_MINOR, 0)
 #endif
 
-// const expressions
+// constants
 namespace constcoe
 {
 #if GAMECOE_HAS_UBO
