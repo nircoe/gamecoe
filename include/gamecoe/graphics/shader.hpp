@@ -25,6 +25,8 @@ namespace gamecoe
         Shader &operator=(Shader &&other) noexcept;
         ~Shader();
 
+        std::uint32_t id() const;
+
         void use();
 
         void set(const std::string &name, bool value) const;

@@ -21,7 +21,7 @@ namespace gamecoe
     
     std::uint8_t Color::alpha() const { return m_alpha; }
     
-    std::array<float, 4> Color::normalized() const
+    glm::vec4 Color::normalized() const
     {
         return { static_cast<float>(m_red) / 255.0f, 
                  static_cast<float>(m_green) / 255.0f, 
@@ -61,7 +61,7 @@ namespace gamecoe
             detail::invalidArgument("Color::fromHex(): The string argument should be in format of \"#RRGGBBAA\" or \"#RRGGBB\" in hexadecimal");
         };
         
-        std::array<std::uint8_t, 4> values = { 0U, 0U, 0U, 255U };
+        std::uint8_t values[4] = { 0U, 0U, 0U, 255U };
         int iterations = (hex.length() - 1) / 2; // 3 or 4
         for(int i = 0; i < iterations; ++i)
         {

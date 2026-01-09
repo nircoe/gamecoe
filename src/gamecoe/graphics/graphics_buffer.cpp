@@ -9,7 +9,8 @@
 
 namespace gamecoe
 {
-    GraphicsBuffer::GraphicsBuffer(std::uint32_t target) : m_id(0), m_target(target), m_usage(0)
+    GraphicsBuffer::GraphicsBuffer(std::uint32_t target, std::uint32_t bindingPoint) : m_id(0), m_target(target), 
+                                                                                       m_usage(0), m_allocated(false)
     {
 #if GAMECOE_HAS_DSA
         glCreateBuffers(1, &m_id);
@@ -26,6 +27,13 @@ namespace gamecoe
             detail::throwError("GraphicsBuffer::GraphicsBuffer(): Could not generate buffer");
 
         m_usage = m_target == GL_UNIFORM_BUFFER ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
+
+        if (m_target != GL_UNIFORM_BUFFER)
+            return;
+        
+        glBindBufferBase(m_target, bindingPoint, m_id);
+        detail::checkAndThrowError("GraphicsBuffer::GraphicsBuffer(): Uniform Buffer:");
+        unbind();
     }
 
     GraphicsBuffer::~GraphicsBuffer()
@@ -36,13 +44,16 @@ namespace gamecoe
         m_id = 0;
         m_target = 0;
         m_usage = 0;
+        m_allocated = false;
     }
 
-    GraphicsBuffer::GraphicsBuffer(GraphicsBuffer &&other) noexcept : m_id(other.m_id), m_target(other.m_target), m_usage(other.m_usage)
+    GraphicsBuffer::GraphicsBuffer(GraphicsBuffer &&other) noexcept : m_id(other.m_id), m_target(other.m_target),
+                                                                      m_usage(other.m_usage), m_allocated(other.m_allocated)
     {
         other.m_id = 0;
         other.m_target = 0;
         other.m_usage = 0;
+        other.m_allocated = false;
     }
 
     GraphicsBuffer &GraphicsBuffer::operator=(GraphicsBuffer &&other) noexcept
@@ -55,9 +66,11 @@ namespace gamecoe
         m_id = other.m_id;
         m_target = other.m_target;
         m_usage = other.m_usage;
+        m_allocated = other.m_allocated;
         other.m_id = 0;
         other.m_target = 0;
         other.m_usage = 0;
+        other.m_allocated = false;
 
         return *this;
     }
@@ -78,26 +91,27 @@ namespace gamecoe
 #endif
     }
 
-    void GraphicsBuffer::bindBase(std::uint32_t bindingPoint) const
-    {
-        if (m_target != GL_UNIFORM_BUFFER)
-            detail::throwError("GraphicsBuffer::bindBase(): Use this method only for Uniform Buffers");
-        
-        bind();
-        glBindBufferBase(m_target, bindingPoint, m_id);
-        detail::checkAndThrowError("GraphicsBuffer::bindBase():");
-        unbind();
-    }
-
     void GraphicsBuffer::uploadData(const void* data, size_t size)
     {
+        if (!m_allocated)
+        {
 #if GAMECOE_HAS_DSA
-        glNamedBufferData(m_id, size, data, m_usage);
+            glNamedBufferData(m_id, size, nullptr, m_usage);
+#else
+            bind();
+            glBufferData(m_target, size, nullptr, m_usage);
+            unbind();
+#endif
+            detail::checkAndThrowError("GraphicsBuffer::uploadData():");
+            m_allocated = true;
+        }
+
+#if GAMECOE_HAS_DSA
+        glNamedBufferSubData(m_id, 0, size, data);
         detail::checkAndThrowError("GraphicsBuffer::uploadData():");
 #else
         bind();
-        if (m_target == GL_UNIFORM_BUFFER) bindBase(); // when should I call bindBase?
-        glBufferData(m_target, size, data, m_usage);
+        glBufferSubData(m_target, 0, size, data);
         detail::checkAndThrowError("GraphicsBuffer::uploadData():");
         unbind();
 #endif
@@ -123,8 +137,8 @@ namespace gamecoe
         return GraphicsBuffer(GL_ELEMENT_ARRAY_BUFFER);
     }
 
-    GraphicsBuffer GraphicsBuffer::createUniformBuffer()
+    GraphicsBuffer GraphicsBuffer::createUniformBuffer(std::uint32_t bindingPoint)
     {
-        return GraphicsBuffer(GL_UNIFORM_BUFFER);
+        return GraphicsBuffer(GL_UNIFORM_BUFFER, bindingPoint);
     }
 } // namespace gamecoe

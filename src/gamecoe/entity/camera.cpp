@@ -3,6 +3,7 @@
 #include <gamecoe/core/game.hpp>
 #include <gamecoe/core/window.hpp>
 #include <gamecoe/utils/error_handler.hpp>
+#include <gamecoe/utils/consts.hpp>
 
 namespace gamecoe
 {
@@ -15,7 +16,7 @@ namespace gamecoe
                                         m_projectionCached(false)
     {
 #if GAMECOE_HAS_UBO
-        m_uniformBuffer.emplace(UniformBuffer());
+        m_uniformBuffer.emplace(UniformBuffer(constcoe::CAMERA_UBO_BINDING_POINT));
 #endif
     }
     
@@ -40,7 +41,7 @@ namespace gamecoe
         data.m_view = viewMatrix();
         data.m_projection = projectionMatrix();
 
-        m_uniformBuffer->uploadData(&data, sizeof(data)); // when should I call bindBase?
+        m_uniformBuffer->uploadData(&data, sizeof(data));
 #endif
     }
 

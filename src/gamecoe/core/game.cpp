@@ -75,6 +75,8 @@ namespace gamecoe
     {
         m_activeScenes.clear();
         m_inactiveScenes.clear();
+        m_internalScene.reset();
+        m_mainWindow.reset();
 
         // TODO: more shutdowns, datacoe, soundcoe, etc...
         glfwTerminate();
@@ -244,7 +246,7 @@ namespace gamecoe
             auto bgColor = m_backgroundColor.normalized();
 
 #if GAMECOE_USE_OPENGL
-            glClearColor(bgColor[0], bgColor[1], bgColor[2], bgColor[3]);
+            glClearColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // TODO: check if we need those bits anytime, or let the gamedevs decide somehow
 #endif
 
