@@ -83,9 +83,8 @@ namespace gamecoe
 #endif
         }
 
-#if !GAMECOE_HAS_DSA
         s_shader->use();
-#endif
+        
 #if !GAMECOE_HAS_UBO
         auto &camera = owner().game().mainCamera();
         s_shader->set("view", camera.viewMatrix());

@@ -35,11 +35,11 @@ namespace gamecoe
 #if GAMECOE_HAS_UBO
         struct CameraUniformData
         {
-            alignas(16) glm::mat4 m_view;
-            alignas(16) glm::mat4 m_projection;
+            glm::mat4 m_projection;
+            glm::mat4 m_view;
         } data;
-        data.m_view = viewMatrix();
         data.m_projection = projectionMatrix();
+        data.m_view = viewMatrix();
 
         m_uniformBuffer->uploadData(&data, sizeof(data));
 #endif

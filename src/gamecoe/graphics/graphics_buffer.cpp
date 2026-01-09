@@ -33,7 +33,6 @@ namespace gamecoe
         
         glBindBufferBase(m_target, bindingPoint, m_id);
         detail::checkAndThrowError("GraphicsBuffer::GraphicsBuffer(): Uniform Buffer:");
-        unbind();
     }
 
     GraphicsBuffer::~GraphicsBuffer()
@@ -100,7 +99,6 @@ namespace gamecoe
 #else
             bind();
             glBufferData(m_target, size, nullptr, m_usage);
-            unbind();
 #endif
             detail::checkAndThrowError("GraphicsBuffer::uploadData():");
             m_allocated = true;
@@ -113,7 +111,6 @@ namespace gamecoe
         bind();
         glBufferSubData(m_target, 0, size, data);
         detail::checkAndThrowError("GraphicsBuffer::uploadData():");
-        unbind();
 #endif
     }
 

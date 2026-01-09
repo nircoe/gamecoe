@@ -150,9 +150,7 @@ namespace gamecoe
 
     void Shader::use()
     {
-#if !GAMECOE_HAS_DSA
         glUseProgram(m_id);
-#endif
     }
 
 // set uniform macros

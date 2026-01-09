@@ -17,10 +17,6 @@ add_subdirectory(external)
 
 include(FetchContent)
 
-# testing different configurations - TODO: remove later
-set(GAMECOE_GRAPHICS_VERSION_MAJOR 4)
-set(GAMECOE_GRAPHICS_VERSION_MINOR 6)
-
 # Fetching gamecoe toolkit libraries:
 fetch_logcoe()
 fetch_soundcoe()
