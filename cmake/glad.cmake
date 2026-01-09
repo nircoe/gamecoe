@@ -42,47 +42,63 @@ function(generate_glad)
         message(STATUS "[gamecoe] Using default graphics API - ${GAMECOE_GRAPHICS_API}")
         message(STATUS "[gamecoe] Can be changed with \"set(GAMECOE_GRAPHICS_API <API>)\"")
         message(STATUS "[gamecoe] Options are \"OpenGL\" (\"Vulkan\" not supported yet)")
+    elseif(GAMECOE_GRAPHICS_API NOT STREQUAL "OpenGL") # TODO: Change when adding Vulkan support
+        message(FATAL_ERROR "[gamecoe] ${GAMECOE_GRAPHICS_API} is not a supported graphics API")
     endif()
     
     set(DEFAULT_VERSION_MAJOR OFF)
     if(NOT DEFINED GAMECOE_GRAPHICS_VERSION_MAJOR)
         set(DEFAULT_VERSION_MAJOR ON)
-        set(GAMECOE_GRAPHICS_VERSION_MAJOR 3)
-        set(GAMECOE_GRAPHICS_VERSION_MAJOR 3 PARENT_SCOPE)
     endif()
 
     set(DEFAULT_VERSION_MINOR OFF)
     if(NOT DEFINED GAMECOE_GRAPHICS_VERSION_MINOR)
         set(DEFAULT_VERSION_MINOR ON)
-        set(GAMECOE_GRAPHICS_VERSION_MINOR 3)
-        set(GAMECOE_GRAPHICS_VERSION_MINOR 3 PARENT_SCOPE)
     endif()
-    
+
     if(DEFAULT_VERSION_MAJOR OR DEFAULT_VERSION_MINOR)
+        set(GAMECOE_GRAPHICS_VERSION_MAJOR 4)
+        set(GAMECOE_GRAPHICS_VERSION_MAJOR 4 PARENT_SCOPE)
+        set(GAMECOE_GRAPHICS_VERSION_MINOR 6)
+        set(GAMECOE_GRAPHICS_VERSION_MINOR 6 PARENT_SCOPE)
         message(STATUS "[gamecoe] Using default version ${GAMECOE_GRAPHICS_VERSION_MAJOR}.${GAMECOE_GRAPHICS_VERSION_MINOR}")
         message(STATUS "[gamecoe] Can be changed with \"set(GAMECOE_GRAPHICS_VERSION_MAJOR <major>)\" and \"set(GAMECOE_GRAPHICS_VERSION_MINOR <minor>)\"")
-        message(STATUS "[gamecoe] Currently supported: OpenGL 3.3+") # TODO: Add more in the future
+        message(STATUS "[gamecoe] Currently supported versions: OpenGL 3.0+") # TODO: Add more in the future
+    endif()
+
+    set(CURRENT_GRAPHICS_VERSION "${GAMECOE_GRAPHICS_VERSION_MAJOR}.${GAMECOE_GRAPHICS_VERSION_MINOR}")
+    if(CURRENT_GRAPHICS_VERSION VERSION_LESS "3.0")
+        message(FATAL_ERROR "[gamecoe] Currently supported versions: OpenGL 3.0+")
     endif()
 
     if(NOT DEFINED GAMECOE_GRAPHICS_PROFILE)
-        set(GAMECOE_GRAPHICS_PROFILE "core")
+        if(CURRENT_GRAPHICS_VERSION VERSION_GREATER_EQUAL "3.2")
+            set(GAMECOE_GRAPHICS_PROFILE "core")
+        else()
+            set(GAMECOE_GRAPHICS_PROFILE "compat")
+        endif()
         message(STATUS "[gamecoe] Using default profile: ${GAMECOE_GRAPHICS_PROFILE}")
         message(STATUS "[gamecoe] Can be changed with \"set(GAMECOE_GRAPHICS_PROFILE <profile>)\"")
-        message(STATUS "[gamecoe] Options are \"core\" and \"compatibility\"")
+        message(STATUS "[gamecoe] Options are \"core\" (for OpenGL3.2+) and \"compat\"")
+    elseif((GAMECOE_GRAPHICS_PROFILE NOT STREQUAL "core") AND (GAMECOE_GRAPHICS_PROFILE NOT STREQUAL "compat"))
+        message(FATAL_ERROR "[gamecoe] Only OpenGL \"core\" (version 3.2+) or \"compat\" profiles are supported")
     endif()
+
+    message(STATUS "\n\n\n   [gamecoe] Using ${GAMECOE_GRAPHICS_API} ${CURRENT_GRAPHICS_VERSION} ${GAMECOE_GRAPHICS_PROFILE}\n\n")
 
     if(GAMECOE_GRAPHICS_API STREQUAL "OpenGL")
         set(GAMECOE_GRAPHICS_API "gl") # for GLAD generator
         set(GAMECOE_USE_OPENGL 1 PARENT_SCOPE)
         set(GAMECOE_USE_VULKAN 0 PARENT_SCOPE)
-    elseif(GAMECOE_GRAPHICS_API STREQUAL "Vulkan")
-        message(FATAL_ERROR "[gamecoe] Vulkan is not supported yet")
+    # elseif(GAMECOE_GRAPHICS_API STREQUAL "Vulkan")
         # Uncomment when Vulkan will be supported
         # set(GAMECOE_GRAPHICS_API "vulkan") # for GLAD generator
         # set(GAMECOE_USE_OPENGL 0 PARENT_SCOPE)
         # set(GAMECOE_USE_VULKAN 1 PARENT_SCOPE)
-    else()
-        message(FATAL_ERROR "[gamecoe] ${GAMECOE_GRAPHICS_API} is not a supported graphics API")
+    endif()
+
+    if(GAMECOE_GRAPHICS_PROFILE STREQUAL "compat")
+        set(GAMECOE_GRAPHICS_PROFILE "compatibility")
     endif()
 
     if(GAMECOE_GRAPHICS_PROFILE STREQUAL "core")
