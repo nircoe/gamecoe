@@ -1,26 +1,68 @@
-function(ensure_jinja2)
+function(ensure_jinja2 OUTPUT_PYTHON_VAR)
+    # Check if the user has jinja2 installed
     execute_process(
         COMMAND ${Python3_EXECUTABLE} -c "import jinja2"
         RESULT_VARIABLE JINJA2_RESULT
-        OUTPUT_QUIET
-        ERROR_QUIET
+        OUTPUT_QUIET ERROR_QUIET
     )
     
-    if(NOT JINJA2_RESULT EQUAL 0)
-        message(STATUS "[gamecoe] Installing jinja2 for GLAD2 generator...")
+    if(JINJA2_RESULT EQUAL 0)
+        message(STATUS "[gamecoe] Using jinja2 to generate GLAD")
+        set(${OUTPUT_PYTHON_VAR} ${Python3_EXECUTABLE} PARENT_SCOPE)
+        return()
+    endif()
+
+    # Trying to install jinja2 for the user
+    message(STATUS "[gamecoe] Trying to install jinja2")
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -m pip install --user jinja2
+        RESULT_VARIABLE JINJA2_INSTALL_RESULT
+        OUTPUT_QUIET ERROR_QUIET
+    )
+    
+    if(JINJA2_INSTALL_RESULT EQUAL 0)
         execute_process(
-            COMMAND ${Python3_EXECUTABLE} -m pip install --user jinja2
-            RESULT_VARIABLE INSTALL_RESULT
+            COMMAND ${Python3_EXECUTABLE} -c "import jinja2"
+            RESULT_VARIABLE JINJA2_VERIFY
+            OUTPUT_QUIET ERROR_QUIET
         )
-        
-        if(NOT INSTALL_RESULT EQUAL 0)
-            message(FATAL_ERROR 
-                "[gamecoe] Failed to install jinja2. Please run: pip install --user jinja2\n"
-                "  For Arch-based distros (externally-managed Python): sudo pacman -S python-jinja\n"
-                "  Or use a virtual environment: python -m venv venv && source venv/bin/activate && pip install jinja2\n"
-            )
+
+        if(JINJA2_VERIFY EQUAL 0)
+            set(${OUTPUT_PYTHON_VAR} ${Python3_EXECUTABLE} PARENT_SCOPE)
+            return()
         endif()
     endif()
+
+    # Couldn't use jinja2 in user environment, trying inside a venv
+    message(STATUS "[gamecoe] Could not install jinja2, using virtual environment")
+    set(VENV_DIR ${CMAKE_CURRENT_BINARY_DIR}/.venv_glad)
+
+    execute_process(
+        COMMAND ${Python3_EXECUTABLE} -m venv ${VENV_DIR}
+        RESULT_VARIABLE VENV_RESULT
+    )
+
+    if(NOT VENV_RESULT EQUAL 0)
+        message(FATAL_ERROR "[gamecoe] Failed to create virtual environment, please install jinja2 manually")
+    endif()
+
+    if(WIN32)
+        set(VENV_PYTHON ${VENV_DIR}/Scripts/python.exe)
+    else()
+        set(VENV_PYTHON ${VENV_DIR}/bin/python)
+    endif()
+
+    execute_process(
+        COMMAND ${VENV_PYTHON} -m pip install jinja2
+        RESULT_VARIABLE VENV_INSTALL_RESULT
+    )
+
+    if(NOT VENV_INSTALL_RESULT EQUAL 0)
+        message(FATAL_ERROR "[gamecoe] Failed to install jinja2 in virtual environment, please install jinja2 manually")
+    endif()
+
+    set(${OUTPUT_PYTHON_VAR} ${VENV_PYTHON} PARENT_SCOPE)
+    message(STATUS "[gamecoe] Using virtual environment at: ${VENV_DIR}")
 endfunction()
 
 function(generate_glad)
@@ -34,7 +76,7 @@ function(generate_glad)
     FetchContent_MakeAvailable(glad)
 
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
-    ensure_jinja2()
+    ensure_jinja2(PYTHON_EXE)
 
     # User-configurable options
     if(NOT DEFINED GAMECOE_GRAPHICS_API)
@@ -146,7 +188,7 @@ function(generate_glad)
 
     add_custom_command(
         OUTPUT ${GAMECOE_GLAD_SOURCES} ${GAMECOE_GLAD_HEADERS}
-        COMMAND ${Python3_EXECUTABLE} -m glad ${GLAD_COMMAND_ARGS}
+        COMMAND ${PYTHON_EXE} -m glad ${GLAD_COMMAND_ARGS}
         WORKING_DIRECTORY ${glad_SOURCE_DIR}
         COMMENT ${GLAD_COMMENT}
         VERBATIM
