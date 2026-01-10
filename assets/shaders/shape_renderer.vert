@@ -1,4 +1,8 @@
+#if __VERSION__ >= 330
 layout (location = 0) in vec3 aPos;
+#else
+attribute vec3 aPos;
+#endif
 // texture, etc... in the future
 
 uniform mat4 model;
