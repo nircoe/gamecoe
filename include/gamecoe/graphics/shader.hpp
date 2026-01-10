@@ -3,6 +3,8 @@
 #include <string>
 #include <unordered_map>
 #include <cstdint>
+#include <utility>
+#include <vector>
 #include <glm/glm.hpp>
 
 namespace gamecoe
@@ -10,15 +12,20 @@ namespace gamecoe
     class Shader
     {
         std::uint32_t m_id;
+        std::unordered_map<std::string, bool> m_macros;
         mutable std::unordered_map<std::string, std::int32_t> m_uniformLocation;
 
         static void logIfCompileOrLinkFailed(const std::string &operation, std::uint32_t id, bool isProgram = true);
 
         std::int32_t getUniformLocation(const std::string &name) const;
 
+        void initializeMacros(const std::vector<std::string> &macros = {});
+        std::string prepareForPreprocessor(const std::string &shaderCode);
+        std::pair<std::string, std::string> readShaderFiles(const std::string &vertexPath, const std::string &fragmentPath);
+
     public:
         Shader() = delete;
-        Shader(const std::string &vertexPath, const std::string &fragmentPath);
+        Shader(const std::string &vertexPath, const std::string &fragmentPath, const std::vector<std::string> &macros = {});
         Shader(const Shader &) = delete;
         Shader &operator=(const Shader &) = delete;
         Shader(Shader &&other) noexcept;

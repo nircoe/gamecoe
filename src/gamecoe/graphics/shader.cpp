@@ -3,13 +3,45 @@
 #include <gamecoe_config.hpp>
 #include <fstream>
 #include <sstream>
-#include <iostream>
-#include <exception>
 #include <glm/gtc/type_ptr.hpp>
 
 #if GAMECOE_USE_OPENGL
 #include <glad/gl.h>
 #endif
+
+namespace
+{
+#if GAMECOE_USE_OPENGL
+    std::string getGLSLVersion()
+    {
+#if GAMECOE_OPENGL_VERSION_AT_LEAST(3, 3)
+        return std::to_string(GAMECOE_GRAPHICS_VERSION_MAJOR) +
+               std::to_string(GAMECOE_GRAPHICS_VERSION_MINOR) + "0";
+#elif GAMECOE_OPENGL_VERSION(2, 0)
+        return "110";
+#elif GAMECOE_OPENGL_VERSION(2, 1)
+        return "120";
+#elif GAMECOE_OPENGL_VERSION(3, 0)
+        return "130";
+#elif GAMECOE_OPENGL_VERSION(3, 1)
+        return "140";
+#elif GAMECOE_OPENGL_VERSION(3, 2)
+        return "150";
+#else
+        return "";
+#endif
+    }
+
+    std::string getOpenGLProfile()
+    {
+#if GAMECOE_OPENGL_VERSION_AT_LEAST(3, 2)
+        return GAMECOE_PROFILE_CORE ? " core" : " compatibility";
+#else
+        return "";
+#endif
+    }
+#endif
+} // anonymous namespace
 
 namespace gamecoe
 {
@@ -46,25 +78,47 @@ namespace gamecoe
         return location;
     }
 
-    Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath) : m_id(0)
+    void Shader::initializeMacros(const std::vector<std::string> &macros)
     {
-        struct garbage_collector
+        // TODO: add more gamecoe macros when added in gamecoe_config.hpp.in
+        m_macros.clear(); // just to be safe
+
+        m_macros["GAMECOE_HAS_UBO"] = GAMECOE_HAS_UBO;
+        m_macros["GAMECOE_HAS_DSA"] = GAMECOE_HAS_DSA;
+        // TODO: uncomment when implemented
+        // m_macros["GAMECOE_HAS_MULTI_DRAW_INDIRECT"] = GAMECOE_HAS_MULTI_DRAW_INDIRECT;
+        // m_macros["GAMECOE_HAS_SSBO"] = GAMECOE_HAS_SSBO;
+        // m_macros["GAMECOE_HAS_PERSISTENT_MAP"] = GAMECOE_HAS_PERSISTENT_MAP;
+        // m_macros["GAMECOE_HAS_BINDLESS_TEXTURES"] = GAMECOE_HAS_BINDLESS_TEXTURES;
+
+        for (const auto &macro : macros)
         {
-            std::uint32_t m_vertex = 0, m_fragment = 0, m_program = 0;
+            m_macros[macro] = true;
+        }
+    }
 
-            garbage_collector() { }
-            garbage_collector(const garbage_collector &) = delete;
-            garbage_collector &operator=(const garbage_collector &) = delete;
+    std::string Shader::prepareForPreprocessor(const std::string &shaderCode)
+    {
+#if GAMECOE_USE_OPENGL
+        if(shaderCode.find("#version") != std::string::npos)
+            detail::throwError("Shader::Shader(): Please remove \"#version\" statement from your shaders. "
+                               "gamecoe auto-injects the version based on your CMake configuration");
 
-            ~garbage_collector()
-            {
-                glDeleteShader(m_vertex);
-                glDeleteShader(m_fragment);
-                glDeleteProgram(m_program);
-            }
-        } gc;
+        std::string defines = "#version " + getGLSLVersion() + getOpenGLProfile() + "\n";
+        for(const auto &[macro, value] : m_macros)
+        {
+            defines += "#define " + macro + " " + (value ? "1" : "0") + "\n";
+        }
 
-        // reading the glsl files
+        return defines + shaderCode;
+#else
+        // TODO: refactor when relevant
+        return shaderCode;
+#endif
+    }
+
+    std::pair<std::string, std::string> Shader::readShaderFiles(const std::string &vertexPath, const std::string &fragmentPath)
+    {
         std::stringstream vertexStream;
         std::stringstream fragmentStream;
 
@@ -87,11 +141,33 @@ namespace gamecoe
             detail::throwError("Shader::Shader(): Failed to read shader file: " + std::string(f.what()));
         }
 
-        std::string vertexSource = vertexStream.str();
-        std::string fragmentSource = fragmentStream.str();
+        return { prepareForPreprocessor(vertexStream.str()), prepareForPreprocessor(fragmentStream.str()) };
+    }
 
-        const char *vertexCode = vertexSource.c_str();
-        const char *fragmentCode = fragmentSource.c_str();
+    Shader::Shader(const std::string &vertexPath, const std::string &fragmentPath, const std::vector<std::string> &macros) : m_id(0), m_macros()
+    {
+        struct GarbageCollector
+        {
+            std::uint32_t m_vertex = 0, m_fragment = 0, m_program = 0;
+
+            GarbageCollector() { }
+            GarbageCollector(const GarbageCollector &) = delete;
+            GarbageCollector &operator=(const GarbageCollector &) = delete;
+
+            ~GarbageCollector()
+            {
+                if (m_vertex != 0)      glDeleteShader(m_vertex);
+                if (m_fragment != 0)    glDeleteShader(m_fragment);
+                if (m_program != 0)     glDeleteProgram(m_program);
+            }
+        } gc;
+
+        // reading the glsl files
+        initializeMacros(macros);
+        auto shaderSources = readShaderFiles(vertexPath, fragmentPath);
+
+        const char *vertexCode = shaderSources.first.c_str();
+        const char *fragmentCode = shaderSources.second.c_str();
 
         // vertex Shader
         std::uint32_t vertexShader = glCreateShader(GL_VERTEX_SHADER);

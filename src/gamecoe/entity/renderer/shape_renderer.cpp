@@ -66,20 +66,13 @@ namespace gamecoe
         
         if (!s_shader)
         {
-            // TODO: Support passing macros into Shader class 
-            // In order to unite those 2 vertex shaders with #ifdef statements
-#if GAMECOE_HAS_UBO
-            s_shader.emplace(
-                resolvePath("gamecoe/shaders/shape_renderer_ubo.vert"), 
-                resolvePath("gamecoe/shaders/shape_renderer.frag")
-            );
-            s_cameraUniformBlockIndex = glGetUniformBlockIndex(s_shader->id(), "CameraMatrices");
-            glUniformBlockBinding(s_shader->id(), s_cameraUniformBlockIndex, constcoe::CAMERA_UBO_BINDING_POINT);
-#else
             s_shader.emplace(
                 resolvePath("gamecoe/shaders/shape_renderer.vert"), 
                 resolvePath("gamecoe/shaders/shape_renderer.frag")
             );
+#if GAMECOE_HAS_UBO
+            s_cameraUniformBlockIndex = glGetUniformBlockIndex(s_shader->id(), "CameraMatrices");
+            glUniformBlockBinding(s_shader->id(), s_cameraUniformBlockIndex, constcoe::CAMERA_UBO_BINDING_POINT);
 #endif
         }
 
