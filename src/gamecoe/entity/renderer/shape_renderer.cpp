@@ -113,6 +113,8 @@ namespace gamecoe
 #endif
         shader->set("model", owner().transform().modelMatrix());
         shader->set("color", m_color.normalized());
+        if (m_shape == Shape::Circle || m_shape == Shape::Sphere)
+            shader->set("shapeType", m_shape == Shape::Circle ? 0 : 1);
 
         m_vertexArray.bind();
 

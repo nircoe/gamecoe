@@ -6,12 +6,14 @@ varying vec3 localPos;
 #endif
 
 uniform vec4 color;
+uniform int shapeType; // 0 == Circle, 1 == Sphere
 
 void main()
 {
     const float RADIUS = 1.0;
 
-    vec3 samplePos = localPos * 2.1;
+    float multiplier = (shapeType == 0) ? 2.1 : 1.75;
+    vec3 samplePos = localPos * multiplier;
     float dist = length(samplePos);
 
     float edgeWidth = fwidth(dist);
