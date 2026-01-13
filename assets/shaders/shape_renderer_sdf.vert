@@ -1,12 +1,8 @@
 #if __VERSION__ >= 330
 layout (location = 0) in vec3 aPos;
-#else
-attribute vec3 aPos;
-#endif
-
-#if __VERSION__ >= 330
 out vec3 localPos;
 #else
+attribute vec3 aPos;
 varying vec3 localPos;
 #endif
 
