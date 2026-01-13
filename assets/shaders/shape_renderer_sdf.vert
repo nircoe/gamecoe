@@ -4,6 +4,12 @@ layout (location = 0) in vec3 aPos;
 attribute vec3 aPos;
 #endif
 
+#if __VERSION__ >= 330
+out vec3 localPos;
+#else
+varying vec3 localPos;
+#endif
+
 uniform mat4 model;
 #if GAMECOE_HAS_UBO
 layout(std140) uniform CameraMatrices
@@ -18,5 +24,6 @@ uniform mat4 projection;
 
 void main()
 {
+    localPos = aPos;
     gl_Position = projection * view * model * vec4(aPos, 1.0);
 }

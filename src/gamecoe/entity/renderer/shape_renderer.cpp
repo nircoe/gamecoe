@@ -7,6 +7,7 @@
 #include <gamecoe/utils/consts.hpp>
 #include <cassert>
 #include <optional>
+#include <utility>
 #include <glm/glm.hpp>
 
 #if GAMECOE_USE_OPENGL
@@ -22,13 +23,27 @@ namespace
         case gamecoe::Shape::Triangle:
             return gamecoe::VertexArray::triangle();
         case gamecoe::Shape::Rectangle:
+        case gamecoe::Shape::Circle:
             return gamecoe::VertexArray::rectangle();
         case gamecoe::Shape::Box:
-            return gamecoe::VertexArray::box();
-        
+        case gamecoe::Shape::Sphere:
         default:
-            assert(false && "Need to add support for a new Shape");
-            break;
+            return gamecoe::VertexArray::box();
+        }
+    }
+
+    std::pair<std::string, std::string> shapeToShaderPaths(gamecoe::Shape shape)
+    {
+        switch (shape)
+        {
+        case gamecoe::Shape::Triangle:
+        case gamecoe::Shape::Rectangle:
+        case gamecoe::Shape::Box:
+            return { "gamecoe/shaders/shape_renderer.vert", "gamecoe/shaders/shape_renderer.frag" };
+        case gamecoe::Shape::Circle:
+        case gamecoe::Shape::Sphere:
+        default:
+            return { "gamecoe/shaders/shape_renderer_sdf.vert", "gamecoe/shaders/shape_renderer_sdf.frag" };
         }
     }
 }
@@ -36,10 +51,23 @@ namespace
 namespace gamecoe
 {
     std::atomic<std::uint32_t> ShapeRenderer::s_counter = 0;
-    std::optional<Shader> ShapeRenderer::s_shader = std::nullopt;
-#if GAMECOE_HAS_UBO
-    std::uint32_t ShapeRenderer::s_cameraUniformBlockIndex = 0;
-#endif
+    std::optional<Shader> ShapeRenderer::s_shapeShader = std::nullopt;
+    std::optional<Shader> ShapeRenderer::s_sdfShader = std::nullopt;
+
+    std::optional<gamecoe::Shader> &ShapeRenderer::shapeToShader(gamecoe::Shape shape) const
+    {
+        switch (shape)
+        {
+        case Shape::Triangle:
+        case Shape::Rectangle:
+        case Shape::Box:
+            return s_shapeShader;
+        case Shape::Circle:
+        case Shape::Sphere:
+        default:
+            return s_sdfShader;
+        }
+    }
 
     ShapeRenderer::ShapeRenderer(GameObject &owner, Shape shape, const Color &color, std::int8_t layer) : 
         Renderer(owner, layer), 
@@ -55,7 +83,8 @@ namespace gamecoe
         --s_counter;
         if (s_counter == 0)
         {
-            s_shader.reset();
+            s_shapeShader.reset();
+            s_sdfShader.reset();
             VertexArray::destroyShapeVAs();
         }
     }
@@ -64,27 +93,26 @@ namespace gamecoe
     {
         if (!m_active) return;
         
-        if (!s_shader)
+        std::optional<Shader> &shader = shapeToShader(m_shape);
+        if (!shader)
         {
-            s_shader.emplace(
-                resolvePath("gamecoe/shaders/shape_renderer.vert"), 
-                resolvePath("gamecoe/shaders/shape_renderer.frag")
-            );
+            auto shaderPaths = shapeToShaderPaths(m_shape);
+            shader.emplace(resolvePath(shaderPaths.first), resolvePath(shaderPaths.second));
 #if GAMECOE_HAS_UBO
-            s_cameraUniformBlockIndex = glGetUniformBlockIndex(s_shader->id(), "CameraMatrices");
-            glUniformBlockBinding(s_shader->id(), s_cameraUniformBlockIndex, constcoe::CAMERA_UBO_BINDING_POINT);
+            std::uint32_t cameraUniformBlockIndex = glGetUniformBlockIndex(shader->id(), "CameraMatrices");
+            glUniformBlockBinding(shader->id(), cameraUniformBlockIndex, constcoe::CAMERA_UBO_BINDING_POINT);
 #endif
         }
 
-        s_shader->use();
+        shader->use();
         
 #if !GAMECOE_HAS_UBO
         auto &camera = owner().game().mainCamera();
-        s_shader->set("view", camera.viewMatrix());
-        s_shader->set("projection", camera.projectionMatrix());
+        shader->set("view", camera.viewMatrix());
+        shader->set("projection", camera.projectionMatrix());
 #endif
-        s_shader->set("model", owner().transform().modelMatrix());
-        s_shader->set("color", m_color.normalized());
+        shader->set("model", owner().transform().modelMatrix());
+        shader->set("color", m_color.normalized());
 
         m_vertexArray.bind();
 
@@ -116,5 +144,15 @@ namespace gamecoe
     std::unique_ptr<ShapeRenderer> ShapeRenderer::box(GameObject &owner, const Color &color, std::int8_t layer)
     {
         return std::unique_ptr<ShapeRenderer>(new ShapeRenderer(owner, Shape::Box, color, layer));
+    }
+
+    std::unique_ptr<ShapeRenderer> ShapeRenderer::circle(GameObject &owner, const Color &color, std::int8_t layer)
+    {
+        return std::unique_ptr<ShapeRenderer>(new ShapeRenderer(owner, Shape::Circle, color, layer));
+    }
+
+    std::unique_ptr<ShapeRenderer> ShapeRenderer::sphere(GameObject &owner, const Color &color, std::int8_t layer)
+    {
+        return std::unique_ptr<ShapeRenderer>(new ShapeRenderer(owner, Shape::Sphere, color, layer));
     }
 } // namespace gamecoe
