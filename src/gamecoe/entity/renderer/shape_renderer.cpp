@@ -116,8 +116,15 @@ namespace gamecoe
         shader->set("projection", camera.projectionMatrix());
         shader->set("cameraPosition", camera.owner().transform().position());
 #endif
-        shader->set("model", owner().transform().modelMatrix());
+        auto &transform = owner().transform();
+        shader->set("model", transform.modelMatrix());
         shader->set("color", m_color.normalized());
+        if(m_shape == Shape::Sphere)
+        {
+            shader->set("sphereCenter", transform.position());
+            shader->set("sphereScale", transform.scale());
+            shader->set("sphereRotation", glm::mat3(transform.rotationMatrix())); // how should I handle it mat3-mat4? maybe change to mat4 in the frag shader?
+        }
 
         m_vertexArray.bind();
 

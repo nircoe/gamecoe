@@ -1,9 +1,9 @@
 #if __VERSION__ >= 330
 layout (location = 0) in vec3 aPos;
-out vec3 localPos;
+out vec3 worldPos;
 #else
 attribute vec3 aPos;
-varying vec3 localPos;
+varying vec3 worldPos;
 #endif
 
 uniform mat4 model;
@@ -22,6 +22,7 @@ uniform vec3 cameraPosition;
 
 void main()
 {
-    localPos = aPos;
-    gl_Position = projection * view * model * vec4(aPos, 1.0);
+    vec4 wPos = model * vec4(aPos, 1.0);
+    worldPos = vec3(wPos);
+    gl_Position = projection * view * wPos;
 }

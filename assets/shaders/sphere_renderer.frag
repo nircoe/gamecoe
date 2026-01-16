@@ -1,10 +1,11 @@
 #if __VERSION__ >= 330
-in vec3 localPos;
+in vec3 worldPos;
 out vec4 FragColor;
 #else
-varying vec3 localPos;
+varying vec3 worldPos;
 #endif
 
+uniform mat4 model;
 uniform vec4 color;
 #if GAMECOE_HAS_UBO
 layout(std140) uniform CameraMatrices
@@ -18,43 +19,55 @@ uniform mat4 view;
 uniform mat4 projection;
 uniform vec3 cameraPosition;
 #endif
+uniform vec3 sphereCenter;
+uniform vec3 sphereScale;
+uniform mat3 sphereRotation;
 
-float sphereAlpha(vec3 rayOrigin, vec3 lPos)
+vec3 sphereIntersection(vec3 rayOrigin, vec3 wPos)
 {
-    // Sphere center at (0, 0, 0)
     const float RADIUS = 1.0;
-    const float MULTIPLIER = 1.75; // Box is -0.5 to 0.5, scale to radius 1.0
+    const float BOX_RADIUS = 0.5;
 
-    vec3 samplePos = lPos * MULTIPLIER;
-    vec3 rayDirection = vec3(normalize(samplePos - rayOrigin));
+    mat3 sphereRotationT = transpose(sphereRotation);
+
+    vec3 effectiveScale = sphereScale * BOX_RADIUS;
+    vec3 rayDirection = vec3(sphereRotationT * normalize(wPos - rayOrigin)) / effectiveScale;
+    vec3 sphereCenterToRayOrigin = (sphereRotationT * vec3(rayOrigin - sphereCenter)) / effectiveScale;
 
     float a = dot(rayDirection, rayDirection);
-    float b = 2.0 * dot(rayOrigin, rayDirection);
-    float c = dot(rayOrigin, rayOrigin) - (RADIUS * RADIUS);
+    float b = 2.0 * dot(sphereCenterToRayOrigin, rayDirection);
+    float c = dot(sphereCenterToRayOrigin, sphereCenterToRayOrigin) - (RADIUS * RADIUS);
 
     float discriminant = b * b - 4.0 * a * c;
 
-    return (discriminant >= 0.0) ? 1.0 : 0.0;
-    /*
     if (discriminant < 0.0)
     {
-        return 0.0;
+        return vec3(0.0);
     }
 
     float t1 = (-b + sqrt(discriminant)) / (2.0 * a);
     float t2 = (-b - sqrt(discriminant)) / (2.0 * a);
     float t = t2 > 0.0 ? t2 : t1;
-    vec3 intersection = rayOrigin + vec3(t * rayDirection);
-    */
+    vec3 intersection = rayOrigin + (sphereRotation * (vec3(t * rayDirection) * effectiveScale));
+
+    return intersection;
 }
 
 void main()
 {
-    float alpha = sphereAlpha(cameraPosition, localPos);
+    vec3 spherePoint = sphereIntersection(cameraPosition, worldPos);
+    if (spherePoint == vec3(0.0))
+    {
+        discard;
+    }
+
+    vec4 shadingPos = projection * view * model * vec4(spherePoint, 1.0);
+    shadingPos /= shadingPos.w;
+    gl_FragDepth = shadingPos.z; // need version gating?
 
 #if __VERSION__ >= 330
-    FragColor = vec4(color.rgb, color.a * alpha);
+    FragColor = color;
 #else
-    gl_FragColor = vec4(color.rgb, color.a * alpha);
+    gl_FragColor = color;
 #endif
 }
