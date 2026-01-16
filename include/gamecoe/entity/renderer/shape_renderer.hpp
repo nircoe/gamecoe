@@ -25,7 +25,8 @@ namespace gamecoe
     {
         static std::atomic<std::uint32_t> s_counter;
         static std::optional<Shader> s_shapeShader;
-        static std::optional<Shader> s_sdfShader;
+        static std::optional<Shader> s_circleShader;
+        static std::optional<Shader> s_sphereShader;
         
         Shape m_shape;
         Color m_color;

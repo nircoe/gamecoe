@@ -37,9 +37,11 @@ namespace gamecoe
         {
             glm::mat4 m_projection;
             glm::mat4 m_view;
+            glm::vec3 m_cameraPosition;
         } data;
         data.m_projection = projectionMatrix();
         data.m_view = viewMatrix();
+        data.m_cameraPosition = m_owner.transform().position();
 
         m_uniformBuffer->uploadData(&data, sizeof(data));
 #endif

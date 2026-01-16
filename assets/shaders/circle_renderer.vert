@@ -12,10 +12,12 @@ layout(std140) uniform CameraMatrices
 {
     mat4 projection;
     mat4 view;
+    vec3 cameraPosition;
 };
 #else
 uniform mat4 view;
 uniform mat4 projection;
+uniform vec3 cameraPosition;
 #endif
 
 void main()

@@ -36,14 +36,15 @@ namespace
     {
         switch (shape)
         {
+        case gamecoe::Shape::Circle:
+            return { "gamecoe/shaders/circle_renderer.vert", "gamecoe/shaders/circle_renderer.frag" };
+        case gamecoe::Shape::Sphere:
+            return { "gamecoe/shaders/sphere_renderer.vert", "gamecoe/shaders/sphere_renderer.frag" };
         case gamecoe::Shape::Triangle:
         case gamecoe::Shape::Rectangle:
         case gamecoe::Shape::Box:
-            return { "gamecoe/shaders/shape_renderer.vert", "gamecoe/shaders/shape_renderer.frag" };
-        case gamecoe::Shape::Circle:
-        case gamecoe::Shape::Sphere:
         default:
-            return { "gamecoe/shaders/shape_renderer_sdf.vert", "gamecoe/shaders/shape_renderer_sdf.frag" };
+            return { "gamecoe/shaders/shape_renderer.vert", "gamecoe/shaders/shape_renderer.frag" };
         }
     }
 }
@@ -52,20 +53,22 @@ namespace gamecoe
 {
     std::atomic<std::uint32_t> ShapeRenderer::s_counter = 0;
     std::optional<Shader> ShapeRenderer::s_shapeShader = std::nullopt;
-    std::optional<Shader> ShapeRenderer::s_sdfShader = std::nullopt;
+    std::optional<Shader> ShapeRenderer::s_circleShader = std::nullopt;
+    std::optional<Shader> ShapeRenderer::s_sphereShader = std::nullopt;
 
     std::optional<gamecoe::Shader> &ShapeRenderer::shapeToShader(gamecoe::Shape shape) const
     {
         switch (shape)
         {
+        case Shape::Circle:
+            return s_circleShader;
+        case Shape::Sphere:
+            return s_sphereShader;
         case Shape::Triangle:
         case Shape::Rectangle:
         case Shape::Box:
-            return s_shapeShader;
-        case Shape::Circle:
-        case Shape::Sphere:
         default:
-            return s_sdfShader;
+            return s_shapeShader;
         }
     }
 
@@ -84,7 +87,8 @@ namespace gamecoe
         if (s_counter == 0)
         {
             s_shapeShader.reset();
-            s_sdfShader.reset();
+            s_circleShader.reset();
+            s_sphereShader.reset();
             VertexArray::destroyShapeVAs();
         }
     }
@@ -110,11 +114,10 @@ namespace gamecoe
         auto &camera = owner().game().mainCamera();
         shader->set("view", camera.viewMatrix());
         shader->set("projection", camera.projectionMatrix());
+        shader->set("cameraPosition", camera.owner().transform().position());
 #endif
         shader->set("model", owner().transform().modelMatrix());
         shader->set("color", m_color.normalized());
-        if (m_shape == Shape::Circle || m_shape == Shape::Sphere)
-            shader->set("shapeType", m_shape == Shape::Circle ? 0 : 1);
 
         m_vertexArray.bind();
 
