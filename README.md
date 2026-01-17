@@ -166,7 +166,6 @@ gencoe component Monster -n Enemies
 ## Roadmap
 
 - **Collider**: Collider Component for GameObjects collision detection and handling
-- **More Basic Shapes**: Circle, Sphere and more
 - **Batch Rendering**: Introduce batch rendering system for better performance
 - **SpriteRenderer**: New Renderer Component for Sprite rendering
 - **datacoe**: Integrate [datacoe](https://github.com/nircoe/datacoe) for save/load data management system with optional encryption
@@ -175,8 +174,7 @@ gencoe component Monster -n Enemies
 - **Text Rendering**: Font loading, text rendering
 - **uicoe**: Built-in factory methods for basic UI GameObjects such as Button, Textbox, and more
 - **poolcoe**: Built-in Object Pool system
-- **GameObject parent-child tracking**: Two-way tracking
-- **Better Documentation and Logging**
 - **mathcoe**: In-house math library, to replace glm
+- **Better Documentation and Logging**
 
 ## MIT License - See LICENSE for details
