@@ -38,6 +38,7 @@ namespace gamecoe
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 #endif
+        glfwWindowHint(GLFW_SAMPLES, 4); // which opengl version? work only on opengl?
 
         GLFWwindow *current = glfwGetCurrentContext();
         GLFWwindow *window = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, current);

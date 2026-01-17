@@ -16,21 +16,24 @@ namespace gamecoe
         Triangle,
         Rectangle,
         Box,
+        Circle,
+        Sphere,
         // TODO: Support more primitive shapes
     };
 
     class ShapeRenderer : public Renderer
     {
         static std::atomic<std::uint32_t> s_counter;
-        static std::optional<Shader> s_shader;
-#if GAMECOE_HAS_UBO
-        static std::uint32_t s_cameraUniformBlockIndex;
-#endif
+        static std::optional<Shader> s_shapeShader;
+        static std::optional<Shader> s_circleShader;
+        static std::optional<Shader> s_sphereShader;
         
         Shape m_shape;
         Color m_color;
         const VertexArray &m_vertexArray;
     
+        std::optional<gamecoe::Shader> &shapeToShader(gamecoe::Shape shape) const;
+
         ShapeRenderer(GameObject &owner, Shape shape, const Color &color, std::int8_t layer = 0);
 
     public:
@@ -55,6 +58,8 @@ namespace gamecoe
         static std::unique_ptr<ShapeRenderer> triangle(GameObject &owner, const Color &color, std::int8_t layer = 0);
         static std::unique_ptr<ShapeRenderer> rectangle(GameObject &owner, const Color &color, std::int8_t layer = 0);
         static std::unique_ptr<ShapeRenderer> box(GameObject &owner, const Color &color, std::int8_t layer = 0);
+        static std::unique_ptr<ShapeRenderer> circle(GameObject &owner, const Color &color, std::int8_t layer = 0);
+        static std::unique_ptr<ShapeRenderer> sphere(GameObject &owner, const Color &color, std::int8_t layer = 0);
     };
 
 } // namespace gamecoe

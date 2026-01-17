@@ -59,6 +59,11 @@ namespace gamecoe
 #if GAMECOE_USE_OPENGL
         if(!gladLoadGL(glfwGetProcAddress))
             detail::throwError("Game::Game(): Failed to initialize glad");
+
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_MULTISAMPLE);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 #endif
 
         m_internalScene.emplace(*this, "gamecoe::Internal");

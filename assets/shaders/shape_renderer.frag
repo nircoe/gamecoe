@@ -1,8 +1,8 @@
-uniform vec4 color;
-
 #if __VERSION__ >= 330
 out vec4 FragColor;
 #endif
+
+uniform vec4 color;
 
 void main()
 {
