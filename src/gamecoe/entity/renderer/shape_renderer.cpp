@@ -120,20 +120,16 @@ namespace gamecoe
         shader->set("model", model);
         shader->set("color", m_color.normalized());
         if(m_shape == Shape::Sphere)
-        {
-            shader->set("inverseModel", glm::inverse(model));
-            glDisable(GL_CULL_FACE);
-        }
+            shader->set("inverseModel", glm::inverse(model)); // TODO: If GL_CULL_FACE is enabled, need to glDisable() it
 
         m_vertexArray.bind();
 
+#if GAMECOE_USE_OPENGL
         if (m_vertexArray.hasIndices())
             glDrawElements(GL_TRIANGLES, m_vertexArray.indexCount(), GL_UNSIGNED_INT, (void*)0);
         else
             glDrawArrays(GL_TRIANGLES, 0, m_vertexArray.vertexCount());
-
-        if (m_shape == Shape::Sphere)
-            glEnable(GL_CULL_FACE);
+#endif
     }
 
     Shape ShapeRenderer::shape() const { return m_shape; }

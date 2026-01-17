@@ -8,6 +8,7 @@ varying vec3 localCamPos;
 #endif
 
 uniform mat4 model;
+uniform mat4 inverseModel;
 uniform vec4 color;
 #if GAMECOE_HAS_UBO
 layout(std140) uniform CameraMatrices
@@ -47,12 +48,30 @@ vec4 sphereHit(out vec3 normal)
     vec4 worldHit = model * vec4(localHit, 1.0);
 
     vec3 localNormal = normalize(localHit);
-    if (t1 <= 0.0) localNormal = -localNormal;
+    if (t1 <= 0.0) localNormal = -localNormal; // Inside the sphere, flip normal toward camera
 
-    vec3 worldNormal = normalize(mat3(model) * localNormal);
+    mat3 normalMatrix = transpose(mat3(inverseModel));
+    vec3 worldNormal = normalize(normalMatrix * localNormal);
     normal = worldNormal;
 
     return worldHit;
+}
+
+vec3 calculateShadedColor(vec4 originalColor, vec3 normal, vec4 spherePoint)
+{
+    vec3 lightDirection = normalize(vec3(1.0, 2.0, 3.0));
+    vec3 viewDirection = normalize(cameraPosition - spherePoint.xyz);
+
+    const float AMBIENT = 0.2;
+    float diffuse = max(dot(normal, lightDirection), AMBIENT);
+
+    vec3 reflectDirection = reflect(-lightDirection, normal);
+    float specStrength = pow(max(dot(viewDirection, reflectDirection), 0.0), 32.0);
+    vec3 specularColor = vec3(1.0) * specStrength * 0.5;
+
+    vec3 color = (originalColor.rgb * diffuse) + specularColor;
+    
+    return color;
 }
 
 void main()
@@ -61,13 +80,17 @@ void main()
     vec4 spherePoint = sphereHit(normal);
 
     vec4 clipPos = projection * view * spherePoint;
-    gl_FragDepth = (clipPos.z / clipPos.w) * 0.5 + 0.5; // how should I version gate this?
+#if __VERSION__ >= 330
+    gl_FragDepth = (clipPos.z / clipPos.w) * 0.5 + 0.5;
+#elif defined(GL_EXT_frag_depth)
+    gl_FragDepthEXT = (clipPos.z / clipPos.w) * 0.5 + 0.5;
+#endif
 
-    float diffuse = max(dot(normal, normalize(vec3(1.0, 2.0, 3.0))), 0.55);
+    vec3 finalColor = calculateShadedColor(color, normal, spherePoint);
 
 #if __VERSION__ >= 330
-    FragColor = vec4(color.rgb * diffuse, color.a);
+    FragColor = vec4(finalColor, color.a);
 #else
-    gl_FragColor = vec4(color.rgb * diffuse, color.a);
+    gl_FragColor = vec4(finalColor, color.a);
 #endif
 }

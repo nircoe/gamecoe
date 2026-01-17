@@ -22,7 +22,7 @@ uniform vec3 cameraPosition;
 
 void main()
 {
-    const float SCALE_MULTIPLIER = 2.1; // Quad is -0.5 to 0.5, scale to radius 1.0
+    const float SCALE_MULTIPLIER = 2.05; // Quad is -0.5 to 0.5, scale to radius 1.0, I'm using 2.05 for the anti-aliasing
 
     vec3 scaledPos = aPos * SCALE_MULTIPLIER;
     localPos = scaledPos;
