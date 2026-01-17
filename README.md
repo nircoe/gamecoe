@@ -14,7 +14,7 @@
     - **DSA (Direct State Access)** for OpenGL 4.5+ - Stateless buffer operations (`#if GAMECOE_HAS_DSA`)
     - **UBO (Uniform Buffer Object)** for OpenGL 3.1+ - Efficient uniform data sharing (`#if GAMECOE_HAS_UBO`)
     - **Shader Preprocessing**: gamecoe auto-injects `#version` and `#define` macros into your shaders
-- **Rendering**: Basic Shape rendering support (only triangle, rectangle and box at the moment)
+- **Rendering**: Basic Shape rendering support (only triangle, rectangle, box, circle and sphere at the moment)
 - **Multi Active Scene Support**: Want to build a bigger world with more than 1 active Scene at a time? 
                                   Want to make the pause menu a separated Scene so your code will be more organized? 
                                   gamecoe supports it!
