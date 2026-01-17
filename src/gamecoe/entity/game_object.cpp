@@ -1,14 +1,39 @@
 #include <gamecoe/entity/game_object.hpp>
 #include <gamecoe/core/scene.hpp>
+#include <cassert>
+#include <algorithm>
 
 namespace gamecoe
 {
     std::atomic<std::uint32_t> GameObject::s_currentId = 0;
 
+    void GameObject::insertChild(std::reference_wrapper<GameObject> child)
+    {
+        assert(std::find_if(m_children.begin(), m_children.end(),
+                    [&](auto& c) { return c.get().id() == child.get().id(); }) == m_children.end()
+                    && "GameObject::insertChild(): Child already exists!");
+        m_children.push_back(child);
+    }
+
+    void GameObject::removeChild(std::reference_wrapper<GameObject> child)
+    {
+        for(auto it = m_children.begin(); it != m_children.end();)
+        {
+            if (it->get().id() == child.get().id())
+            {
+                m_children.erase(it);
+                return;
+            }
+        }
+        logcoe::debug("GameObject::removeChild(): The GameObject \"" + child.get().name() + 
+                      "\" is not a child of the GameObject \"" + m_name + "\"");
+    }
+
     GameObject::GameObject(Scene &scene, const std::string &name, std::optional<std::reference_wrapper<GameObject>> parent) : 
         m_id(++s_currentId), 
         m_name(name), 
-        m_parent(parent), 
+        m_parent(parent),
+        m_children(),
         m_transform(*this), 
         m_components(), 
         m_initialized(false), 
@@ -17,6 +42,23 @@ namespace gamecoe
     {
         if (m_name == "")
             m_name = "GameObject" + std::to_string(m_id);
+        if (parent)
+            parent->get().insertChild(std::ref(*this));
+    }
+
+    GameObject::~GameObject()
+    {
+        if (m_parent)
+            m_parent->get().removeChild(std::ref(*this));
+
+        for (auto &child : m_children)
+            child.get().m_parent.reset();
+
+        m_parent.reset();
+        m_children.clear();
+        m_components.clear();
+        m_renderer.reset();
+        m_initialized = m_active = false;
     }
 
     void GameObject::initialize()
@@ -167,7 +209,21 @@ namespace gamecoe
 
     void GameObject::setParent(std::optional<std::reference_wrapper<GameObject>> parent)
     {
+        if (m_parent)
+            clearParent();
+
         m_parent = parent;
+
+        if(m_parent)
+            m_parent->get().insertChild(std::ref(*this));
+    }
+
+    void GameObject::clearParent()
+    {
+        if (!m_parent) return;
+
+        m_parent->get().removeChild(std::ref(*this));
+        m_parent.reset();
     }
 
     std::optional<std::reference_wrapper<GameObject>> GameObject::parent()
@@ -185,6 +241,16 @@ namespace gamecoe
     bool GameObject::hasParent() const
     {
         return m_parent.has_value();
+    }
+
+    const std::vector<std::reference_wrapper<GameObject>> &GameObject::children() const
+    {
+        return m_children;
+    }
+
+    bool GameObject::hasChildren() const
+    {
+        return !m_children.empty();
     }
 
     bool GameObject::active() const
