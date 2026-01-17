@@ -22,7 +22,10 @@ uniform vec3 cameraPosition;
 
 void main()
 {
-    vec4 wPos = model * vec4(aPos, 1.0);
+    const float SCALE_MULTIPLIER = 2; // Quad is -0.5 to 0.5, scale to radius 1.0
+
+    vec3 scaledPos = aPos * SCALE_MULTIPLIER;
+    vec4 wPos = model * vec4(scaledPos, 1.0);
     worldPos = vec3(wPos);
     gl_Position = projection * view * wPos;
 }

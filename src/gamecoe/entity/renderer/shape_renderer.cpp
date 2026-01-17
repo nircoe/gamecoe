@@ -123,7 +123,8 @@ namespace gamecoe
         {
             shader->set("sphereCenter", transform.position());
             shader->set("sphereScale", transform.scale());
-            shader->set("sphereRotation", glm::mat3(transform.rotationMatrix())); // how should I handle it mat3-mat4? maybe change to mat4 in the frag shader?
+            shader->set("sphereRotation", glm::mat3(transform.rotationMatrix()));
+            glDisable(GL_CULL_FACE);
         }
 
         m_vertexArray.bind();
@@ -132,6 +133,9 @@ namespace gamecoe
             glDrawElements(GL_TRIANGLES, m_vertexArray.indexCount(), GL_UNSIGNED_INT, (void*)0);
         else
             glDrawArrays(GL_TRIANGLES, 0, m_vertexArray.vertexCount());
+
+        if (m_shape == Shape::Sphere)
+            glEnable(GL_CULL_FACE);
     }
 
     Shape ShapeRenderer::shape() const { return m_shape; }
