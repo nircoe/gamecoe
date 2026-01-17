@@ -1,12 +1,15 @@
 #if __VERSION__ >= 330
 layout (location = 0) in vec3 aPos;
-out vec3 worldPos;
+out vec3 localPos;
+out vec3 localCamPos;
 #else
 attribute vec3 aPos;
-varying vec3 worldPos;
+varying vec3 localPos;
+varying vec3 localCamPos;
 #endif
 
 uniform mat4 model;
+uniform mat4 inverseModel;
 #if GAMECOE_HAS_UBO
 layout(std140) uniform CameraMatrices
 {
@@ -22,10 +25,7 @@ uniform vec3 cameraPosition;
 
 void main()
 {
-    const float SCALE_MULTIPLIER = 2; // Quad is -0.5 to 0.5, scale to radius 1.0
-
-    vec3 scaledPos = aPos * SCALE_MULTIPLIER;
-    vec4 wPos = model * vec4(scaledPos, 1.0);
-    worldPos = vec3(wPos);
-    gl_Position = projection * view * wPos;
+    localPos = aPos * 2.0; // Box is -0.5 to 0.5, scale to radius 1.0
+    localCamPos = vec3(inverseModel * vec4(cameraPosition, 1.0));
+    gl_Position = projection * view * model * vec4(localPos, 1.0);
 }

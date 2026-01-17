@@ -116,14 +116,12 @@ namespace gamecoe
         shader->set("projection", camera.projectionMatrix());
         shader->set("cameraPosition", camera.owner().transform().position());
 #endif
-        auto &transform = owner().transform();
-        shader->set("model", transform.modelMatrix());
+        auto model = owner().transform().modelMatrix();
+        shader->set("model", model);
         shader->set("color", m_color.normalized());
         if(m_shape == Shape::Sphere)
         {
-            shader->set("sphereCenter", transform.position());
-            shader->set("sphereScale", transform.scale());
-            shader->set("sphereRotation", glm::mat3(transform.rotationMatrix()));
+            shader->set("inverseModel", glm::inverse(model));
             glDisable(GL_CULL_FACE);
         }
 

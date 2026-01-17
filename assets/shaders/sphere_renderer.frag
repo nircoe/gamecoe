@@ -1,8 +1,10 @@
 #if __VERSION__ >= 330
-in vec3 worldPos;
+in vec3 localPos;
+in vec3 localCamPos;
 out vec4 FragColor;
 #else
-varying vec3 worldPos;
+varying vec3 localPos;
+varying vec3 localCamPos;
 #endif
 
 uniform mat4 model;
@@ -19,57 +21,49 @@ uniform mat4 view;
 uniform mat4 projection;
 uniform vec3 cameraPosition;
 #endif
-uniform vec3 sphereCenter;
-uniform vec3 sphereScale;
-uniform mat3 sphereRotation;
 
-vec3 sphereIntersection(vec3 rayOrigin, vec3 wPos, out vec3 normal)
+vec4 sphereHit(out vec3 normal)
 {
-    const float RADIUS = 1.0;
+    vec3 rayDirection = normalize(localPos - localCamPos);
 
-    mat3 sphereRotationT = transpose(sphereRotation);
+    // float a = dot(rayDirection, rayDirection) = 1.0;
+    float b = 2.0 * dot(localCamPos, rayDirection);
+    float c = dot(localCamPos, localCamPos) - 1.0;
 
-    vec3 rayDirection = vec3(sphereRotationT * normalize(wPos - rayOrigin)) / sphereScale;
-    vec3 sphereCenterToRayOrigin = (sphereRotationT * vec3(rayOrigin - sphereCenter)) / sphereScale;
+    float discriminant = b * b - 4.0 * c;
 
-    float a = dot(rayDirection, rayDirection);
-    float b = 2.0 * dot(sphereCenterToRayOrigin, rayDirection);
-    float c = dot(sphereCenterToRayOrigin, sphereCenterToRayOrigin) - (RADIUS * RADIUS);
-
-    float discriminant = b * b - 4.0 * a * c;
-
-    if (discriminant < 0.0) return vec3(0.0);
+    if (discriminant < 0.0) discard;
 
     float sqrtDisc = sqrt(discriminant);
-    float t1 = (-b - sqrtDisc) / (2.0 * a);
-    float t2 = (-b + sqrtDisc) / (2.0 * a);
+    float t1 = (-b - sqrtDisc) / 2.0;
+    float t2 = (-b + sqrtDisc) / 2.0;
 
-    if (t1 < 0.0 && t2 < 0.0) return vec3(0.0);
-    
     float t;
     if (t1 > 0.0) t = t1;
     else if (t2 > 0.0) t = t2;
-    else return vec3(0.0);
+    else discard;
 
-    vec3 intersection = rayOrigin + (sphereRotation * (t * rayDirection * sphereScale));
-    vec3 localIntersection = (sphereRotationT * (intersection - sphereCenter)) / sphereScale;
-    normal = sphereRotation * localIntersection;
-    
-    if (t1 <= 0.0) normal = -normal;
+    vec3 localHit = localCamPos + t * rayDirection;
+    vec4 worldHit = model * vec4(localHit, 1.0);
 
-    return intersection;
+    vec3 localNormal = normalize(localHit);
+    if (t1 <= 0.0) localNormal = -localNormal;
+
+    vec3 worldNormal = normalize(mat3(model) * localNormal);
+    normal = worldNormal;
+
+    return worldHit;
 }
 
 void main()
 {
     vec3 normal = vec3(0.0);
-    vec3 spherePoint = sphereIntersection(cameraPosition, worldPos, normal);
-    if (spherePoint == vec3(0.0)) discard;
+    vec4 spherePoint = sphereHit(normal);
 
-    vec4 shadingPos = projection * view * vec4(spherePoint, 1.0);
-    gl_FragDepth = (shadingPos.z / shadingPos.w) * 0.5 + 0.5;
+    vec4 clipPos = projection * view * spherePoint;
+    gl_FragDepth = (clipPos.z / clipPos.w) * 0.5 + 0.5; // how should I version gate this?
 
-    float diffuse = max(dot(normalize(vec3(1.0, 2.0, 3.0)), normal), 0.55);
+    float diffuse = max(dot(normal, normalize(vec3(1.0, 2.0, 3.0))), 0.55);
 
 #if __VERSION__ >= 330
     FragColor = vec4(color.rgb * diffuse, color.a);
