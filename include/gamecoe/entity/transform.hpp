@@ -13,6 +13,12 @@ namespace gamecoe
         glm::quat m_rotation;
         glm::vec3 m_scale;
 
+        mutable glm::mat4 m_cachedModelMatrix{1.0f};
+        mutable glm::mat4 m_cachedInverseModelMatrix{1.0f};
+        mutable bool m_modelChanged = true;
+
+        void invalidateCachedModel() const;
+
         static constexpr glm::mat4 s_identityMatrix{1.0f};
         static constexpr glm::vec3 s_forwardVector{0.0f, 0.0f, -1.0f};
         static constexpr glm::vec3 s_rightVector{1.0f, 0.0f, 0.0f};
@@ -37,36 +43,77 @@ namespace gamecoe
         // other related components will update the state of Transform directly
         virtual void update() override { }
 
-        // Gets a float vector 3 for the position in the x,y,z axis
+        // Gets the local space position
         const glm::vec3 &position() const;
-        // Gets a float quaternion for the rotation
+        // Gets the local space quaternion rotation
         const glm::quat &rotation() const;
-        // Gets a float vector 3 for the rotation Euler angles
+        // Gets the local space euler angles rotation
         glm::vec3 eulerRotation() const;
-        // Gets a float vector 3 for the scale multiplier in the x,y,z axis
+        // Gets the local space scale
         const glm::vec3 &scale() const;
 
-        glm::mat4 translationMatrix() const;
-        glm::mat4 rotationMatrix() const;
-        glm::mat4 scaleMatrix() const;
-        glm::mat4 localMatrix() const;
-        glm::mat4 modelMatrix() const;
+        // Gets the world space position
+        glm::vec3 worldPosition() const;
+        // Gets the world space quaternion rotation
+        glm::quat worldRotation() const;
+        // Gets the world space euler angles rotation
+        glm::vec3 worldEulerRotation() const;
+        // Gets the world space scale
+        glm::vec3 worldScale() const;
 
+        // Returns the local translation matrix
+        glm::mat4 translationMatrix() const;
+        // Returns the local rotation matrix
+        glm::mat4 rotationMatrix() const;
+        // Returns the local scale matrix
+        glm::mat4 scaleMatrix() const;
+        // Returns the local transformation matrix
+        glm::mat4 localMatrix() const;
+        // Returns world transformation matrix
+        const glm::mat4 &modelMatrix() const;
+        // Returns the inversed world transformation matrix
+        const glm::mat4 &inverseModelMatrix() const;
+
+        // Sets the local space position
         void setPosition(const glm::vec3 &position);
+        // Sets the local space quaternion rotation
         void setRotation(const glm::quat &rotation);
+        // Sets the local space euler angles rotation
         void setRotation(const glm::vec3 &eulerAngles);
+        // Sets the local space scale
         void setScale(const glm::vec3 &scale);
 
+        // Sets the world space position
+        void setWorldPosition(const glm::vec3 &position);
+        // Sets the world space quaternion rotation
+        void setWorldRotation(const glm::quat &rotation);
+        // Sets the world space euler angles rotation
+        void setWorldRotation(const glm::vec3 &eulerAngles);
+        // Sets the world space scale
+        void setWorldScale(const glm::vec3 &scale);
+
+        // Translates in local space
         void translate(const glm::vec3 &offset);
-        // Rotates the Transform in local space
+        // Rotates in local space
         void rotate(const glm::vec3 &eulerOffset);
-        // Rotates the Transform in world space
+        // Rotates around axis in local space
         void rotateAround(const glm::vec3 &axis, float angle);
 
+        // Returns the local forward direction vector
         glm::vec3 forward() const;
+        // Returns the local right direction vector
         glm::vec3 right() const;
+        // Returns the local up direction vector
         glm::vec3 up() const;
 
+        // Returns the world forward direction vector
+        glm::vec3 worldForward() const;
+        // Returns the world right direction vector  
+        glm::vec3 worldRight() const;
+        // Returns the world up direction vector
+        glm::vec3 worldUp() const;
+
+        // Rotates Transform to look at target (world space coordinates)
         void lookAt(const glm::vec3 &target, const glm::vec3 &up = glm::vec3(0.0f, 1.0f, 0.0f));
     };
 } // namespace gamecoe
