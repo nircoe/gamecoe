@@ -6,7 +6,7 @@
 
 namespace gamecoe
 {
-    Renderer::Renderer(GameObject &owner, std::int8_t layer) : Component<Renderer>(owner), m_layer(layer) 
+    Renderer::Renderer(GameObject &owner, std::int8_t layer) : Component<Renderer>(owner), m_layer(layer), m_visible(true)
     { 
         m_owner.scene().addRenderer(m_layer, &m_owner);
     }
@@ -15,6 +15,11 @@ namespace gamecoe
     {
         try { m_owner.scene().removeRenderer(m_layer ,m_owner.id()); }
         catch (const std::exception &e) { detail::throwError("Renderer::~Renderer(): " + std::string(e.what())); }
+    }
+
+    void Renderer::render() const
+    {
+        if (visible()) renderImpl();
     }
 
     void Renderer::setLayer(std::int8_t layer) 
