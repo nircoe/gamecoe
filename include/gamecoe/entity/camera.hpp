@@ -15,19 +15,44 @@ namespace gamecoe
 {
     class Camera : public Component<Camera>
     {
+    public:
+        struct Plane
+        {
+            // The normal vector to the plane
+            glm::vec3 m_normal;
+            // A point on the plane
+            glm::vec3 m_point;
+        };
+
+        struct Frustum
+        {
+            Plane m_topFace;
+            Plane m_bottomFace;
+            Plane m_rightFace;
+            Plane m_leftFace;
+            Plane m_nearFace;
+            Plane m_farFace;
+        };
+
+    private:
         float m_fov;
         float m_nearPlane;
         float m_farPlane;
         float m_orthographicHeight;
 
         bool m_perspective;
-        mutable bool m_projectionCached;
 
+        mutable bool m_projectionCached;
         mutable glm::mat4 m_projectionMatrix;
+
+        mutable bool m_frustumCached;
+        mutable Frustum m_frustum;
 
 #if GAMECOE_HAS_UBO
         std::optional<GraphicsBuffer> m_uniformBuffer;
 #endif
+
+        void calculateFrustum() const;
 
     public:
         static constexpr const char* TYPE_NAME = "Camera";
@@ -57,6 +82,7 @@ namespace gamecoe
         float fov() const;
         float nearPlane() const;
         float farPlane() const;
+        // Returns a pair of floats - first the near plane and second the far plane
         std::pair<float, float> planes() const;
 
         bool perspective() const;
@@ -64,5 +90,7 @@ namespace gamecoe
 
         glm::mat4 viewMatrix() const;
         const glm::mat4 &projectionMatrix() const;
+
+        const Frustum &frustum() const;
     };
 } // namespace gamecoe
