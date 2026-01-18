@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gamecoe/entity/renderer/renderer.hpp>
+#include <gamecoe/utils/shape.hpp>
 #include <gamecoe/graphics/vertex_array.hpp>
 #include <gamecoe/graphics/shader.hpp>
 #include <gamecoe_config.hpp>
@@ -11,18 +12,9 @@
 
 namespace gamecoe
 {
-    enum class Shape
-    {
-        Triangle,
-        Rectangle,
-        Box,
-        Circle,
-        Sphere,
-        // TODO: Support more primitive shapes
-    };
-
     class ShapeRenderer : public Renderer
     {
+    private:
         static std::atomic<std::uint32_t> s_counter;
         static std::optional<Shader> s_shapeShader;
         static std::optional<Shader> s_circleShader;
@@ -32,9 +24,12 @@ namespace gamecoe
         Color m_color;
         const VertexArray &m_vertexArray;
     
-        std::optional<gamecoe::Shader> &shapeToShader(gamecoe::Shape shape) const;
+        std::optional<Shader> &shapeToShader(Shape shape) const;
 
         ShapeRenderer(GameObject &owner, Shape shape, const Color &color, std::int8_t layer = 0);
+
+        virtual bool visible() const override;
+        virtual void renderImpl() const override;
 
     public:
         ShapeRenderer(const ShapeRenderer&) = delete;
@@ -48,7 +43,6 @@ namespace gamecoe
         virtual void activate() override { m_active = true; }
         virtual void deactivate() override { m_active = false; }
         virtual void update() override {}
-        virtual void render() const override;
 
         Shape shape() const;
         Color color() const;

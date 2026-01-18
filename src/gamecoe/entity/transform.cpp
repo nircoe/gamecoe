@@ -184,8 +184,8 @@ namespace gamecoe
     {
         if (!m_owner.hasParent()) return setPosition(position);
 
-        const auto &parentModel = m_owner.parent()->get().transform().modelMatrix();
-        auto localPos = glm::inverse(parentModel) * glm::vec4(position, 1.0f);
+        const auto &parentInverseModel = m_owner.parent()->get().transform().inverseModelMatrix();
+        auto localPos = parentInverseModel * glm::vec4(position, 1.0f);
         
         setPosition({ localPos.x, localPos.y, localPos.z });
     }
@@ -265,32 +265,32 @@ namespace gamecoe
 
     glm::vec3 Transform::forward() const
     {
-        return m_rotation * s_forwardVector;
+        return glm::normalize(m_rotation * s_forwardVector);
     }
 
     glm::vec3 Transform::right() const
     {
-        return m_rotation * s_rightVector;
+        return glm::normalize(m_rotation * s_rightVector);
     }
 
     glm::vec3 Transform::up() const
     {
-        return m_rotation * s_upVector;
+        return glm::normalize(m_rotation * s_upVector);
     }
 
     glm::vec3 Transform::worldForward() const
     {
-        return worldRotation() * s_forwardVector;
+        return glm::normalize(worldRotation() * s_forwardVector);
     }
 
     glm::vec3 Transform::worldRight() const
     {
-        return worldRotation() * s_rightVector;
+        return glm::normalize(worldRotation() * s_rightVector);
     }
 
     glm::vec3 Transform::worldUp() const
     {
-        return worldRotation() * s_upVector;
+        return glm::normalize(worldRotation() * s_upVector);
     }
 
     void Transform::lookAt(const glm::vec3 &target, const glm::vec3 &up)
@@ -302,5 +302,10 @@ namespace gamecoe
     void Transform::lookAt(const glm::vec2 &target)
     {
         lookAt({ target.x, target.y, 0.0f });
+    }
+
+    bool Transform::modelChanged() const
+    {
+        return m_modelChanged;
     }
 } // namespace gamecoe

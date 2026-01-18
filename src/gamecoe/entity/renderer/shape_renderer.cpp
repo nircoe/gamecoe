@@ -5,6 +5,7 @@
 #include <gamecoe/core/game.hpp>
 #include <gamecoe/utils/paths.hpp>
 #include <gamecoe/utils/consts.hpp>
+#include <gamecoe/utils/frustum.hpp>
 #include <cassert>
 #include <optional>
 #include <utility>
@@ -56,7 +57,7 @@ namespace gamecoe
     std::optional<Shader> ShapeRenderer::s_circleShader = std::nullopt;
     std::optional<Shader> ShapeRenderer::s_sphereShader = std::nullopt;
 
-    std::optional<gamecoe::Shader> &ShapeRenderer::shapeToShader(gamecoe::Shape shape) const
+    std::optional<Shader> &ShapeRenderer::shapeToShader(Shape shape) const
     {
         switch (shape)
         {
@@ -81,19 +82,26 @@ namespace gamecoe
         ++s_counter;
     }
 
-    ShapeRenderer::~ShapeRenderer()
+    bool ShapeRenderer::visible() const
     {
-        --s_counter;
-        if (s_counter == 0)
+        auto &camera = m_owner.game().mainCamera();
+        auto &transform = m_owner.transform();
+
+        // Camera or Object moved, need to calculate visiblity
+        if (transform.modelChanged() || camera.owner().transform().modelChanged())
         {
-            s_shapeShader.reset();
-            s_circleShader.reset();
-            s_sphereShader.reset();
-            VertexArray::destroyShapeVAs();
+            transform.modelMatrix(); // Updates the cached Model Matrix and the .modelChanged() result for next time
+            m_visible = camera.frustum().contains(transform, m_shape);
+
+            bool is2D = m_shape == Shape::Triangle || m_shape == Shape::Rectangle || m_shape == Shape::Circle;
+            if (is2D)
+                m_visible = m_visible && camera.facing(transform);
         }
+
+        return m_visible;
     }
 
-    void ShapeRenderer::render() const
+    void ShapeRenderer::renderImpl() const
     {
         if (!m_active) return;
         
@@ -111,12 +119,12 @@ namespace gamecoe
         shader->use();
         
 #if !GAMECOE_HAS_UBO
-        auto &camera = owner().game().mainCamera();
+        auto &camera = m_owner.game().mainCamera();
         shader->set("view", camera.viewMatrix());
         shader->set("projection", camera.projectionMatrix());
         shader->set("cameraPosition", camera.owner().transform().worldPosition());
 #endif
-        auto &transform = owner().transform();
+        auto &transform = m_owner.transform();
         shader->set("model", transform.modelMatrix());
         shader->set("color", m_color.normalized());
         if(m_shape == Shape::Sphere)
@@ -130,6 +138,18 @@ namespace gamecoe
         else
             glDrawArrays(GL_TRIANGLES, 0, m_vertexArray.vertexCount());
 #endif
+    }
+
+    ShapeRenderer::~ShapeRenderer()
+    {
+        --s_counter;
+        if (s_counter == 0)
+        {
+            s_shapeShader.reset();
+            s_circleShader.reset();
+            s_sphereShader.reset();
+            VertexArray::destroyShapeVAs();
+        }
     }
 
     Shape ShapeRenderer::shape() const { return m_shape; }

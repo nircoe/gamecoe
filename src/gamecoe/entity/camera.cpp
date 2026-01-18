@@ -1,19 +1,54 @@
 #include <gamecoe/entity/camera.hpp>
 #include <gamecoe/entity/game_object.hpp>
+#include <gamecoe/entity/transform.hpp>
 #include <gamecoe/core/game.hpp>
 #include <gamecoe/core/window.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 #include <gamecoe/utils/consts.hpp>
+#include <cmath>
 
 namespace gamecoe
 {
+    void Camera::calculateFrustum() const
+    {
+        const auto &transform = m_owner.transform();
+
+        const auto position = transform.worldPosition();
+        const auto forward = transform.worldForward();
+        const auto right = transform.worldRight();
+        const auto up = transform.worldUp();
+
+        const float aspectRatio = m_owner.game().mainWindow().aspectRatio();
+        const float halfVSide = m_farPlane * std::tanf(glm::radians(m_fov) * 0.5f);
+        const float halfHSide = halfVSide * aspectRatio;
+        const auto forwardFar = m_farPlane * forward;
+
+        m_frustum.m_topFace.m_normal = m_perspective ? glm::normalize(glm::cross(right, forwardFar - (halfVSide * up))) : -up;
+        m_frustum.m_topFace.m_point = m_perspective ? position : position + (halfVSide * up);
+        m_frustum.m_bottomFace.m_normal = m_perspective ? glm::normalize(glm::cross(forwardFar + (halfVSide * up), right)) : up;
+        m_frustum.m_bottomFace.m_point = m_perspective ? position : position - (halfVSide * up);
+
+        m_frustum.m_rightFace.m_normal = m_perspective ? glm::normalize(glm::cross(forwardFar - (halfHSide * right), up)) : -right;
+        m_frustum.m_rightFace.m_point = m_perspective ? position : position + (halfHSide * right);
+        m_frustum.m_leftFace.m_normal = m_perspective ? glm::normalize(glm::cross(up, forwardFar + (halfHSide * right))) : right;
+        m_frustum.m_leftFace.m_point = m_perspective ? position : position - (halfHSide * right);
+
+        m_frustum.m_nearFace.m_normal = forward;
+        m_frustum.m_nearFace.m_point = position + (m_nearPlane * forward);
+        m_frustum.m_farFace.m_normal = -forward;
+        m_frustum.m_farFace.m_point = position + forwardFar;
+    }
+
     Camera::Camera(GameObject &owner) : Component(owner), 
                                         m_fov(45.0f),
                                         m_nearPlane(0.1f),
                                         m_farPlane(100.0f),
                                         m_orthographicHeight(-1.0f),
                                         m_perspective(true),
-                                        m_projectionCached(false)
+                                        m_projectionCached(false),
+                                        m_projectionMatrix(),
+                                        m_frustumCached(false),
+                                        m_frustum()
     {
 #if GAMECOE_HAS_UBO
         m_uniformBuffer.emplace(UniformBuffer(constcoe::CAMERA_UBO_BINDING_POINT));
@@ -53,7 +88,7 @@ namespace gamecoe
             detail::invalidArgument("Camera::setFov(): FOV must be between 0 and 180 degrees");
 
         m_fov = fov;
-        m_projectionCached = false;
+        m_projectionCached = m_frustumCached = false;
     }
 
     void Camera::setNearPlane(float nearPlane) 
@@ -65,7 +100,7 @@ namespace gamecoe
                                ") must be greater than the near plane (" + std::to_string(nearPlane) + ")");
 
         m_nearPlane = nearPlane; 
-        m_projectionCached = false;
+        m_projectionCached = m_frustumCached = false;
     }
 
     void Camera::setFarPlane(float farPlane) 
@@ -77,7 +112,7 @@ namespace gamecoe
                                ") must be greater than the near plane (" + std::to_string(m_nearPlane) + ")");
 
         m_farPlane = farPlane;
-        m_projectionCached = false;
+        m_projectionCached = m_frustumCached = false;
     }
 
     void Camera::setPlanes(float nearPlane, float farPlane)
@@ -89,7 +124,7 @@ namespace gamecoe
 
         m_nearPlane = nearPlane;
         m_farPlane = farPlane;
-        m_projectionCached = false;
+        m_projectionCached = m_frustumCached = false;
     }
 
     void Camera::setPerspectiveMode() 
@@ -97,7 +132,7 @@ namespace gamecoe
         if (m_perspective) return;
 
         m_orthographicHeight = -1.0f;
-        m_projectionCached = false;
+        m_projectionCached = m_frustumCached = false;
         m_perspective = true;
     }
 
@@ -109,7 +144,7 @@ namespace gamecoe
             detail::invalidArgument("Camera::setOrthographicMode(): Orthographic size must be positive");
 
         m_orthographicHeight = orthographicSize;
-        m_projectionCached = false;
+        m_projectionCached = m_frustumCached = false;
         m_perspective = false;
     }
 
@@ -152,5 +187,27 @@ namespace gamecoe
         }
 
         return m_projectionMatrix;
+    }
+
+    const Frustum &Camera::frustum() const
+    {
+        if (!m_frustumCached || m_owner.transform().modelChanged())
+        {
+            calculateFrustum();
+            m_frustumCached = true;
+        }
+
+        return m_frustum;
+    }
+
+    bool Camera::facing(const Transform &transform) const
+    {
+        auto shapeNormal = transform.worldForward();
+        auto shapePosition = transform.worldPosition();
+        auto cameraPosition = m_owner.transform().worldPosition();
+        auto toCamera = glm::normalize(cameraPosition - shapePosition);
+
+        float facingDot = glm::dot(shapeNormal, toCamera);
+        return std::abs(facingDot) > 0.01f; // around 90 degrees
     }
 } // namespace gamecoe

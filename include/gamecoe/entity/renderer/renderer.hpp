@@ -8,6 +8,10 @@ namespace gamecoe
     {
     protected:
         std::int8_t m_layer;
+        mutable bool m_visible;
+
+        virtual bool visible() const = 0;
+        virtual void renderImpl() const = 0;
 
     public:
         static constexpr const char* TYPE_NAME = "Renderer";
@@ -19,7 +23,7 @@ namespace gamecoe
         Renderer& operator=(Renderer&&) = delete;
         virtual ~Renderer();
 
-        virtual void render() const = 0;
+        void render() const;
 
         void setLayer(std::int8_t layer = 0);
         std::int8_t layer() const;

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <gamecoe/entity/component.hpp>
+#include <gamecoe/utils/shape.hpp>
+#include <gamecoe/utils/frustum.hpp>
 #include <gamecoe_config.hpp>
 #include <utility>
 #include <glm/glm.hpp>
@@ -13,6 +15,8 @@
 
 namespace gamecoe
 {
+    class Transform;
+    
     class Camera : public Component<Camera>
     {
         float m_fov;
@@ -21,13 +25,18 @@ namespace gamecoe
         float m_orthographicHeight;
 
         bool m_perspective;
-        mutable bool m_projectionCached;
 
+        mutable bool m_projectionCached;
         mutable glm::mat4 m_projectionMatrix;
+
+        mutable bool m_frustumCached;
+        mutable Frustum m_frustum;
 
 #if GAMECOE_HAS_UBO
         std::optional<GraphicsBuffer> m_uniformBuffer;
 #endif
+
+        void calculateFrustum() const;
 
     public:
         static constexpr const char* TYPE_NAME = "Camera";
@@ -57,6 +66,7 @@ namespace gamecoe
         float fov() const;
         float nearPlane() const;
         float farPlane() const;
+        // Returns a pair of floats - first the near plane and second the far plane
         std::pair<float, float> planes() const;
 
         bool perspective() const;
@@ -64,5 +74,10 @@ namespace gamecoe
 
         glm::mat4 viewMatrix() const;
         const glm::mat4 &projectionMatrix() const;
+
+        const Frustum &frustum() const;
+
+        // Returns if a 2D object is facing the Camera
+        bool facing(const Transform &transform) const;
     };
 } // namespace gamecoe
