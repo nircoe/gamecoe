@@ -18,6 +18,11 @@ namespace gamecoe
         return m_position;
     }
 
+    glm::vec2 Transform::position2D() const
+    {
+        return { m_position.x, m_position.y };
+    }
+
     const glm::quat &Transform::rotation() const
     {
         return m_rotation;
@@ -28,15 +33,32 @@ namespace gamecoe
         return glm::eulerAngles(m_rotation);
     }
 
+    glm::vec2 Transform::eulerRotation2D() const
+    {
+        auto rotation = eulerRotation();
+        return { rotation.x, rotation.y };
+    }
+
     const glm::vec3 &Transform::scale() const
     {
         return m_scale;
+    }
+
+    glm::vec2 Transform::scale2D() const
+    {
+        return { m_scale.x, m_scale.y };
     }
 
     glm::vec3 Transform::worldPosition() const
     {
         const auto &model = modelMatrix();
         return glm::vec3(model[3]);
+    }
+
+    glm::vec2 Transform::worldPosition2D() const
+    {
+        auto wPos = worldPosition();
+        return { wPos.x, wPos.y };
     }
 
     glm::quat Transform::worldRotation() const
@@ -57,6 +79,12 @@ namespace gamecoe
         return glm::eulerAngles(worldRotation());
     }
 
+    glm::vec2 Transform::worldEulerRotation2D() const
+    {
+        auto rotation = worldEulerRotation();
+        return { rotation.x, rotation.y };
+    }
+
     glm::vec3 Transform::worldScale() const
     {
         const auto &model = modelMatrix();
@@ -66,6 +94,12 @@ namespace gamecoe
             glm::length(model[1]),
             glm::length(model[2])
         );
+    }
+
+    glm::vec2 Transform::worldScale2D() const
+    {
+        auto scale = worldScale();
+        return { scale.x, scale.y };
     }
 
     glm::mat4 Transform::translationMatrix() const
@@ -113,6 +147,11 @@ namespace gamecoe
         invalidateCachedModel();
     }
 
+    void Transform::setPosition(const glm::vec2 &position)
+    {
+        setPosition({ position.x, position.y, 0.0f });
+    }
+
     void Transform::setRotation(const glm::quat &rotation)
     {
         m_rotation = rotation;
@@ -125,10 +164,20 @@ namespace gamecoe
         invalidateCachedModel();
     }
 
+    void Transform::setRotation(const glm::vec2 &eulerAngles)
+    {
+        setRotation({ eulerAngles.x, eulerAngles.y, 0.0f });
+    }
+
     void Transform::setScale(const glm::vec3 &scale)
     {
         m_scale = scale;
         invalidateCachedModel();
+    }
+
+    void Transform::setScale(const glm::vec2 &scale)
+    {
+        setScale({ scale.x, scale.y, 1.0f });
     }
 
     void Transform::setWorldPosition(const glm::vec3 &position)
@@ -138,7 +187,12 @@ namespace gamecoe
         const auto &parentModel = m_owner.parent()->get().transform().modelMatrix();
         auto localPos = glm::inverse(parentModel) * glm::vec4(position, 1.0f);
         
-        setPosition(glm::vec3(localPos));
+        setPosition({ localPos.x, localPos.y, localPos.z });
+    }
+
+    void Transform::setWorldPosition(const glm::vec2 &position)
+    {
+        setWorldPosition({ position.x, position.y, 0.0f });
     }
 
     void Transform::setWorldRotation(const glm::quat &rotation)
@@ -156,6 +210,11 @@ namespace gamecoe
         setWorldRotation(glm::quat(eulerAngles));
     }
 
+    void Transform::setWorldRotation(const glm::vec2 &eulerAngles)
+    {
+        setWorldRotation({ eulerAngles.x, eulerAngles.y, 0.0f });
+    }
+
     void Transform::setWorldScale(const glm::vec3 &scale)
     {
         if (!m_owner.hasParent()) return setScale(scale);
@@ -166,10 +225,20 @@ namespace gamecoe
         setScale(localScale);
     }
 
+    void Transform::setWorldScale(const glm::vec2 &scale)
+    {
+        setWorldScale({ scale.x, scale.y, 1.0f });
+    }
+
     void Transform::translate(const glm::vec3 &offset)
     {
         m_position += offset;
         invalidateCachedModel();
+    }
+
+    void Transform::translate(const glm::vec2 &offset)
+    {
+        translate({ offset.x, offset.y, 0.0f });
     }
 
     void Transform::rotate(const glm::vec3 &eulerOffset)
@@ -178,10 +247,20 @@ namespace gamecoe
         invalidateCachedModel();
     }
 
+    void Transform::rotate(const glm::vec2 &eulerOffset)
+    {
+        rotate({ eulerOffset.x, eulerOffset.y, 0.0f });
+    }
+
     void Transform::rotateAround(const glm::vec3 &axis, float angle)
     {
         m_rotation *= glm::angleAxis(angle, glm::normalize(axis));
         invalidateCachedModel();
+    }
+
+    void Transform::rotateAround(float angle)
+    {
+        rotateAround({ 0.0f, 0.0f, 1.0f }, angle);
     }
 
     glm::vec3 Transform::forward() const
@@ -216,7 +295,12 @@ namespace gamecoe
 
     void Transform::lookAt(const glm::vec3 &target, const glm::vec3 &up)
     {
-        glm::vec3 direction = glm::normalize(target - worldPosition());
+        auto direction = glm::normalize(target - worldPosition());
         setWorldRotation(glm::quatLookAt(direction, up));
+    }
+
+    void Transform::lookAt(const glm::vec2 &target)
+    {
+        lookAt({ target.x, target.y, 0.0f });
     }
 } // namespace gamecoe

@@ -45,21 +45,33 @@ namespace gamecoe
 
         // Gets the local space position
         const glm::vec3 &position() const;
+        // Gets the local space 2D position
+        glm::vec2 position2D() const;
         // Gets the local space quaternion rotation
         const glm::quat &rotation() const;
         // Gets the local space euler angles rotation
         glm::vec3 eulerRotation() const;
+        // Gets the local space euler angles 2D rotation
+        glm::vec2 eulerRotation2D() const;
         // Gets the local space scale
         const glm::vec3 &scale() const;
+        // Gets the local space 2D scale
+        glm::vec2 scale2D() const;
 
         // Gets the world space position
         glm::vec3 worldPosition() const;
+        // Gets the world space 2D position
+        glm::vec2 worldPosition2D() const;
         // Gets the world space quaternion rotation
         glm::quat worldRotation() const;
         // Gets the world space euler angles rotation
         glm::vec3 worldEulerRotation() const;
+        // Gets the world space euler angles 2D rotation
+        glm::vec2 worldEulerRotation2D() const;
         // Gets the world space scale
         glm::vec3 worldScale() const;
+        // Gets the world space 2D scale
+        glm::vec2 worldScale2D() const;
 
         // Returns the local translation matrix
         glm::mat4 translationMatrix() const;
@@ -76,28 +88,46 @@ namespace gamecoe
 
         // Sets the local space position
         void setPosition(const glm::vec3 &position);
+        // Sets the local space 2D position
+        void setPosition(const glm::vec2 &position);
         // Sets the local space quaternion rotation
         void setRotation(const glm::quat &rotation);
         // Sets the local space euler angles rotation
         void setRotation(const glm::vec3 &eulerAngles);
+        // Sets the local space euler angles 2D rotation
+        void setRotation(const glm::vec2 &eulerAngles);
         // Sets the local space scale
         void setScale(const glm::vec3 &scale);
+        // Sets the local space 2D scale
+        void setScale(const glm::vec2 &scale);
 
         // Sets the world space position
         void setWorldPosition(const glm::vec3 &position);
+        // Sets the world space 2D position
+        void setWorldPosition(const glm::vec2 &position);
         // Sets the world space quaternion rotation
         void setWorldRotation(const glm::quat &rotation);
         // Sets the world space euler angles rotation
         void setWorldRotation(const glm::vec3 &eulerAngles);
+        // Sets the world space euler angles 2D rotation
+        void setWorldRotation(const glm::vec2 &eulerAngles);
         // Sets the world space scale
         void setWorldScale(const glm::vec3 &scale);
+        // Sets the world space 2D scale
+        void setWorldScale(const glm::vec2 &scale);
 
         // Translates in local space
         void translate(const glm::vec3 &offset);
+        // Translates in local space (2D)
+        void translate(const glm::vec2 &offset);
         // Rotates in local space
         void rotate(const glm::vec3 &eulerOffset);
+        // Rotates in local space (2D)
+        void rotate(const glm::vec2 &eulerOffset);
         // Rotates around axis in local space
         void rotateAround(const glm::vec3 &axis, float angle);
+        // Rotates around the z-axis in local space (2D)
+        void rotateAround(float angle);
 
         // Returns the local forward direction vector
         glm::vec3 forward() const;
@@ -115,5 +145,7 @@ namespace gamecoe
 
         // Rotates Transform to look at target (world space coordinates)
         void lookAt(const glm::vec3 &target, const glm::vec3 &up = glm::vec3(0.0f, 1.0f, 0.0f));
+        // Rotates Transform to look at target (world space 2D coordinates)
+        void lookAt(const glm::vec2 &target);
     };
 } // namespace gamecoe
