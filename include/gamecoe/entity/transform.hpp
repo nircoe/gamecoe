@@ -129,23 +129,26 @@ namespace gamecoe
         // Rotates around the z-axis in local space (2D)
         void rotateAround(float angle);
 
-        // Returns the local forward direction vector
+        // Returns the normalized local forward direction vector
         glm::vec3 forward() const;
-        // Returns the local right direction vector
+        // Returns the normalized local right direction vector
         glm::vec3 right() const;
-        // Returns the local up direction vector
+        // Returns the normalized local up direction vector
         glm::vec3 up() const;
 
-        // Returns the world forward direction vector
+        // Returns the normalized world forward direction vector
         glm::vec3 worldForward() const;
-        // Returns the world right direction vector  
+        // Returns the normalized world right direction vector  
         glm::vec3 worldRight() const;
-        // Returns the world up direction vector
+        // Returns the normalized world up direction vector
         glm::vec3 worldUp() const;
 
         // Rotates Transform to look at target (world space coordinates)
         void lookAt(const glm::vec3 &target, const glm::vec3 &up = glm::vec3(0.0f, 1.0f, 0.0f));
         // Rotates Transform to look at target (world space 2D coordinates)
         void lookAt(const glm::vec2 &target);
+
+        // Returns if the model matrix require update
+        bool modelChanged() const;
     };
 } // namespace gamecoe
