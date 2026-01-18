@@ -1,5 +1,6 @@
 #include <gamecoe/entity/camera.hpp>
 #include <gamecoe/entity/game_object.hpp>
+#include <gamecoe/entity/transform.hpp>
 #include <gamecoe/core/game.hpp>
 #include <gamecoe/core/window.hpp>
 #include <gamecoe/utils/error_handler.hpp>
@@ -188,7 +189,7 @@ namespace gamecoe
         return m_projectionMatrix;
     }
 
-    const Camera::Frustum &Camera::frustum() const
+    const Frustum &Camera::frustum() const
     {
         if (!m_frustumCached || m_owner.transform().modelChanged())
         {
@@ -197,5 +198,16 @@ namespace gamecoe
         }
 
         return m_frustum;
+    }
+
+    bool Camera::facing(const Transform &transform) const
+    {
+        auto shapeNormal = transform.worldForward();
+        auto shapePosition = transform.worldPosition();
+        auto cameraPosition = m_owner.transform().worldPosition();
+        auto toCamera = glm::normalize(cameraPosition - shapePosition);
+
+        float facingDot = glm::dot(shapeNormal, toCamera);
+        return std::abs(facingDot) > 0.01f; // around 90 degrees
     }
 } // namespace gamecoe

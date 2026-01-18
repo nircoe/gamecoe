@@ -1,6 +1,8 @@
 #pragma once
 
 #include <gamecoe/entity/component.hpp>
+#include <gamecoe/utils/shape.hpp>
+#include <gamecoe/utils/frustum.hpp>
 #include <gamecoe_config.hpp>
 #include <utility>
 #include <glm/glm.hpp>
@@ -13,28 +15,10 @@
 
 namespace gamecoe
 {
+    class Transform;
+    
     class Camera : public Component<Camera>
     {
-    public:
-        struct Plane
-        {
-            // The normal vector to the plane
-            glm::vec3 m_normal;
-            // A point on the plane
-            glm::vec3 m_point;
-        };
-
-        struct Frustum
-        {
-            Plane m_topFace;
-            Plane m_bottomFace;
-            Plane m_rightFace;
-            Plane m_leftFace;
-            Plane m_nearFace;
-            Plane m_farFace;
-        };
-
-    private:
         float m_fov;
         float m_nearPlane;
         float m_farPlane;
@@ -92,5 +76,8 @@ namespace gamecoe
         const glm::mat4 &projectionMatrix() const;
 
         const Frustum &frustum() const;
+
+        // Returns if a 2D object is facing the Camera
+        bool facing(const Transform &transform) const;
     };
 } // namespace gamecoe

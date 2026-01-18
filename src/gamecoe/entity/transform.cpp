@@ -184,8 +184,8 @@ namespace gamecoe
     {
         if (!m_owner.hasParent()) return setPosition(position);
 
-        const auto &parentModel = m_owner.parent()->get().transform().modelMatrix();
-        auto localPos = glm::inverse(parentModel) * glm::vec4(position, 1.0f);
+        const auto &parentInverseModel = m_owner.parent()->get().transform().inverseModelMatrix();
+        auto localPos = parentInverseModel * glm::vec4(position, 1.0f);
         
         setPosition({ localPos.x, localPos.y, localPos.z });
     }
