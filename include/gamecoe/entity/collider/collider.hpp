@@ -15,16 +15,16 @@ namespace gamecoe
         std::int8_t m_layer;
         mutable std::unordered_set<std::uint32_t> m_collidedWith;
 
-        std::function<void(const Collider&)> m_onCollisionBegin;    // First frame of a collision callback
-        std::function<void(const Collider&)> m_onCollision;         // Continuous collision callback
-        std::function<void(const Collider&)> m_onCollisionEnd;      // First frame after a collision ends callback
+        std::function<void(Collider&)> m_onCollisionBegin;    // First frame of a collision callback
+        std::function<void(Collider&)> m_onCollision;         // Continuous collision callback
+        std::function<void(Collider&)> m_onCollisionEnd;      // First frame after a collision ends callback
 
     public:
         static constexpr const char* TYPE_NAME = "Collider";
 
-        Collider(GameObject &owner, const std::function<void(const Collider&)> &onCollisionBegin = nullptr, 
-                                    const std::function<void(const Collider&)> &onCollision = nullptr, 
-                                    const std::function<void(const Collider&)> &onCollisionEnd = nullptr,
+        Collider(GameObject &owner, const std::function<void(Collider&)> &onCollisionBegin = nullptr, 
+                                    const std::function<void(Collider&)> &onCollision = nullptr, 
+                                    const std::function<void(Collider&)> &onCollisionEnd = nullptr,
                                     std::int8_t layer = 0);
 
         Collider(const Collider &other) = delete;
@@ -41,16 +41,16 @@ namespace gamecoe
         virtual void update() override;
 
         // Sets callback method for the first frame of a collision
-        void setOnCollisionBegin(const std::function<void(const Collider&)> &onCollisionBegin);
+        void setOnCollisionBegin(const std::function<void(Collider&)> &onCollisionBegin);
         // Sets callback method for a continuous collision
-        void setOnCollision(const std::function<void(const Collider&)> &onCollision);
+        void setOnCollision(const std::function<void(Collider&)> &onCollision);
         // Sets callback method for the first frame after a collision ends
-        void setOnCollisionEnd(const std::function<void(const Collider&)> &onCollisionEnd);
+        void setOnCollisionEnd(const std::function<void(Collider&)> &onCollisionEnd);
 
         void setLayer(std::int8_t layer);
         std::int8_t layer() const;
 
         virtual Shape shape() const;
-        void collide(const Collider &other) const;
+        void collide(Collider &other);
     };
 } // namespace gamecoe

@@ -8,9 +8,9 @@
 namespace gamecoe
 {
     Collider::Collider(GameObject &owner,
-        const std::function<void(const Collider&)> &onCollisionBegin, 
-        const std::function<void(const Collider&)> &onCollision, 
-        const std::function<void(const Collider&)> &onCollisionEnd,
+        const std::function<void(Collider&)> &onCollisionBegin, 
+        const std::function<void(Collider&)> &onCollision, 
+        const std::function<void(Collider&)> &onCollisionEnd,
         std::int8_t layer) : Component<Collider>(owner),
         m_layer(layer),
         m_collidedWith(),
@@ -63,20 +63,20 @@ namespace gamecoe
 
     void Collider::update()
     {
-        
+
     }
 
-    void Collider::setOnCollisionBegin(const std::function<void(const Collider&)> &onCollisionBegin)
+    void Collider::setOnCollisionBegin(const std::function<void(Collider&)> &onCollisionBegin)
     {
         m_onCollisionBegin = onCollisionBegin;
     }
 
-    void Collider::setOnCollision(const std::function<void(const Collider&)> &onCollision)
+    void Collider::setOnCollision(const std::function<void(Collider&)> &onCollision)
     {
         m_onCollision = onCollision;
     }
 
-    void Collider::setOnCollisionEnd(const std::function<void(const Collider&)> &onCollisionEnd)
+    void Collider::setOnCollisionEnd(const std::function<void(Collider&)> &onCollisionEnd)
     {
         m_onCollisionEnd = onCollisionEnd;
     }
@@ -97,7 +97,7 @@ namespace gamecoe
         return Shape::Invalid;
     }
 
-    void Collider::collide(const Collider &other) const
+    void Collider::collide(Collider &other)
     {
         if (!m_active || !other.active()) return;
 

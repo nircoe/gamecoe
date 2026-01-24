@@ -13,9 +13,9 @@ namespace gamecoe
         Shape m_shape;
 
         ShapeCollider(GameObject &owner, Shape shape, 
-                        const std::function<void(const Collider&)> &onCollisionBegin = nullptr, 
-                        const std::function<void(const Collider&)> &onCollision = nullptr, 
-                        const std::function<void(const Collider&)> &onCollisionEnd = nullptr, 
+                        const std::function<void(Collider&)> &onCollisionBegin = nullptr, 
+                        const std::function<void(Collider&)> &onCollision = nullptr, 
+                        const std::function<void(Collider&)> &onCollisionEnd = nullptr, 
                         std::int8_t layer = 0);
 
     public:
@@ -34,29 +34,29 @@ namespace gamecoe
         virtual Shape shape() const override;
 
         static std::unique_ptr<ShapeCollider> triangle(GameObject &owner,
-                                                        const std::function<void(const Collider&)> &onCollisionBegin = nullptr,
-                                                        const std::function<void(const Collider&)> &onCollision = nullptr,
-                                                        const std::function<void(const Collider&)> &onCollisionEnd = nullptr,
+                                                        const std::function<void(Collider&)> &onCollisionBegin = nullptr,
+                                                        const std::function<void(Collider&)> &onCollision = nullptr,
+                                                        const std::function<void(Collider&)> &onCollisionEnd = nullptr,
                                                         std::int8_t layer = 0);
         static std::unique_ptr<ShapeCollider> rectangle(GameObject &owner,
-                                                        const std::function<void(const Collider&)> &onCollisionBegin = nullptr,
-                                                        const std::function<void(const Collider&)> &onCollision = nullptr,
-                                                        const std::function<void(const Collider&)> &onCollisionEnd = nullptr,
+                                                        const std::function<void(Collider&)> &onCollisionBegin = nullptr,
+                                                        const std::function<void(Collider&)> &onCollision = nullptr,
+                                                        const std::function<void(Collider&)> &onCollisionEnd = nullptr,
                                                         std::int8_t layer = 0);
         static std::unique_ptr<ShapeCollider> box(GameObject &owner,
-                                                        const std::function<void(const Collider&)> &onCollisionBegin = nullptr,
-                                                        const std::function<void(const Collider&)> &onCollision = nullptr,
-                                                        const std::function<void(const Collider&)> &onCollisionEnd = nullptr,
+                                                        const std::function<void(Collider&)> &onCollisionBegin = nullptr,
+                                                        const std::function<void(Collider&)> &onCollision = nullptr,
+                                                        const std::function<void(Collider&)> &onCollisionEnd = nullptr,
                                                         std::int8_t layer = 0);
         static std::unique_ptr<ShapeCollider> circle(GameObject &owner,
-                                                        const std::function<void(const Collider&)> &onCollisionBegin = nullptr,
-                                                        const std::function<void(const Collider&)> &onCollision = nullptr,
-                                                        const std::function<void(const Collider&)> &onCollisionEnd = nullptr,
+                                                        const std::function<void(Collider&)> &onCollisionBegin = nullptr,
+                                                        const std::function<void(Collider&)> &onCollision = nullptr,
+                                                        const std::function<void(Collider&)> &onCollisionEnd = nullptr,
                                                         std::int8_t layer = 0);
         static std::unique_ptr<ShapeCollider> sphere(GameObject &owner,
-                                                        const std::function<void(const Collider&)> &onCollisionBegin = nullptr,
-                                                        const std::function<void(const Collider&)> &onCollision = nullptr,
-                                                        const std::function<void(const Collider&)> &onCollisionEnd = nullptr,
+                                                        const std::function<void(Collider&)> &onCollisionBegin = nullptr,
+                                                        const std::function<void(Collider&)> &onCollision = nullptr,
+                                                        const std::function<void(Collider&)> &onCollisionEnd = nullptr,
                                                         std::int8_t layer = 0);
     };
 } // namespace gamecoe
