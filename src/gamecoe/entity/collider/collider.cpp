@@ -61,6 +61,11 @@ namespace gamecoe
         m_owner.game().removeCollider(*this, m_layer);
     }
 
+    void Collider::update()
+    {
+        
+    }
+
     void Collider::setOnCollisionBegin(const std::function<void(const Collider&)> &onCollisionBegin)
     {
         m_onCollisionBegin = onCollisionBegin;
