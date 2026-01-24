@@ -1,5 +1,6 @@
 #include <gamecoe/entity/collider/collider.hpp>
 #include <gamecoe/entity/game_object.hpp>
+#include <gamecoe/core/game.hpp>
 #include <gamecoe/core/scene.hpp>
 #include <gamecoe/utils/collision.hpp>
 #include <gamecoe/utils/shape.hpp>
@@ -9,7 +10,9 @@ namespace gamecoe
     Collider::Collider(GameObject &owner,
         const std::function<void(const Collider&)> &onCollisionBegin, 
         const std::function<void(const Collider&)> &onCollision, 
-        const std::function<void(const Collider&)> &onCollisionEnd) : Component<Collider>(owner),
+        const std::function<void(const Collider&)> &onCollisionEnd,
+        std::int8_t layer) : Component<Collider>(owner),
+        m_layer(layer),
         m_collidedWith(),
         m_onCollisionBegin(onCollisionBegin), 
         m_onCollision(onCollision), 
@@ -37,7 +40,7 @@ namespace gamecoe
 
     void Collider::activate() 
     {
-
+        m_owner.game().addCollider(*this, m_layer);
     }
 
     void Collider::deactivate() 
@@ -50,12 +53,13 @@ namespace gamecoe
             if (go && go->get().hasComponent<Collider>())
             {
                 auto &col = go->get().getComponent<Collider>();
-                if (m_onCollisionEnd) m_onCollisionEnd(col); // really needed? the gameobject is deactivating...
+                if (m_onCollisionEnd) m_onCollisionEnd(col);
                 if (col.m_onCollisionEnd) col.m_onCollisionEnd(*this);
                 col.m_collidedWith.erase(m_owner.id());
             }
         }
         m_collidedWith.clear();
+        m_owner.game().removeCollider(*this, m_layer);
     }
 
     void Collider::setOnCollisionBegin(const std::function<void(const Collider&)> &onCollisionBegin)
@@ -73,6 +77,17 @@ namespace gamecoe
         m_onCollisionEnd = onCollisionEnd;
     }
 
+    void Collider::setLayer(std::int8_t layer)
+    {
+        m_owner.game().updateColliderLayer(*this, m_layer, layer);
+        m_layer = layer;
+    }
+
+    std::int8_t Collider::layer() const
+    {
+        return m_layer;
+    }
+
     Shape Collider::shape() const 
     {
         return Shape::Invalid;
@@ -82,8 +97,8 @@ namespace gamecoe
     {
         if (!m_active || !other.active()) return;
 
-        // other is a ShapeCollider
-        if (other.shape() != Shape::Invalid)
+        // ShapeCollider/ShapeCollider collision detection
+        if (shape() != Shape::Invalid && other.shape() != Shape::Invalid)
         {
             bool collided = collision::detect(m_owner.transform(), shape(), other.owner().transform(), other.shape());
 
@@ -112,7 +127,6 @@ namespace gamecoe
             other.m_collidedWith.insert(id);
             if (m_onCollisionBegin) m_onCollisionBegin(other);
             if (other.m_onCollisionBegin) other.m_onCollisionBegin(*this);
-            return;
         }
         // TODO: treat other Colliders
     }

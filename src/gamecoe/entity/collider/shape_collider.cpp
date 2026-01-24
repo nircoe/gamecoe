@@ -8,7 +8,7 @@ namespace gamecoe
         const std::function<void(const Collider&)> &onCollision,
         const std::function<void(const Collider&)> &onCollisionEnd,
         std::int8_t layer) : 
-        Collider(owner, onCollisionBegin, onCollision, onCollisionEnd), m_shape(shape)
+        Collider(owner, onCollisionBegin, onCollision, onCollisionEnd, layer), m_shape(shape)
     { 
         
     }
@@ -30,6 +30,7 @@ namespace gamecoe
 
     void ShapeCollider::activate() 
     {
+        Collider::activate();
         m_active = true;
     }
 

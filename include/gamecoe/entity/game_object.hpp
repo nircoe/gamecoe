@@ -130,12 +130,11 @@ namespace gamecoe
     template <std::derived_from<ComponentBase> T>
     inline void GameObject::addComponent(std::unique_ptr<T> component)
     {
-        static const std::string componentType = T::staticType();
-        if (m_components.contains(componentType))
+        if (m_components.contains(T::staticType()))
             detail::throwError("GameObject::addComponent(): The Game Object \"" + m_name + "\" already have a " + 
-                               componentType + " component");
+                               T::staticType() + " component");
         
-        if (componentType == Transform::staticType())
+        if constexpr (T::staticType() == Transform::staticType())
             detail::invalidArgument("GameObject::addComponent(): GameObject have built-in Transform Component");
         
         if constexpr (std::is_base_of_v<Renderer, T>)
@@ -144,16 +143,14 @@ namespace gamecoe
             return setRenderer(std::move(component));
         }
 
-        m_components.emplace(componentType, std::move(component));
-        setUpComponent(m_components[componentType]);
+        m_components.emplace(T::staticType(), std::move(component));
+        setUpComponent(m_components[T::staticType()]);
     }
     
     template <std::derived_from<ComponentBase> T>
     inline void GameObject::removeComponent()
     {
-        static const std::string componentType = T::staticType();
-
-        if (componentType == Transform::staticType())
+        if constexpr (T::staticType() == Transform::staticType())
             detail::invalidArgument("GameObject::removeComponent(): You cannot remove Transform from any GameObject");
         
         if constexpr (std::is_base_of_v<Renderer, T>)
@@ -162,25 +159,23 @@ namespace gamecoe
             return removeRenderer();
         }
 
-        if (!m_components.contains(componentType))
+        if (!m_components.contains(T::staticType()))
             detail::throwError("GameObject::removeComponent(): The Game Object \"" + m_name + 
-                               "\" does not have an " + componentType + " component");
+                               "\" does not have an " + T::staticType() + " component");
 
-        m_components.erase(componentType);
+        m_components.erase(T::staticType());
     }
 
     template <std::derived_from<ComponentBase> T>
     inline T &GameObject::getComponent()
     {
-        static const std::string componentType = T::staticType();
-
-        if (componentType == Transform::staticType())
+        if constexpr (T::staticType() == Transform::staticType())
         {
             logcoe::debug("GameObject::getComponent(): Returning Transform (prefer transform() for direct access)");
             return m_transform;
         }
 
-        if (std::is_base_of_v<Renderer, T>)
+        if constexpr (std::is_base_of_v<Renderer, T>)
         {
             if (!m_renderer)
                 detail::throwError("GameObject::getComponent(): The Game Object \"" + m_name + "\" does not have a Renderer");
@@ -189,10 +184,10 @@ namespace gamecoe
             return static_cast<T&>(*m_renderer);
         }
 
-        auto it = m_components.find(componentType);
+        auto it = m_components.find(T::staticType());
         if (it == m_components.end())
             detail::throwError("GameObject::getComponent(): The Game Object \"" + m_name + "\" does not have a " + 
-                                componentType + " component");
+                                T::staticType() + " component");
             
         return static_cast<T&>(*(it->second));
     }
@@ -200,15 +195,13 @@ namespace gamecoe
     template <std::derived_from<ComponentBase> T>
     inline const T &GameObject::getComponent() const
     {
-        static const std::string componentType = T::staticType();
-
-        if (componentType == Transform::staticType())
+        if constexpr (T::staticType() == Transform::staticType())
         {
             logcoe::debug("GameObject::getComponent(): Returning Transform (prefer transform() for direct access)");
             return m_transform;
         }
 
-        if (std::is_base_of_v<Renderer, T>)
+        if constexpr (std::is_base_of_v<Renderer, T>)
         {
             if (!m_renderer)
                 detail::throwError("GameObject::getComponent(): The Game Object \"" + m_name + "\" does not have a Renderer");
@@ -217,10 +210,10 @@ namespace gamecoe
             return static_cast<const T&>(*m_renderer);
         }
 
-        auto it = m_components.find(componentType);
+        auto it = m_components.find(T::staticType());
         if (it == m_components.end())
             detail::throwError("GameObject::getComponent(): The Game Object \"" + m_name + "\" does not have a " + 
-                                componentType + " component");
+                                T::staticType() + " component");
             
         return static_cast<const T&>(*(it->second));
     }
@@ -228,15 +221,13 @@ namespace gamecoe
     template <std::derived_from<ComponentBase> T>
     inline bool GameObject::hasComponent() const
     {
-        static const std::string componentType = T::staticType();
-
-        if (componentType == Transform::staticType())
+        if constexpr (T::staticType() == Transform::staticType())
             return true;
 
-        if (std::is_base_of_v<Renderer, T>)
+        if constexpr (std::is_base_of_v<Renderer, T>)
             return m_renderer != nullptr;
 
-        return m_components.contains(componentType);
+        return m_components.contains(T::staticType());
     }
 
 } // namespace gamecoe

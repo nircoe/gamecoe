@@ -12,6 +12,7 @@ namespace gamecoe
     class Collider : public Component<Collider>
     {
     protected: 
+        std::int8_t m_layer;
         mutable std::unordered_set<std::uint32_t> m_collidedWith;
 
         std::function<void(const Collider&)> m_onCollisionBegin;    // First frame of a collision callback
@@ -23,7 +24,8 @@ namespace gamecoe
 
         Collider(GameObject &owner, const std::function<void(const Collider&)> &onCollisionBegin = nullptr, 
                                     const std::function<void(const Collider&)> &onCollision = nullptr, 
-                                    const std::function<void(const Collider&)> &onCollisionEnd = nullptr);
+                                    const std::function<void(const Collider&)> &onCollisionEnd = nullptr,
+                                    std::int8_t layer = 0);
 
         Collider(const Collider &other) = delete;
         Collider& operator=(const Collider &other) = delete;
@@ -44,6 +46,9 @@ namespace gamecoe
         void setOnCollision(const std::function<void(const Collider&)> &onCollision);
         // Sets callback method for the first frame after a collision ends
         void setOnCollisionEnd(const std::function<void(const Collider&)> &onCollisionEnd);
+
+        void setLayer(std::int8_t layer);
+        std::int8_t layer() const;
 
         virtual Shape shape() const;
         void collide(const Collider &other) const;
