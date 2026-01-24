@@ -25,7 +25,7 @@ uniform vec3 cameraPosition;
 
 void main()
 {
-    localPos = aPos * 2.0; // Box is -0.5 to 0.5, scale to radius 1.0
+    localPos = aPos;
     localCamPos = vec3(inverseModel * vec4(cameraPosition, 1.0));
-    gl_Position = projection * view * model * vec4(localPos, 1.0);
+    gl_Position = projection * view * model * vec4(aPos, 1.0);
 }

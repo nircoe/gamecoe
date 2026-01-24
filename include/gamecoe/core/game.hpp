@@ -1,5 +1,8 @@
 #pragma once
 
+#include <gamecoe/core/window.hpp>
+#include <gamecoe/core/scene.hpp>
+#include <gamecoe/entity/camera.hpp>
 #include <unordered_map>
 #include <map>
 #include <vector>
@@ -8,14 +11,14 @@
 #include <optional>
 #include <functional>
 #include <string>
+#include <map>
 #include <cstdint>
-#include <gamecoe/core/window.hpp>
-#include <gamecoe/core/scene.hpp>
-#include <gamecoe/entity/camera.hpp>
 #include <colorcoe.hpp>
 
 namespace gamecoe
-{    
+{
+    class Collider;
+
     class Game
     {
         std::optional<Window> m_mainWindow;
@@ -25,10 +28,17 @@ namespace gamecoe
         std::unordered_map<std::string, std::unique_ptr<Scene>> m_activeScenes;
         std::unordered_map<std::string, std::unique_ptr<Scene>> m_inactiveScenes;
 
+        mutable std::map<std::int8_t, std::vector<std::reference_wrapper<Collider>>> m_colliders;
+        mutable std::vector<std::pair<std::int8_t, std::reference_wrapper<Collider>>> m_collidersToAdd;
+        mutable std::vector<std::pair<std::int8_t, std::reference_wrapper<Collider>>> m_collidersToRemove;
+
         Color m_backgroundColor;
 
         // TODO: For games with multiply windows - optional
         // std::vector<std::unique_ptr<Window>> m_additionalWindows;
+
+        // Delayed additions and removals of colliders
+        void processColliderModifications() const;
 
     public:
         Game(); // Default title "gamecoe", screen size 800x600 pixels
@@ -50,6 +60,10 @@ namespace gamecoe
 
         std::map<std::int8_t, std::vector<std::reference_wrapper<Scene>>> getActiveSceneLayers() const;
         void setSceneLayer(const std::string &scene, std::int8_t layer);
+
+        void addCollider(Collider& collider, std::int8_t layer) const;
+        void updateColliderLayer(Collider& collider, std::int8_t oldLayer, std::int8_t newLayer) const;
+        void removeCollider(Collider& collider, std::int8_t layer) const;
 
         Camera &mainCamera();
         const Camera &mainCamera() const;

@@ -4,6 +4,7 @@ namespace gamecoe
 {
     enum class Shape
     {
+        Invalid,
         Triangle,
         Rectangle,
         Box,

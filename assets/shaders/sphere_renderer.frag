@@ -25,11 +25,12 @@ uniform vec3 cameraPosition;
 
 vec4 sphereHit(out vec3 normal)
 {
+    const float RADIUS = 0.5;
     vec3 rayDirection = normalize(localPos - localCamPos);
 
     // float a = dot(rayDirection, rayDirection) = 1.0;
     float b = 2.0 * dot(localCamPos, rayDirection);
-    float c = dot(localCamPos, localCamPos) - 1.0;
+    float c = dot(localCamPos, localCamPos) - (RADIUS * RADIUS);
 
     float discriminant = b * b - 4.0 * c;
 

@@ -90,12 +90,13 @@ namespace gamecoe
         // Camera or Object moved, need to calculate visiblity
         if (transform.modelChanged() || camera.owner().transform().modelChanged())
         {
-            transform.modelMatrix(); // Updates the cached Model Matrix and the .modelChanged() result for next time
+            transform.modelMatrix();
             m_visible = camera.frustum().contains(transform, m_shape);
 
             bool is2D = m_shape == Shape::Triangle || m_shape == Shape::Rectangle || m_shape == Shape::Circle;
             if (is2D)
                 m_visible = m_visible && camera.facing(transform);
+            transform.clearModelChanged();
         }
 
         return m_visible;

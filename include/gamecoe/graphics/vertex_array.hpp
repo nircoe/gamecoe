@@ -2,6 +2,7 @@
 #include <gamecoe/graphics/graphics_buffer.hpp>
 #include <optional>
 #include <vector>
+#include <cstdint>
 
 namespace gamecoe
 {
@@ -9,7 +10,7 @@ namespace gamecoe
     {
         static std::vector<VertexArray*> s_shapeVAs;
 
-        unsigned int m_id;
+        std::uint32_t m_id;
         GraphicsBuffer m_vertexBuffer;
         std::optional<GraphicsBuffer> m_indexBuffer;
         size_t m_vertexCount;
@@ -18,7 +19,7 @@ namespace gamecoe
 
         VertexArray() = delete;
         VertexArray(const float *vertices, size_t vertexCount, size_t vertexSize,
-                    const unsigned int *indices = nullptr, size_t indexCount = 0);
+                    const std::uint32_t *indices = nullptr, size_t indexCount = 0);
         
         void setupVertexAttributes();
 

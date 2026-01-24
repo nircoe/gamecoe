@@ -16,6 +16,7 @@ namespace gamecoe
         mutable glm::mat4 m_cachedModelMatrix{1.0f};
         mutable glm::mat4 m_cachedInverseModelMatrix{1.0f};
         mutable bool m_modelChanged = true;
+        mutable bool m_cachedModelValid = false;
 
         void invalidateCachedModel() const;
 
@@ -148,7 +149,9 @@ namespace gamecoe
         // Rotates Transform to look at target (world space 2D coordinates)
         void lookAt(const glm::vec2 &target);
 
-        // Returns if the model matrix require update
+        // Returns if the transform moved in the current frame
         bool modelChanged() const;
+        // Clears the modelChanged flag
+        void clearModelChanged() const;
     };
 } // namespace gamecoe

@@ -37,7 +37,7 @@ namespace gamecoe
         Component& operator=(Component&&) = delete;
         virtual ~Component() = default;
 
-        static std::string staticType() { return Derived::TYPE_NAME; };
+        static constexpr std::string staticType() { return Derived::TYPE_NAME; };
         // Returns the component type in string
         const std::string &type() const { return staticType(); };
 

@@ -1,11 +1,12 @@
 #include <gamecoe/core/game.hpp>
-#include <gamecoe/core/window.hpp>
+#include <gamecoe/entity/collider/collider.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 #include <gamecoe/utils/paths.hpp>
 #include <gamecoe_config.hpp>
 #include <timecoe.hpp>
 #include <inputcoe.hpp>
 #include <cassert>
+#include <algorithm>
 
 #if GAMECOE_USE_LOGCOE
 #include <logcoe.hpp>
@@ -22,6 +23,33 @@
 
 namespace gamecoe
 {
+    void Game::processColliderModifications() const
+    {
+        for (auto &[layer, collider] : m_collidersToRemove)
+        {
+            if (auto colliders = m_colliders.find(layer); colliders != m_colliders.end())
+            {
+                auto it = std::find_if(colliders->second.begin(), colliders->second.end(),
+                    [&collider](const auto &col) { return &col.get() == &collider.get(); });
+
+                if (it != colliders->second.end())
+                {
+                    colliders->second.erase(it);
+                    if (colliders->second.empty())
+                        m_colliders.erase(layer);
+                }
+            }
+        }
+
+        for (auto &[layer, collider] : m_collidersToAdd)
+        {
+            m_colliders[layer].push_back(collider);
+        }
+
+        m_collidersToRemove.clear();
+        m_collidersToAdd.clear();
+    }
+
     Game::Game() : Game("gamecoe", 800, 600) { }
 
     Game::Game(const std::string &title, uint32_t width, uint32_t height, const Color &backgroundColor) :
@@ -29,6 +57,8 @@ namespace gamecoe
                     m_internalScene(std::nullopt),
                     m_activeScenes(),
                     m_inactiveScenes(),
+                    m_colliders(),
+                    m_collidersToRemove(),
                     m_backgroundColor(backgroundColor)
     {
         struct GarbageCollector
@@ -185,6 +215,22 @@ namespace gamecoe
         detail::throwError("Game::setSceneLayer(): The Scene named \"" + scene + "\" does not exist");
     }
 
+    void Game::addCollider(Collider& collider, std::int8_t layer) const
+    {
+        m_collidersToAdd.push_back({ layer, std::ref(collider) });    
+    }
+
+    void Game::updateColliderLayer(Collider& collider, std::int8_t oldLayer, std::int8_t newLayer) const
+    {
+        removeCollider(collider, oldLayer);
+        addCollider(collider, newLayer);
+    }
+
+    void Game::removeCollider(Collider& collider, std::int8_t layer) const
+    {
+        m_collidersToRemove.push_back({ layer, std::ref(collider) });
+    }
+
     Camera &Game::mainCamera()
     {
         assert(m_mainCamera && "Game::mainCamera(): Main Camera should have been created in the Game constructor and not been nullptr");
@@ -262,16 +308,24 @@ namespace gamecoe
                 for (auto &scene : scenes)
                     scene.get().update();
             }
-
             m_internalScene->update();
 
-            // TODO: Physics/Collision system
+            for (auto it1 = m_colliders.begin(); it1 != m_colliders.end(); ++it1)
+            {
+                auto it2 = it1;
+                for (++it2; it2 != m_colliders.end(); ++it2)
+                    for (auto &collider1 : it1->second)
+                        for (auto &collider2 : it2->second)
+                            collider1.get().collide(collider2.get());
+            }
+            processColliderModifications();
 
             for (auto &[layer, scenes] : scenesByLayers)
             {
                 for (auto &scene : scenes)
                     scene.get().render();
             }
+            m_mainCamera->owner().transform().clearModelChanged();
 
             soundcoe::update();
         }
