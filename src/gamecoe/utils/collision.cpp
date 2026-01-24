@@ -221,7 +221,7 @@ namespace gamecoe
             return false; // not supported yet
         }
 
-        bool boxes(const Transform &t1, const Transform &t2)
+        bool boxes([[maybe_unused]] const Transform &t1, [[maybe_unused]] const Transform &t2)
         {
             return false; // not supported yet
         }
@@ -243,7 +243,7 @@ namespace gamecoe
             return false; // not supported yet
         }
 
-        bool spheres(const Transform &t1, const Transform &t2)
+        bool spheres([[maybe_unused]] const Transform &t1, [[maybe_unused]] const Transform &t2)
         {
             return false; // not supported yet
         }
@@ -266,7 +266,7 @@ namespace gamecoe
             return false; // not supported yet
         }
 
-        bool triangleWithBox(const Transform &t1, const Transform &t2)
+        bool triangleWithBox([[maybe_unused]] const Transform &t1, [[maybe_unused]] const Transform &t2)
         {
             return false; // not supported yet
         }
@@ -289,12 +289,12 @@ namespace gamecoe
             return false; // not supported yet
         }
 
-        bool triangleWithSphere(const Transform &t1, const Transform &t2)
+        bool triangleWithSphere([[maybe_unused]] const Transform &t1, [[maybe_unused]] const Transform &t2)
         {
             return false; // not supported yet
         }
 
-        bool rectangleWithBox(const Transform &t1, const Transform &t2)
+        bool rectangleWithBox([[maybe_unused]] const Transform &t1, [[maybe_unused]] const Transform &t2)
         {
             return false; // not supported yet
         }
@@ -317,22 +317,22 @@ namespace gamecoe
             return false; // not supported yet
         }
 
-        bool rectangleWithSphere(const Transform &t1, const Transform &t2)
+        bool rectangleWithSphere([[maybe_unused]] const Transform &t1, [[maybe_unused]] const Transform &t2)
         {
             return false; // not supported yet
         }
 
-        bool boxWithCircle(const Transform &t1, const Transform &t2)
+        bool boxWithCircle([[maybe_unused]] const Transform &t1, [[maybe_unused]] const Transform &t2)
         {
             return false; // not supported yet
         }
 
-        bool boxWithSphere(const Transform &t1, const Transform &t2)
+        bool boxWithSphere([[maybe_unused]] const Transform &t1, [[maybe_unused]] const Transform &t2)
         {
             return false; // not supported yet
         }
 
-        bool circleWithSphere(const Transform &t1, const Transform &t2)
+        bool circleWithSphere([[maybe_unused]] const Transform &t1, [[maybe_unused]] const Transform &t2)
         {
             return false; // not supported yet
         }
@@ -362,6 +362,7 @@ namespace gamecoe
                 case Shape::Circle:
                     return triangleWithCircle(first, second);
                 case Shape::Sphere:
+                default:
                     return triangleWithSphere(first, second);
                 }
                 break;
@@ -375,6 +376,7 @@ namespace gamecoe
                 case Shape::Circle:
                     return rectangleWithCircle(first, second);
                 case Shape::Sphere:
+                default:
                     return rectangleWithSphere(first, second);
                 }
                 break;
@@ -386,6 +388,7 @@ namespace gamecoe
                 case Shape::Circle:
                     return boxWithCircle(first, second);
                 case Shape::Sphere:
+                default:
                     return boxWithSphere(first, second);
                 }
                 break;
@@ -395,10 +398,12 @@ namespace gamecoe
                 case Shape::Circle:
                     return circles(first, second);
                 case Shape::Sphere:
+                default:
                     return circleWithSphere(first, second);
                 }
                 break;
             case Shape::Sphere:
+            default:
                 return spheres(first, second);
             }
 
