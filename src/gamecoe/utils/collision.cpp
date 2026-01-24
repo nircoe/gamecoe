@@ -89,7 +89,7 @@ namespace gamecoe
         {
             bool uniformCircles(const Transform &t1, const Transform &t2)
             {
-                float radiusSum = t1.worldScale().x + t2.worldScale().x;
+                float radiusSum = (t1.worldScale().x / 2.0f) + (t2.worldScale().x / 2.0f); // default radius is 0.5f for scale 1.0f
                 glm::vec2 diff = t1.worldPosition() - t2.worldPosition();
                 float distanceSquared = glm::dot(diff, diff);
                 return distanceSquared <= radiusSum * radiusSum;

@@ -12,10 +12,10 @@ target_include_directories(gamecoe
 
 target_link_libraries(gamecoe
     PRIVATE
-        glm::glm-header-only
         glfw
         stb
     PUBLIC
+        glm::glm-header-only
         gamecoe_headers
         $<$<BOOL:${GAMECOE_USE_LOGCOE}>:logcoe>
         $<$<BOOL:${GAMECOE_USE_SOUNDCOE}>:soundcoe>
