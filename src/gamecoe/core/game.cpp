@@ -23,7 +23,7 @@
 
 namespace gamecoe
 {
-    void Game::processColliderRemovals() const
+    void Game::processColliderModifications() const
     {
         for (auto &[layer, collider] : m_collidersToRemove)
         {
@@ -40,6 +40,14 @@ namespace gamecoe
                 }
             }
         }
+
+        for (auto &[layer, collider] : m_collidersToAdd)
+        {
+            m_colliders[layer].push_back(collider);
+        }
+
+        m_collidersToRemove.clear();
+        m_collidersToAdd.clear();
     }
 
     Game::Game() : Game("gamecoe", 800, 600) { }
@@ -209,7 +217,7 @@ namespace gamecoe
 
     void Game::addCollider(Collider& collider, std::int8_t layer) const
     {
-        m_colliders[layer].push_back(std::ref(collider));        
+        m_collidersToAdd.push_back({ layer, std::ref(collider) });    
     }
 
     void Game::updateColliderLayer(Collider& collider, std::int8_t oldLayer, std::int8_t newLayer) const
@@ -220,7 +228,7 @@ namespace gamecoe
 
     void Game::removeCollider(Collider& collider, std::int8_t layer) const
     {
-        m_collidersToRemove.push_back({ layer, std::ref(collider)});
+        m_collidersToRemove.push_back({ layer, std::ref(collider) });
     }
 
     Camera &Game::mainCamera()
@@ -310,7 +318,7 @@ namespace gamecoe
                         for (auto &collider2 : it2->second)
                             collider1.get().collide(collider2.get());
             }
-            processColliderRemovals();
+            processColliderModifications();
 
             for (auto &[layer, scenes] : scenesByLayers)
             {
