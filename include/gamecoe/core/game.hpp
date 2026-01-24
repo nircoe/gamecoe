@@ -28,12 +28,15 @@ namespace gamecoe
         std::unordered_map<std::string, std::unique_ptr<Scene>> m_activeScenes;
         std::unordered_map<std::string, std::unique_ptr<Scene>> m_inactiveScenes;
 
-        mutable std::map<std::int8_t, std::vector<std::reference_wrapper<Collider>>> m_colliders; // need to be in Game in order to support collision detection between entities from different scenes
+        mutable std::map<std::int8_t, std::vector<std::reference_wrapper<Collider>>> m_colliders;
+        mutable std::vector<std::pair<std::int8_t, std::reference_wrapper<Collider>>> m_collidersToRemove;
 
         Color m_backgroundColor;
 
         // TODO: For games with multiply windows - optional
         // std::vector<std::unique_ptr<Window>> m_additionalWindows;
+
+        void processColliderRemovals() const;
 
     public:
         Game(); // Default title "gamecoe", screen size 800x600 pixels

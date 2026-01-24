@@ -23,6 +23,25 @@
 
 namespace gamecoe
 {
+    void Game::processColliderRemovals() const
+    {
+        for (auto &[layer, collider] : m_collidersToRemove)
+        {
+            if (auto colliders = m_colliders.find(layer); colliders != m_colliders.end())
+            {
+                auto it = std::find_if(colliders->second.begin(), colliders->second.end(),
+                    [&collider](const auto &col) { return &col.get() == &collider.get(); });
+
+                if (it != colliders->second.end())
+                {
+                    colliders->second.erase(it);
+                    if (colliders->second.empty())
+                        m_colliders.erase(layer);
+                }
+            }
+        }
+    }
+
     Game::Game() : Game("gamecoe", 800, 600) { }
 
     Game::Game(const std::string &title, uint32_t width, uint32_t height, const Color &backgroundColor) :
@@ -31,6 +50,7 @@ namespace gamecoe
                     m_activeScenes(),
                     m_inactiveScenes(),
                     m_colliders(),
+                    m_collidersToRemove(),
                     m_backgroundColor(backgroundColor)
     {
         struct GarbageCollector
@@ -200,19 +220,7 @@ namespace gamecoe
 
     void Game::removeCollider(Collider& collider, std::int8_t layer) const
     {
-        if (auto colliders = m_colliders.find(layer); colliders != m_colliders.end())
-        {
-            auto it = std::find_if(colliders->second.begin(), colliders->second.end(),
-                [&collider](const auto &col) { return &col.get() == &collider; });
-
-            if (it != colliders->second.end())
-            {
-                    colliders->second.erase(it);
-                    if (colliders->second.empty())
-                        m_colliders.erase(layer);
-                    return;
-            }
-        }
+        m_collidersToRemove.push_back({ layer, std::ref(collider)});
     }
 
     Camera &Game::mainCamera()
@@ -302,6 +310,7 @@ namespace gamecoe
                         for (auto &collider2 : it2->second)
                             collider1.get().collide(collider2.get());
             }
+            processColliderRemovals();
 
             for (auto &[layer, scenes] : scenesByLayers)
             {
