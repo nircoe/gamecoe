@@ -45,7 +45,6 @@ namespace gamecoe
 
     void Collider::deactivate() 
     {
-        auto id = m_owner.id();
         for (auto otherId : m_collidedWith)
         {
             auto go = m_owner.scene().findGameObject(otherId);

@@ -56,8 +56,8 @@ namespace gamecoe
         const std::function<void(const Collider&)> &onCollisionEnd,
         std::int8_t layer)
     {
-        return std::make_unique<ShapeCollider>(owner, Shape::Triangle, 
-            onCollisionBegin, onCollision, onCollisionEnd, layer);
+        return std::unique_ptr<ShapeCollider>(new ShapeCollider(owner, Shape::Triangle,
+            onCollisionBegin, onCollision, onCollisionEnd, layer));
     }
 
     std::unique_ptr<ShapeCollider> ShapeCollider::rectangle(GameObject &owner,
@@ -66,8 +66,8 @@ namespace gamecoe
         const std::function<void(const Collider&)> &onCollisionEnd,
         std::int8_t layer)
     {
-        return std::make_unique<ShapeCollider>(owner, Shape::Rectangle,
-            onCollisionBegin, onCollision, onCollisionEnd, layer);
+        return std::unique_ptr<ShapeCollider>(new ShapeCollider(owner, Shape::Rectangle,
+            onCollisionBegin, onCollision, onCollisionEnd, layer));
     }
 
     std::unique_ptr<ShapeCollider> ShapeCollider::box(GameObject &owner,
@@ -76,8 +76,8 @@ namespace gamecoe
         const std::function<void(const Collider&)> &onCollisionEnd,
         std::int8_t layer)
     {
-        return std::make_unique<ShapeCollider>(owner, Shape::Box,
-            onCollisionBegin, onCollision, onCollisionEnd, layer);
+        return std::unique_ptr<ShapeCollider>(new ShapeCollider(owner, Shape::Box,
+            onCollisionBegin, onCollision, onCollisionEnd, layer));
     }
 
     std::unique_ptr<ShapeCollider> ShapeCollider::circle(GameObject &owner,
@@ -86,8 +86,8 @@ namespace gamecoe
         const std::function<void(const Collider&)> &onCollisionEnd,
         std::int8_t layer)
     {
-        return std::make_unique<ShapeCollider>(owner, Shape::Circle,
-            onCollisionBegin, onCollision, onCollisionEnd, layer);
+        return std::unique_ptr<ShapeCollider>(new ShapeCollider(owner, Shape::Circle,
+            onCollisionBegin, onCollision, onCollisionEnd, layer));
     }
 
     std::unique_ptr<ShapeCollider> ShapeCollider::sphere(GameObject &owner,
@@ -96,7 +96,7 @@ namespace gamecoe
         const std::function<void(const Collider&)> &onCollisionEnd,
         std::int8_t layer)
     {
-        return std::make_unique<ShapeCollider>(owner, Shape::Sphere,
-            onCollisionBegin, onCollision, onCollisionEnd, layer);
+        return std::unique_ptr<ShapeCollider>(new ShapeCollider(owner, Shape::Sphere,
+            onCollisionBegin, onCollision, onCollisionEnd, layer));
     }
 } // namespace gamecoe
