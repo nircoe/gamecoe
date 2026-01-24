@@ -158,14 +158,14 @@ namespace gamecoe
                GL_LINEAR_MIPMAP_LINEAR;
     }
 
-    static inline unsigned int getCurrentBoundTextureId(int dimension)
+    static inline std::uint32_t getCurrentBoundTextureId(int dimension)
     {
         int textureBinding = (dimension == GL_TEXTURE_1D) ? GL_TEXTURE_BINDING_1D :
                              (dimension == GL_TEXTURE_2D) ? GL_TEXTURE_BINDING_2D :
                              GL_TEXTURE_BINDING_3D;
         GLint currentTexture;
         glGetIntegerv(textureBinding, &currentTexture);
-        return static_cast<unsigned int>(currentTexture);
+        return static_cast<std::uint32_t>(currentTexture);
     }
 #endif
 
@@ -179,14 +179,14 @@ namespace gamecoe
         }
 
 #if !GAMECOE_HAS_DSA
-        unsigned int currentTexture = getCurrentBoundTextureId(m_dimension);
+        std::uint32_t currentTexture = getCurrentBoundTextureId(m_dimension);
         
         struct AutomaticRebinding
         {
-            unsigned int m_texture;
+            std::uint32_t m_texture;
             int m_dimension;
             bool m_shouldRebind = false;
-            AutomaticRebinding(unsigned int tex, int dim) : m_texture(tex), m_dimension(dim) { }
+            AutomaticRebinding(std::uint32_t tex, int dim) : m_texture(tex), m_dimension(dim) { }
             ~AutomaticRebinding()
             {
                 if(m_shouldRebind)

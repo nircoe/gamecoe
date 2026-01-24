@@ -262,7 +262,6 @@ namespace gamecoe
                 for (auto &scene : scenes)
                     scene.get().update();
             }
-
             m_internalScene->update();
 
             // TODO: Physics/Collision system
@@ -272,6 +271,7 @@ namespace gamecoe
                 for (auto &scene : scenes)
                     scene.get().render();
             }
+            m_mainCamera->owner().transform().clearModelChanged();
 
             soundcoe::update();
         }

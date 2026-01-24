@@ -9,7 +9,7 @@ uniform vec4 color;
 
 float circleAlpha(vec3 lPos)
 {
-    const float RADIUS = 1.0;
+    const float RADIUS = 0.5;
 
     float dist = length(lPos);
     float edgeWidth = fwidth(dist);

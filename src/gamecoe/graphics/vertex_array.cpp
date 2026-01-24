@@ -1,57 +1,20 @@
 #include <gamecoe/graphics/vertex_array.hpp>
+#include <gamecoe/utils/geometry.hpp>
 #include <gamecoe_config.hpp>
 
 #if GAMECOE_USE_OPENGL
 #include <glad/gl.h>
 #endif
 
-namespace 
-{
-    constexpr float triangleVertices[] = {
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.0f,  0.5f, 0.0f
-    };
-
-    constexpr float rectangleVertices[] = {
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.5f,  0.5f, 0.0f,
-        -0.5f,  0.5f, 0.0f
-    };
-    constexpr unsigned int rectangleIndices[] = {
-        0, 1, 2,
-        2, 3, 0
-    };
-
-    constexpr float boxVertices[] = {
-        -0.5f, -0.5f,  0.5f,
-         0.5f, -0.5f,  0.5f,
-         0.5f,  0.5f,  0.5f,
-        -0.5f,  0.5f,  0.5f,
-        -0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f,  0.5f, -0.5f,
-        -0.5f,  0.5f, -0.5f
-    };
-    constexpr unsigned int boxIndices[] = {
-        0, 1, 2, 2, 3, 0,
-        4, 5, 6, 6, 7, 4,
-        7, 3, 0, 0, 4, 7,
-        1, 5, 6, 6, 2, 1,
-        4, 0, 1, 1, 5, 4,
-        3, 7, 6, 6, 2, 3
-    };
-}
-
 namespace gamecoe
 {
     std::vector<VertexArray*> VertexArray::s_shapeVAs = {};
 
     VertexArray::VertexArray(const float *vertices, size_t vertexCount, size_t vertexSize,
-                             const unsigned int *indices, size_t indexCount) :  m_id(0), 
-                                                                                m_vertexBuffer(VertexBuffer()), 
-                                                                                m_vertexCount(vertexCount)
+                             const std::uint32_t *indices, size_t indexCount) :  
+        m_id(0), 
+        m_vertexBuffer(VertexBuffer()), 
+        m_vertexCount(vertexCount)
     {
 #if GAMECOE_HAS_DSA
         glCreateVertexArrays(1, &m_id);
@@ -71,7 +34,7 @@ namespace gamecoe
         m_vertexBuffer.uploadData(vertices, vertexCount * vertexSize * sizeof(float));
 
         if (m_indexBuffer)
-            m_indexBuffer->uploadData(indices, indexCount * sizeof(unsigned int));
+            m_indexBuffer->uploadData(indices, indexCount * sizeof(std::uint32_t));
 
         setupVertexAttributes();
 #if !GAMECOE_HAS_DSA
@@ -162,7 +125,8 @@ namespace gamecoe
         static VertexArray *triangleVA = nullptr;
         if (!triangleVA)
         {
-            triangleVA = new VertexArray(triangleVertices, 3, 3);
+            static constexpr auto vertices = geometry::triangle::verticesFlat();
+            triangleVA = new VertexArray(vertices.data(), vertices.size() / 3, 3);
             s_shapeVAs.push_back(triangleVA);
         }
     
@@ -174,7 +138,9 @@ namespace gamecoe
         static VertexArray *rectangleVA = nullptr;
         if (!rectangleVA)
         {
-            rectangleVA = new VertexArray(rectangleVertices, 4, 3, rectangleIndices, 6);
+            static constexpr auto vertices = geometry::rectangle::verticesFlat();
+            static constexpr auto indices = geometry::rectangle::indices();
+            rectangleVA = new VertexArray(vertices.data(), vertices.size() / 3, 3, indices.data(), indices.size());
             s_shapeVAs.push_back(rectangleVA);
         }
         
@@ -186,7 +152,9 @@ namespace gamecoe
         static VertexArray *boxVA = nullptr;
         if (!boxVA)
         {
-            boxVA = new VertexArray(boxVertices, 8, 3, boxIndices, 36);
+            static constexpr auto vertices = geometry::box::verticesFlat();
+            static constexpr auto indices = geometry::box::indices();
+            boxVA = new VertexArray(vertices.data(), vertices.size() / 3, 3, indices.data(), indices.size());
             s_shapeVAs.push_back(boxVA);
         }
         

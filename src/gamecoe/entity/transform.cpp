@@ -7,6 +7,7 @@ namespace gamecoe
     void Transform::invalidateCachedModel() const
     {
         m_modelChanged = true;
+        m_cachedModelValid = false;
 
         auto &children = m_owner.children();
         for (auto &child : children)
@@ -124,13 +125,13 @@ namespace gamecoe
 
     const glm::mat4 &Transform::modelMatrix() const
     {
-        if (!m_modelChanged) return m_cachedModelMatrix;
+        if (m_cachedModelValid) return m_cachedModelMatrix;
 
         glm::mat4 local = localMatrix();
 
         m_cachedModelMatrix = !m_owner.hasParent() ? local : m_owner.parent()->get().transform().modelMatrix() * local;
         m_cachedInverseModelMatrix = glm::inverse(m_cachedModelMatrix);
-        m_modelChanged = false;
+        m_cachedModelValid = true;
 
         return m_cachedModelMatrix;
     }
@@ -307,5 +308,10 @@ namespace gamecoe
     bool Transform::modelChanged() const
     {
         return m_modelChanged;
+    }
+
+    void Transform::clearModelChanged() const
+    {
+        m_modelChanged = false;
     }
 } // namespace gamecoe

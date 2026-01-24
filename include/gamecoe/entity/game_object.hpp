@@ -50,6 +50,10 @@ namespace gamecoe
 
     public:
         GameObject(Scene &scene, const std::string &name = "", std::optional<std::reference_wrapper<GameObject>> parent = std::nullopt);
+        GameObject(const GameObject&) = delete;
+        GameObject(GameObject&&) = delete;
+        GameObject &operator=(const GameObject&) = delete;
+        GameObject &operator=(GameObject&&) = delete;
         ~GameObject();
 
         // Called only once, when initializing the GameObject

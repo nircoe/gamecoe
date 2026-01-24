@@ -46,7 +46,10 @@ namespace gamecoe
             detail::throwError("Window::Window(): Failed to create glfw window");
 
         if(!current) // multi-window support
+        {
             glfwMakeContextCurrent(window);
+            glfwSwapInterval(0); // TODO: maybe in the future allow the users to limit their FPS
+        }
         
         glfwSetWindowUserPointer(window, this);
 
