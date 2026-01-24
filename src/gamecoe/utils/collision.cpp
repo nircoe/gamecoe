@@ -149,7 +149,7 @@ namespace gamecoe
                     // if ray from point crosses edge - Jordan Curve Theorem (Ray Casting)
                     // then toggle inside/outside
                     if (((v1.y >= point.y && point.y > v2.y) || (v1.y < point.y && point.y <= v2.y)) &&
-                        (point.x < (((v2.x - v1.x) * (point.y - v1.y)) / ((v2.y - v1.y) + v1.x))))
+                        (point.x < ((((v2.x - v1.x) * (point.y - v1.y)) / (v2.y - v1.y)) + v1.x)))
                         inside = !inside;
                 }
 
@@ -174,7 +174,7 @@ namespace gamecoe
             {
                 for (std::size_t i = 0; i < N1; ++i)
                 {
-                    std::size_t next =(i == N1 - 1) ? 0 : i + 1;
+                    std::size_t next = (i == N1 - 1) ? 0 : i + 1;
                     // check collision
                     if (polygonWithLine(polygon2, polygon1[i], polygon1[next])) return true;
                 }
