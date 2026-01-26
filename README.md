@@ -1,6 +1,10 @@
 # gamecoe - A small C++ Code-Only Game Engine
 
-## Current State - Work in Progress
+## Current State - Refactoring towards Data-Oriented Design Entity Component System Architecture
+
+### Please notice this README isn't updated, gamecoe currently is under refactoring towards DoD-ECS architecture (in `refactor/dod_ecs` branch), so this README is updated to the old version of gamecoe that is currently in `main` branch
+
+---------------------------------------------------------------------------------------------------------
 
 ### gamecoe has been recently tested with OpenGL 3.0-4.6 on Linux (Arch) and worked fine.
 ### If you find any bugs, please open an issue or contact games@nircoe.com
@@ -15,6 +19,7 @@
     - **UBO (Uniform Buffer Object)** for OpenGL 3.1+ - Efficient uniform data sharing (`#if GAMECOE_HAS_UBO`)
     - **Shader Preprocessing**: gamecoe auto-injects `#version` and `#define` macros into your shaders
 - **Rendering**: Basic Shape rendering support (only triangle, rectangle, box, circle and sphere at the moment) with Frustum Culling
+- **Collisions**: Basic Shape collider support (only xy-plane 2D objects are supported at the moment - triangle, rectangle and circle)
 - **Multi Active Scene Support**: Want to build a bigger world with more than 1 active Scene at a time? 
                                   Want to make the pause menu a separated Scene so your code will be more organized? 
                                   gamecoe supports it!
@@ -165,7 +170,6 @@ gencoe component Monster -n Enemies
 
 ## Roadmap
 
-- **Collider**: Collider Component for GameObjects collision detection and handling
 - **Batch Rendering**: Introduce batch rendering system for better performance
 - **SpriteRenderer**: New Renderer Component for Sprite rendering
 - **datacoe**: Integrate [datacoe](https://github.com/nircoe/datacoe) for save/load data management system with optional encryption
