@@ -14,7 +14,7 @@ namespace gamecoe
         static constexpr std::uint32_t ID_MASK = (1U << ID_BITS) - 1;
         static constexpr std::uint32_t GEN_MASK = (1U << GEN_BITS) - 1;
         static constexpr std::uint32_t MAX_ENTITIES = ID_MASK - 1;  // 1,048,574
-        static constexpr std::uint16_t MAX_GENERATIONS = GEN_MASK;  // 4,095
+        static constexpr std::uint16_t MAX_GENERATIONS = GEN_MASK - 1;  // 4,094
 
         static constexpr entity invalid() noexcept { return entity{std::numeric_limits<std::uint32_t>::max()}; }
 
@@ -33,12 +33,12 @@ namespace gamecoe
 
         bool valid() const noexcept { return *this != invalid(); }
 
-        std::uint32_t id() const noexcept { return (m_value >> GEN_BITS) & ID_MASK; }
+        std::uint32_t id() const noexcept { return m_value >> GEN_BITS; }
         std::uint16_t generation() const noexcept { return m_value & GEN_MASK; }
     
     private:
         std::uint32_t m_value;
 
-        explicit entity(std::uint32_t value) : m_value(value) { }
+        explicit entity(std::uint32_t value) noexcept : m_value(value) { }
     };
 } // namespace gamecoe

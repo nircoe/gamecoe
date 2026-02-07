@@ -31,13 +31,20 @@ namespace gamecoe
         {
             return (generation << entity::ID_BITS) | dense_index;
         }
+
+    protected:
+        entity get_entity_at_index(std::size_t index) const noexcept
+        {
+            assert(index < m_dense.size() && "sparse_set::get_entity_at_index(): index out of bounds");
+            return m_dense[index];
+        }
         
     public:
-        sparse_set() = default;
+        sparse_set() noexcept = default;
         sparse_set(const sparse_set&) = delete;
         sparse_set& operator=(const sparse_set&) = delete;
-        sparse_set(sparse_set&&) = default;
-        sparse_set& operator=(sparse_set&&) = default;
+        sparse_set(sparse_set&&) noexcept = default;
+        sparse_set& operator=(sparse_set&&) noexcept = default;
 
         ~sparse_set() = default;
 
