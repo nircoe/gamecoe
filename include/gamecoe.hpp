@@ -3,17 +3,9 @@
 #include <gamecoe_config.hpp>
 
 // gamecoe headers
-#include <gamecoe/core/game.hpp>
-#include <gamecoe/core/window.hpp>
-#include <gamecoe/core/scene.hpp>
-
-#include <gamecoe/graphics/shader.hpp>
-#include <gamecoe/graphics/texture.hpp>
-
-#include <gamecoe/entity/game_object.hpp>
-#include <gamecoe/entity/renderer/renderer.hpp>
-#include <gamecoe/entity/renderer/shape_renderer.hpp>
-#include <gamecoe/entity/camera.hpp>
+#include <gamecoe/entity/entity.hpp>
+#include <gamecoe/entity/sparse_set.hpp>
+#include <gamecoe/entity/component_pool.hpp>
 
 // gamecoe toolkit libraries headers
 #include <colorcoe.hpp>

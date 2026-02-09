@@ -13,7 +13,7 @@ namespace timecoe
     {
         void update()
         {
-            float time = glfwGetTime();
+            float time = static_cast<float>(glfwGetTime());
 
             if (g_lastFrameTime < 0.0f) g_lastFrameTime = time;
 

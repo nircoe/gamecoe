@@ -10,6 +10,7 @@ jobs:
   build-and-test:
     name: ${{ matrix.name }}
     runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false || github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
@@ -18,13 +19,13 @@ jobs:
           - name: "Linux GCC"
             compiler: gcc
             cmake-generator: 'Ninja'
-            cmake-options: '-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DGAMECOE_USE_TESTCOE=ON'
+            cmake-options: '-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DGAMECOE_USE_TESTCOE=ON -DGAMECOE_GLFW_WAYLAND=OFF'
 
           # Linux with Clang
           - name: "Linux Clang"
             compiler: clang
             cmake-generator: 'Ninja'
-            cmake-options: '-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DGAMECOE_USE_TESTCOE=ON'
+            cmake-options: '-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DGAMECOE_USE_TESTCOE=ON -DGAMECOE_GLFW_WAYLAND=OFF'
 
     steps:
     - name: Checkout repository

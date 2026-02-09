@@ -1,5 +1,4 @@
 #include <inputcoe.hpp>
-#include <gamecoe/core/game.hpp>
 #include <GLFW/glfw3.h>
 #include <unordered_map>
 #include <gamecoe_config.hpp>
