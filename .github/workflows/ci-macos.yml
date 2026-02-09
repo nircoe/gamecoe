@@ -1,0 +1,47 @@
+name: macOS
+
+on:
+  push:
+    branches: [ main, refactor/dod_ecs ]
+  pull_request:
+    branches: [ main, refactor/dod_ecs ]
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.name }}
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # macOS with Apple Clang
+          - name: "macOS Clang"
+            compiler: clang
+            cmake-generator: 'Ninja'
+            cmake-options: '-DGAMECOE_USE_TESTCOE=ON'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+
+    - name: Install ninja-build
+      run: |
+        brew install ninja
+      shell: bash
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }}
+
+    - name: Build
+      run: |
+        cmake --build build --config Release
+
+    - name: Run tests
+      working-directory: build
+      run: |
+        echo "Running gamecoe tests"
+        ./tests/gamecoe_tests
+      shell: bash

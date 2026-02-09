@@ -1,0 +1,54 @@
+name: Linux
+
+on:
+  push:
+    branches: [ main, refactor/dod_ecs ]
+  pull_request:
+    branches: [ main, refactor/dod_ecs ]
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux with GCC
+          - name: "Linux GCC"
+            compiler: gcc
+            cmake-generator: 'Ninja'
+            cmake-options: '-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DGAMECOE_USE_TESTCOE=ON'
+
+          # Linux with Clang
+          - name: "Linux Clang"
+            compiler: clang
+            cmake-generator: 'Ninja'
+            cmake-options: '-DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DGAMECOE_USE_TESTCOE=ON'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ninja-build xorg-dev libgl1-mesa-dev libglu1-mesa-dev
+      shell: bash
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }}
+
+    - name: Build
+      run: |
+        cmake --build build --config Release
+
+    - name: Run tests
+      working-directory: build
+      run: |
+        echo "Running gamecoe tests"
+        ./tests/gamecoe_tests
+      shell: bash

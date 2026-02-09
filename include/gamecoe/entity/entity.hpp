@@ -33,12 +33,12 @@ namespace gamecoe
 
         bool valid() const noexcept { return *this != invalid(); }
 
-        std::uint32_t id() const noexcept { return m_value >> GEN_BITS; }
-        std::uint16_t generation() const noexcept { return m_value & GEN_MASK; }
+        std::uint32_t id() const noexcept { return m_handle >> GEN_BITS; }
+        std::uint16_t generation() const noexcept { return m_handle & GEN_MASK; }
     
     private:
-        std::uint32_t m_value;
+        std::uint32_t m_handle;
 
-        explicit entity(std::uint32_t value) noexcept : m_value(value) { }
+        explicit entity(std::uint32_t value) noexcept : m_handle(value) { }
     };
 } // namespace gamecoe
