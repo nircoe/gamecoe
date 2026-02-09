@@ -1,0 +1,74 @@
+name: Windows
+
+on:
+  push:
+    branches: [ main, refactor/dod_ecs ]
+  pull_request:
+    types: [ opened, synchronize, reopened, ready_for_review ]
+    branches: [ main, refactor/dod_ecs ]
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.name }}
+    runs-on: windows-latest
+    if: github.event.pull_request.draft == false || github.event_name == 'push'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Windows with MSVC
+          - name: "Windows MSVC"
+            compiler: msvc
+            cmake-generator: 'Visual Studio 17 2022'
+            cmake-options: '-DGAMECOE_USE_TESTCOE=ON'
+
+          # Windows with MinGW (GCC)
+          - name: "Windows MinGW"
+            compiler: gcc
+            cmake-generator: 'MinGW Makefiles'
+            cmake-options: '-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DGAMECOE_USE_TESTCOE=ON'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+
+    - name: Install Windows build tools
+      if: matrix.compiler != 'msvc'
+      run: |
+        if [ "${{ matrix.compiler }}" == "clang" ]; then
+          choco install ninja
+        elif [ "${{ matrix.compiler }}" == "gcc" ]; then
+          choco install mingw
+        fi
+      shell: bash
+
+
+    - name: Configure CMake
+      run: |
+        cmake -B build -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }}
+
+    - name: Build
+      run: |
+        cmake --build build --config Release
+
+    - name: Run tests
+      working-directory: build
+      run: |
+        if [ "${{ matrix.compiler }}" == "gcc" ]; then
+            # For MinGW - copy DLLs directly (no PATH manipulation)
+            GCC_DIR=$(dirname $(which gcc))
+            echo "GCC directory: $GCC_DIR"
+            echo "Copying DLLs from $GCC_DIR"
+            cp "$GCC_DIR"/libgcc*.dll tests/ 2>/dev/null || echo "No libgcc DLLs found"
+            cp "$GCC_DIR"/libstdc*.dll tests/ 2>/dev/null || echo "No libstdc DLLs found"
+            cp "$GCC_DIR"/libwinpthread*.dll tests/ 2>/dev/null || echo "No libwinpthread DLLs found"
+            echo "Running gamecoe tests"
+            cd tests
+            ./gamecoe_tests.exe
+        else # MSVC
+            echo "Running gamecoe tests"
+            ./tests/Release/gamecoe_tests.exe
+        fi
+      shell: bash

@@ -19,6 +19,7 @@ include(FetchContent)
 
 # Fetching gamecoe toolkit libraries:
 fetch_logcoe()
+fetch_testcoe()
 fetch_soundcoe()
 
 # Fetching external libraries for gamecoe:
@@ -32,6 +33,10 @@ generate_gamecoe_config_header()
 message(STATUS "[gamecoe] Building gamecoe library...")
 add_subdirectory(include)
 add_subdirectory(src)
+
+if(GAMECOE_USE_TESTCOE)
+    add_subdirectory(tests)
+endif()
 
 # gamecoe tester executable
 # add_executable(tester main.cpp)

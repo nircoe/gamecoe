@@ -6,7 +6,6 @@
 #include <vector>
 #include <optional>
 #include <functional>
-#include <cstdint>
 #include <cassert>
 
 namespace gamecoe
