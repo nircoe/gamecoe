@@ -17,7 +17,6 @@ add_subdirectory(external)
 
 include(FetchContent)
 
-set(GAMECOE_USE_TESTCOE ON) # TODO: delete
 # Fetching gamecoe toolkit libraries:
 fetch_logcoe()
 fetch_testcoe()
