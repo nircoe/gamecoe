@@ -95,14 +95,14 @@ namespace inputcoe
     {
         void mousePositionCallback(GLFWwindow *window, double xpos, double ypos)
         {
-            g_currentMousePosition[0] = xpos;
-            g_currentMousePosition[1] = ypos;
+            g_currentMousePosition[0] = static_cast<float>(xpos);
+            g_currentMousePosition[1] = static_cast<float>(ypos);
 
             int width, height;
             glfwGetFramebufferSize(window, &width, &height);
 
-            g_currentMousePositionNormalized[0] = xpos / width;
-            g_currentMousePositionNormalized[1] = ypos / height;
+            g_currentMousePositionNormalized[0] = static_cast<float>(xpos) / width;
+            g_currentMousePositionNormalized[1] = static_cast<float>(ypos) / height;
         }
 
         void keyCallback([[maybe_unused]] GLFWwindow *window, int key, [[maybe_unused]] int scancode, int action, [[maybe_unused]] int mods)

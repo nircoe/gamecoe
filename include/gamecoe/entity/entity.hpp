@@ -39,6 +39,6 @@ namespace gamecoe
     private:
         std::uint32_t m_handle;
 
-        explicit entity(std::uint32_t value) noexcept : m_handle(value) { }
+        explicit constexpr entity(std::uint32_t value) noexcept : m_handle(value) { }
     };
 } // namespace gamecoe
