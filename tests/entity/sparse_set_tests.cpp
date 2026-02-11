@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <gamecoe/entity/sparse_set.hpp>
 #include <vector>
-#include <algorithm>
 
 using namespace gamecoe;
 
@@ -111,6 +110,8 @@ TEST_F(SparseSetTests, EraseNonExistent)
     auto e2 = entity::create(20, 0);
 
     set.insert(e1);
+    EXPECT_EQ(set.size(), 1);
+
     set.erase(e2); // e2 not in set
 
     EXPECT_EQ(set.size(), 1); // Size unchanged
@@ -223,10 +224,12 @@ TEST_F(SparseSetTests, MoveSemantics)
 
     set1.insert(e1);
     set1.insert(e2);
+    EXPECT_EQ(set1.size(), 2);
 
     // Move constructor
     sparse_set set2(std::move(set1));
     EXPECT_EQ(set2.size(), 2);
+    EXPECT_EQ(set1.size(), 0);
     EXPECT_TRUE(set2.contains(e1));
     EXPECT_TRUE(set2.contains(e2));
 

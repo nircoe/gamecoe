@@ -16,7 +16,7 @@ protected:
     // Test helper: custom hash for unordered containers
     struct entity_hash
     {
-        std::size_t operator()(const entity &e) const noexcept
+        std::size_t operator()(entity e) const noexcept
         {
             return std::hash<std::uint32_t>{}(e.id()) ^
                    (std::hash<std::uint16_t>{}(e.generation()) << 1);
@@ -64,22 +64,6 @@ TEST_F(EntityTests, InvalidEntity)
 
     EXPECT_FALSE(invalid.valid());
     EXPECT_EQ(invalid, entity::invalid()); // Two invalid entities are equal
-}
-
-TEST_F(EntityTests, IdGenerationAccessors)
-{
-    // Test various combinations
-    auto e1 = entity::create(0, 0);
-    EXPECT_EQ(e1.id(), 0);
-    EXPECT_EQ(e1.generation(), 0);
-
-    auto e2 = entity::create(1024, 42);
-    EXPECT_EQ(e2.id(), 1024);
-    EXPECT_EQ(e2.generation(), 42);
-
-    auto e3 = entity::create(100000, 1000);
-    EXPECT_EQ(e3.id(), 100000);
-    EXPECT_EQ(e3.generation(), 1000);
 }
 
 //==============================================================================

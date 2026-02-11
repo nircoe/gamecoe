@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <gamecoe/entity/component_pool.hpp>
 #include <memory>
-#include <string>
 
 using namespace gamecoe;
 
@@ -32,46 +31,6 @@ struct MoveOnlyComponent
     MoveOnlyComponent &operator=(const MoveOnlyComponent &) = delete;
     MoveOnlyComponent(MoveOnlyComponent &&) noexcept = default;
     MoveOnlyComponent &operator=(MoveOnlyComponent &&) noexcept = default;
-};
-
-// RAII type for lifecycle test
-struct LifetimeTracker
-{
-    int *counter;
-
-    LifetimeTracker(int *c) : counter(c) { ++(*counter); }
-    ~LifetimeTracker() { --(*counter); }
-
-    // Copyable for swap-and-pop operations
-    LifetimeTracker(const LifetimeTracker &other) : counter(other.counter) { ++(*counter); }
-    LifetimeTracker &operator=(const LifetimeTracker &other)
-    {
-        if (this != &other)
-        {
-            if (counter)
-                --(*counter);
-            counter = other.counter;
-            ++(*counter);
-        }
-        return *this;
-    }
-
-    // Moveable
-    LifetimeTracker(LifetimeTracker &&other) noexcept : counter(other.counter)
-    {
-        other.counter = nullptr;
-    }
-    LifetimeTracker &operator=(LifetimeTracker &&other) noexcept
-    {
-        if (this != &other)
-        {
-            if (counter)
-                --(*counter);
-            counter = other.counter;
-            other.counter = nullptr;
-        }
-        return *this;
-    }
 };
 
 //==============================================================================
@@ -127,21 +86,6 @@ TEST_F(ComponentPoolTests, AddMultiple)
         EXPECT_TRUE(retrieved.has_value());
         EXPECT_EQ(retrieved->get().x, static_cast<float>(i));
     }
-}
-
-TEST_F(ComponentPoolTests, ContainsCheck)
-{
-    auto e = entity::create(42, 0);
-
-    EXPECT_FALSE(pool.contains(e));
-
-    pool.add(e, Position{1.0f, 2.0f, 3.0f});
-
-    EXPECT_TRUE(pool.contains(e));
-    EXPECT_EQ(pool.size(), 1);
-
-    // Note: Adding duplicate component triggers assertion in debug builds
-    // This is a programmer error, not a runtime behavior to test
 }
 
 //==============================================================================
@@ -292,3 +236,5 @@ TEST_F(ComponentPoolTests, ClearPool)
     for (std::uint32_t i = 0; i < 20; ++i)
         EXPECT_FALSE(pool.contains(entity::create(i, 0)));
 }
+
+

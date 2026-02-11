@@ -1,9 +1,7 @@
 #include <gtest/gtest.h>
 #include <gamecoe/entity/entity.hpp>
-#include <gamecoe/entity/sparse_set.hpp>
 #include <gamecoe/entity/component_pool.hpp>
 #include <chrono>
-#include <memory>
 
 using namespace gamecoe;
 

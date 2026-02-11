@@ -10,69 +10,90 @@
 
 namespace gamecoe
 {
+    class basic_component_pool
+    {
+    protected:
+        sparse_set m_entities;
+        
+    private:
+        virtual void do_reserve(std::size_t capacity) = 0;
+
+    public:
+        virtual ~basic_component_pool() = default;
+        virtual void remove(entity e) = 0;
+        virtual void clear() = 0;
+
+        bool contains(entity e) const noexcept { return m_entities.contains(e); }
+        std::size_t size() const noexcept { return m_entities.size(); }
+        bool empty() const noexcept { return m_entities.empty(); }
+        void reserve(std::size_t capacity) { m_entities.reserve(capacity); do_reserve(capacity); }
+    };
+
     template <typename T>
-    class component_pool : private sparse_set
+    class component_pool : public basic_component_pool
     {
         std::vector<T> m_components;
 
-    public:
-        using sparse_set::contains;
-        using sparse_set::size;
-        using sparse_set::empty;
+        void do_reserve(std::size_t capacity) override
+        {
+            m_components.reserve(capacity);
+        }
 
+    public:
         component_pool() noexcept = default;
         component_pool(const component_pool&) = delete;
         component_pool& operator=(const component_pool&) = delete;
         component_pool(component_pool&&) noexcept = default;
         component_pool& operator=(component_pool&&) noexcept = default;
 
-        ~component_pool() = default;
+        ~component_pool() override = default;
 
-        void reserve(std::size_t capacity)
+        void remove(entity e) override
         {
-            sparse_set::reserve(capacity);
-            m_components.reserve(capacity);
+            auto index = m_entities.index(e);
+            if(!index) return;
+
+            std::uint32_t i = index.value();
+            m_entities.erase_at(i);
+
+            if (i != m_components.size() - 1)
+                m_components[i] = std::move(m_components.back());
+
+            m_components.pop_back();
+        }
+
+        void clear() override
+        {
+            m_entities.clear();
+            m_components.clear();
         }
 
         template <typename... Args>
-        T& add(const entity &e, Args&&... args)
+        T& add(entity e, Args&&... args)
         {
             if(contains(e)) 
             {
                 assert(false && "component_pool::add(): entity already has this component");
-                return m_components[sparse_set::index(e).value()];
+                return m_components[m_entities.index(e).value()];
             }
 
-            sparse_set::insert(e);
+            m_entities.insert(e);
             m_components.emplace_back(std::forward<Args>(args)...);
 
             return m_components.back();
         }
 
-        void remove(const entity &e)
+        std::optional<std::reference_wrapper<T>> get(entity e)
         {
-            auto index = sparse_set::index(e);
-            if(!index) return;
-
-            sparse_set::erase(e);
-
-            if (index.value() < m_components.size() - 1)
-                m_components[index.value()] = std::move(m_components.back());
-
-            m_components.pop_back();
-        }
-
-        std::optional<std::reference_wrapper<T>> get(const entity &e)
-        {
-            auto index = sparse_set::index(e);
+            auto index = m_entities.index(e);
             if(!index) return std::nullopt;
 
             return std::ref(m_components[index.value()]);
         }
 
-        std::optional<std::reference_wrapper<const T>> get(const entity &e) const
+        std::optional<std::reference_wrapper<const T>> get(entity e) const
         {
-            auto index = sparse_set::index(e);
+            auto index = m_entities.index(e);
             if(!index) return std::nullopt;
 
             return std::cref(m_components[index.value()]);
@@ -83,7 +104,7 @@ namespace gamecoe
         {
             auto size = m_components.size();
             for(std::size_t i = 0; i < size; ++i)
-                func(sparse_set::get_entity_at_index(i), m_components[i]);
+                func(m_entities.get_entity_at_index(i), m_components[i]);
         }
 
         template<typename Func>
@@ -91,13 +112,7 @@ namespace gamecoe
         {
             auto size = m_components.size();
             for(std::size_t i = 0; i < size; ++i)
-                func(sparse_set::get_entity_at_index(i), m_components[i]);
-        }
-
-        void clear()
-        {
-            sparse_set::clear();
-            m_components.clear();
+                func(m_entities.get_entity_at_index(i), m_components[i]);
         }
 
         // Iterators invalidated by add/remove (dense array reallocation)
