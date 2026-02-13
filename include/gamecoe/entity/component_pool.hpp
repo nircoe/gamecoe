@@ -4,8 +4,6 @@
 #include <gamecoe/entity/entity.hpp>
 #include <gamecoe/entity/sparse_set.hpp>
 #include <vector>
-#include <optional>
-#include <functional>
 #include <cassert>
 
 namespace gamecoe
@@ -83,20 +81,20 @@ namespace gamecoe
             return m_components.back();
         }
 
-        std::optional<std::reference_wrapper<T>> get(entity e)
+        T& get(entity e)
         {
             auto index = m_entities.index(e);
-            if(!index) return std::nullopt;
+            assert(index && "component_pool::get(): entity does not exist in the pool");
 
-            return std::ref(m_components[index.value()]);
+            return m_components[index.value()];
         }
 
-        std::optional<std::reference_wrapper<const T>> get(entity e) const
+        const T& get(entity e) const
         {
             auto index = m_entities.index(e);
-            if(!index) return std::nullopt;
+            assert(index && "component_pool::get(): entity does not exist in the pool");
 
-            return std::cref(m_components[index.value()]);
+            return m_components[index.value()];
         }
 
         template<typename Func>
