@@ -15,7 +15,7 @@ int printHelp()
     std::cout << "  EntityTests              - Entity handle tests" << std::endl;
     std::cout << "  SparseSetTests           - Sparse set data structure tests" << std::endl;
     std::cout << "  ComponentPoolTests       - Component pool wrapper tests" << std::endl;
-    std::cout << "  ECSIntegrationTests      - ECS component interaction tests" << std::endl;
+    std::cout << "  EntitiesTests            - Entities manager tests" << std::endl;
     std::cout << std::endl;
     std::cout << "Example usage:" << std::endl;
     std::cout << "  ./gamecoe_tests --suite=EntityTests" << std::endl;
@@ -30,8 +30,7 @@ int main(int argc, char **argv)
     std::cout << "====================================================" << std::endl;
     std::cout << std::endl;
     std::cout << "Comprehensive testing for gamecoe." << std::endl;
-    std::cout << "Testing Entity Module: entity, sparse_set, component_pool" << std::endl;
-    std::cout << "Testing Integration Module: Multi-component entities, RAII, bulk operations" << std::endl;
+    std::cout << "Testing Entity Module: entity, sparse_set, component_pool, entities" << std::endl;
     std::cout << std::endl;
 
     testcoe::init(&argc, argv);

@@ -242,6 +242,51 @@ TEST_F(SparseSetTests, MoveSemantics)
 }
 
 //==============================================================================
+//                        Erase At (by dense index)
+//==============================================================================
+
+TEST_F(SparseSetTests, EraseAtSwapAndPop)
+{
+    auto e1 = entity::create(10, 0);
+    auto e2 = entity::create(20, 0);
+    auto e3 = entity::create(30, 0);
+
+    set.insert(e1);
+    set.insert(e2);
+    set.insert(e3);
+
+    // Erase middle entity by index (e2 is at dense index 1)
+    set.erase_at(1);
+
+    EXPECT_EQ(set.size(), 2);
+    EXPECT_TRUE(set.contains(e1));
+    EXPECT_FALSE(set.contains(e2));
+    EXPECT_TRUE(set.contains(e3));
+
+    // e3 should have been swapped to index 1 (e2's old position)
+    EXPECT_EQ(set.index(e1).value(), 0);
+    EXPECT_EQ(set.index(e3).value(), 1);
+
+    // Erase last element by index (no swap needed)
+    set.erase_at(1); // e3 is now at index 1 (last)
+
+    EXPECT_EQ(set.size(), 1);
+    EXPECT_TRUE(set.contains(e1));
+    EXPECT_FALSE(set.contains(e3));
+}
+
+TEST_F(SparseSetTests, EraseAtOutOfBounds)
+{
+    auto e = entity::create(42, 0);
+    set.insert(e);
+
+    set.erase_at(5); // Out of bounds, should be no-op
+
+    EXPECT_EQ(set.size(), 1);
+    EXPECT_TRUE(set.contains(e));
+}
+
+//==============================================================================
 //                        Capacity Management
 //==============================================================================
 
