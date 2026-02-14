@@ -6,7 +6,6 @@
 #include <utility>
 #include <vector>
 #include <memory>
-#include <atomic>
 #include <cstdint>
 #include <cassert>
 
@@ -14,13 +13,13 @@ namespace gamecoe
 {
     class entities
     {
-        static std::atomic<std::uint32_t> s_component_id;
+        static std::uint32_t s_component_id;
 
         std::vector<std::unique_ptr<basic_component_pool>> m_pools;
         std::vector<std::uint32_t> m_recycle_ids;
         std::vector<std::uint16_t> m_generations;
 
-        std::atomic<std::uint32_t> m_current_entity_id;
+        std::uint32_t m_current_entity_id{0};
 
         // Returns static and unique id for component T
         template <typename T>

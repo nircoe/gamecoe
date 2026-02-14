@@ -7,8 +7,6 @@
 
 namespace gamecoe
 {
-    class entities;
-
     struct entity
     {
         static constexpr std::uint8_t ID_BITS = 20;

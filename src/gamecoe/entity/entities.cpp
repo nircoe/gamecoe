@@ -1,11 +1,10 @@
-#include "gamecoe/entity/entity.hpp"
+#include <gamecoe/entity/entities.hpp>
 #include <cassert>
 #include <cstddef>
-#include <gamecoe/entity/entities.hpp>
 
 namespace gamecoe
 {
-    std::atomic<std::uint32_t> entities::s_component_id{0};
+    std::uint32_t entities::s_component_id{0};
 
     entity entities::create()
     {
@@ -14,7 +13,7 @@ namespace gamecoe
 
         if (m_recycle_ids.empty())
         {
-            id = m_current_entity_id.load();
+            id = m_current_entity_id;
             assert(id <= entity::MAX_ENTITIES && "entities::create(): entity limit reached");
             m_current_entity_id++;
             generation = 0;
@@ -63,8 +62,8 @@ namespace gamecoe
 
     std::size_t entities::size() const
     {
-        assert(static_cast<std::size_t>(m_current_entity_id.load()) >= m_recycle_ids.size());
-        return static_cast<std::size_t>(m_current_entity_id.load()) - m_recycle_ids.size();
+        assert(static_cast<std::size_t>(m_current_entity_id) >= m_recycle_ids.size());
+        return static_cast<std::size_t>(m_current_entity_id) - m_recycle_ids.size();
     }
 
 } // namespace gamecoe
