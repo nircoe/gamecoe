@@ -22,21 +22,14 @@ namespace gamecoe
         std::vector<page_ptr_type> m_sparse;
         std::vector<entity> m_dense;
 
-        std::uint16_t index_in_page(const entity &e) const noexcept { return e.id() % PAGE_SIZE; }
-        std::uint32_t page_index(const entity &e) const noexcept { return e.id() / PAGE_SIZE; }
+        std::uint16_t index_in_page(entity e) const noexcept { return e.id() % PAGE_SIZE; }
+        std::uint32_t page_index(entity e) const noexcept { return e.id() / PAGE_SIZE; }
 
         std::uint32_t unpack_dense_index(std::uint32_t packed) const noexcept { return packed & entity::ID_MASK; }
         std::uint16_t unpack_generation(std::uint32_t packed) const noexcept { return packed >> entity::ID_BITS; }
         std::uint32_t pack_dense_index(std::uint32_t dense_index, std::uint16_t generation) const noexcept
         {
             return (generation << entity::ID_BITS) | dense_index;
-        }
-
-    protected:
-        entity get_entity_at_index(std::size_t index) const noexcept
-        {
-            assert(index < m_dense.size() && "sparse_set::get_entity_at_index(): index out of bounds");
-            return m_dense[index];
         }
         
     public:
@@ -50,7 +43,7 @@ namespace gamecoe
 
         void reserve(std::size_t capacity) { m_dense.reserve(capacity); }
 
-        void insert(const entity &e)
+        void insert(entity e)
         {
             if (contains(e)) return;
             assert(m_dense.size() <= entity::MAX_ENTITIES && "sparse_set::insert(): max entities exceeded"); // sanity check
@@ -66,11 +59,11 @@ namespace gamecoe
                 page->fill(TOMBSTONE);
             }
             
-            (*page)[index_in_page(e)] = pack_dense_index(m_dense.size(), e.generation());
+            (*page)[index_in_page(e)] = pack_dense_index(static_cast<std::uint32_t>(m_dense.size()), e.generation());
             m_dense.push_back(e);
         }
 
-        void erase(const entity &e)
+        void erase(entity e)
         {
             if (!contains(e)) return;
 
@@ -89,19 +82,45 @@ namespace gamecoe
             (*swapped_page)[index_in_page(swapped)] = pack_dense_index(dense_index, swapped.generation());
         }
 
-        std::optional<std::uint32_t> index(const entity &e) const
+        void erase_at(std::uint32_t dense_index)
+        {
+            if (dense_index >= m_dense.size()) return;
+
+            entity e = m_dense[dense_index];
+            auto page_i = page_index(e);
+            auto i_in_page = index_in_page(e);
+
+            entity swapped = m_dense.back();
+            m_dense[dense_index] = swapped;
+            m_dense.pop_back();
+
+            (*m_sparse[page_i])[i_in_page] = TOMBSTONE;
+
+            if (swapped == e) return;
+
+            auto &swapped_page = m_sparse[page_index(swapped)];
+            (*swapped_page)[index_in_page(swapped)] = pack_dense_index(dense_index, swapped.generation());
+        }
+
+        std::optional<std::uint32_t> index(entity e) const
         {
             if (!contains(e)) return std::nullopt;
 
             return unpack_dense_index((*m_sparse[page_index(e)])[index_in_page(e)]);
         }
 
-        bool contains(const entity &e) const noexcept
+        bool contains(entity e) const noexcept
         { 
             auto page_i = page_index(e);
 
             return page_i < m_sparse.size() && m_sparse[page_i] && 
                    unpack_generation((*m_sparse[page_i])[index_in_page(e)]) == e.generation();
+        }
+
+        entity get_entity_at_index(std::size_t index) const noexcept
+        {
+            assert(index < m_dense.size() && "sparse_set::get_entity_at_index(): index out of bounds");
+            return m_dense[index];
         }
 
         void clear() { m_sparse.clear(); m_dense.clear(); }

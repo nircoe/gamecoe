@@ -18,6 +18,12 @@ namespace gamecoe
 
         static constexpr entity invalid() noexcept { return entity{std::numeric_limits<std::uint32_t>::max()}; }
 
+        auto operator<=>(const entity &other) const noexcept = default;
+        bool operator==(const entity &other) const noexcept = default;
+
+        std::uint32_t id() const noexcept { return m_handle >> GEN_BITS; }
+        std::uint16_t generation() const noexcept { return m_handle & GEN_MASK; }
+
         static entity create(std::uint32_t id, std::uint16_t generation)
         {
             assert(id <= MAX_ENTITIES && "entity::create(): entity id exceeds maximum");
@@ -27,14 +33,6 @@ namespace gamecoe
             // [       20-bit id      ][12-bit generation]
             return entity((id << GEN_BITS) | generation);
         }
-
-        auto operator<=>(const entity &other) const noexcept = default;
-        bool operator==(const entity &other) const noexcept = default;
-
-        bool valid() const noexcept { return *this != invalid(); }
-
-        std::uint32_t id() const noexcept { return m_handle >> GEN_BITS; }
-        std::uint16_t generation() const noexcept { return m_handle & GEN_MASK; }
     
     private:
         std::uint32_t m_handle;

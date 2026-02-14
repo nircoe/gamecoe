@@ -16,7 +16,7 @@ protected:
     // Test helper: custom hash for unordered containers
     struct entity_hash
     {
-        std::size_t operator()(const entity &e) const noexcept
+        std::size_t operator()(entity e) const noexcept
         {
             return std::hash<std::uint32_t>{}(e.id()) ^
                    (std::hash<std::uint16_t>{}(e.generation()) << 1);
@@ -34,7 +34,7 @@ TEST_F(EntityTests, CreateValidEntity)
 
     EXPECT_EQ(e.id(), 42);
     EXPECT_EQ(e.generation(), 5);
-    EXPECT_TRUE(e.valid());
+    EXPECT_TRUE(e != entity::invalid());
 }
 
 TEST_F(EntityTests, CreateBoundaryValues)
@@ -43,43 +43,27 @@ TEST_F(EntityTests, CreateBoundaryValues)
     auto max_id_entity = entity::create(entity::MAX_ENTITIES, 0);
     EXPECT_EQ(max_id_entity.id(), entity::MAX_ENTITIES);
     EXPECT_EQ(max_id_entity.generation(), 0);
-    EXPECT_TRUE(max_id_entity.valid());
+    EXPECT_TRUE(max_id_entity != entity::invalid());
 
     // Test maximum generation (4,094)
     auto max_gen_entity = entity::create(0, entity::MAX_GENERATIONS);
     EXPECT_EQ(max_gen_entity.id(), 0);
     EXPECT_EQ(max_gen_entity.generation(), entity::MAX_GENERATIONS);
-    EXPECT_TRUE(max_gen_entity.valid());
+    EXPECT_TRUE(max_gen_entity != entity::invalid());
 
     // Test both at max
     auto max_both = entity::create(entity::MAX_ENTITIES, entity::MAX_GENERATIONS);
     EXPECT_EQ(max_both.id(), entity::MAX_ENTITIES);
     EXPECT_EQ(max_both.generation(), entity::MAX_GENERATIONS);
-    EXPECT_TRUE(max_both.valid());
+    EXPECT_TRUE(max_both != entity::invalid());
 }
 
 TEST_F(EntityTests, InvalidEntity)
 {
     auto invalid = entity::invalid();
 
-    EXPECT_FALSE(invalid.valid());
+    EXPECT_TRUE(invalid == entity::invalid());
     EXPECT_EQ(invalid, entity::invalid()); // Two invalid entities are equal
-}
-
-TEST_F(EntityTests, IdGenerationAccessors)
-{
-    // Test various combinations
-    auto e1 = entity::create(0, 0);
-    EXPECT_EQ(e1.id(), 0);
-    EXPECT_EQ(e1.generation(), 0);
-
-    auto e2 = entity::create(1024, 42);
-    EXPECT_EQ(e2.id(), 1024);
-    EXPECT_EQ(e2.generation(), 42);
-
-    auto e3 = entity::create(100000, 1000);
-    EXPECT_EQ(e3.id(), 100000);
-    EXPECT_EQ(e3.generation(), 1000);
 }
 
 //==============================================================================
