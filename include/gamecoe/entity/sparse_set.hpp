@@ -59,7 +59,7 @@ namespace gamecoe
                 page->fill(TOMBSTONE);
             }
             
-            (*page)[index_in_page(e)] = pack_dense_index(m_dense.size(), e.generation());
+            (*page)[index_in_page(e)] = pack_dense_index(static_cast<std::uint32_t>(m_dense.size()), e.generation());
             m_dense.push_back(e);
         }
 
