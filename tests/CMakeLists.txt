@@ -4,6 +4,7 @@ add_executable(gamecoe_tests
     entity/sparse_set_tests.cpp
     entity/component_pool_tests.cpp
     entity/entities_tests.cpp
+    entity/extraction_tests.cpp
 )
 
 target_link_libraries(gamecoe_tests

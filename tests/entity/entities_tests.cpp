@@ -32,133 +32,150 @@ protected:
 //                        Entity Lifecycle
 //==============================================================================
 
-TEST_F(EntitiesTests, CreateAndValid)
+TEST_F(EntitiesTests, EntityLifecycle)
 {
-    entity e = mgr.create();
+    // Test 1: Create and validate single entity
+    {
+        entity e = mgr.create();
 
-    EXPECT_TRUE(mgr.valid(e));
-    EXPECT_TRUE(e != entity::invalid());
-    EXPECT_EQ(mgr.size(), 1);
-}
+        EXPECT_TRUE(mgr.valid(e));
+        EXPECT_TRUE(e != entity::invalid());
+        EXPECT_EQ(mgr.size(), 1);
+    }
 
-TEST_F(EntitiesTests, CreateMultiple)
-{
-    entity e0 = mgr.create();
-    entity e1 = mgr.create();
-    entity e2 = mgr.create();
+    // Test 2: Create multiple entities
+    {
+        mgr.clear();
 
-    EXPECT_EQ(mgr.size(), 3);
-    EXPECT_TRUE(mgr.valid(e0));
-    EXPECT_TRUE(mgr.valid(e1));
-    EXPECT_TRUE(mgr.valid(e2));
+        entity e0 = mgr.create();
+        entity e1 = mgr.create();
+        entity e2 = mgr.create();
 
-    // IDs should be distinct
-    EXPECT_NE(e0, e1);
-    EXPECT_NE(e1, e2);
+        EXPECT_EQ(mgr.size(), 3);
+        EXPECT_TRUE(mgr.valid(e0));
+        EXPECT_TRUE(mgr.valid(e1));
+        EXPECT_TRUE(mgr.valid(e2));
 
-    // Handles should be ordered by creation (ID-major layout)
-    EXPECT_LT(e0, e1);
-    EXPECT_LT(e1, e2);
-}
+        // IDs should be distinct
+        EXPECT_NE(e0, e1);
+        EXPECT_NE(e1, e2);
 
-TEST_F(EntitiesTests, DestroyEntity)
-{
-    entity e = mgr.create();
-    EXPECT_EQ(mgr.size(), 1);
+        // Handles should be ordered by creation (ID-major layout)
+        EXPECT_LT(e0, e1);
+        EXPECT_LT(e1, e2);
+    }
 
-    mgr.destroy(e);
+    // Test 3: Destroy entity
+    {
+        mgr.clear();
+        entity e = mgr.create();
+        EXPECT_EQ(mgr.size(), 1);
 
-    EXPECT_FALSE(mgr.valid(e));
-    EXPECT_EQ(mgr.size(), 0);
-}
+        mgr.destroy(e);
 
-TEST_F(EntitiesTests, RecycleId)
-{
-    entity e0 = mgr.create();
-    std::uint32_t original_id = e0.id();
-    std::uint16_t original_gen = e0.generation();
+        EXPECT_FALSE(mgr.valid(e));
+        EXPECT_EQ(mgr.size(), 0);
+    }
 
-    mgr.destroy(e0);
+    // Test 4: Recycle entity ID with incremented generation
+    {
+        mgr.clear();
+        entity e0 = mgr.create();
+        std::uint32_t original_id = e0.id();
+        std::uint16_t original_gen = e0.generation();
 
-    entity e1 = mgr.create();
+        mgr.destroy(e0);
 
-    // Same ID recycled, generation incremented
-    EXPECT_EQ(e1.id(), original_id);
-    EXPECT_EQ(e1.generation(), original_gen + 1);
+        entity e1 = mgr.create();
 
-    // Old handle is stale, new one is valid
-    EXPECT_FALSE(mgr.valid(e0));
-    EXPECT_TRUE(mgr.valid(e1));
-}
+        // Same ID recycled, generation incremented
+        EXPECT_EQ(e1.id(), original_id);
+        EXPECT_EQ(e1.generation(), original_gen + 1);
 
-TEST_F(EntitiesTests, ClearEntities)
-{
-    entity e0 = mgr.create();
-    entity e1 = mgr.create();
-    entity e2 = mgr.create();
+        // Old handle is stale, new one is valid
+        EXPECT_FALSE(mgr.valid(e0));
+        EXPECT_TRUE(mgr.valid(e1));
+    }
 
-    mgr.clear();
+    // Test 5: Clear all entities
+    {
+        mgr.clear();
+        entity e0 = mgr.create();
+        entity e1 = mgr.create();
+        entity e2 = mgr.create();
 
-    EXPECT_EQ(mgr.size(), 0);
-    EXPECT_FALSE(mgr.valid(e0));
-    EXPECT_FALSE(mgr.valid(e1));
-    EXPECT_FALSE(mgr.valid(e2));
+        mgr.clear();
+
+        EXPECT_EQ(mgr.size(), 0);
+        EXPECT_FALSE(mgr.valid(e0));
+        EXPECT_FALSE(mgr.valid(e1));
+        EXPECT_FALSE(mgr.valid(e2));
+    }
 }
 
 //==============================================================================
 //                        Component Operations
 //==============================================================================
 
-TEST_F(EntitiesTests, AddHasGetRemoveComponent)
+TEST_F(EntitiesTests, ComponentOperations)
 {
-    entity e = mgr.create();
+    // Test 1: Add, has, get, remove component
+    {
+        entity e = mgr.create();
 
-    // Add
-    mgr.add_component<Position>(e, Position{1.0f, 2.0f, 3.0f});
-    EXPECT_TRUE(mgr.has_component<Position>(e));
+        // Add
+        mgr.add_component<Position>(e, Position{1.0f, 2.0f, 3.0f});
+        EXPECT_TRUE(mgr.has_component<Position>(e));
 
-    // Get (mutable)
-    Position *pos = mgr.get_component<Position>(e);
-    EXPECT_NE(pos, nullptr);
-    EXPECT_EQ(pos->x, 1.0f);
+        // Get (mutable)
+        Position *pos = mgr.get_component<Position>(e);
+        EXPECT_NE(pos, nullptr);
+        EXPECT_EQ(pos->x, 1.0f);
 
-    // Modify and verify
-    pos->x = 99.0f;
-    EXPECT_EQ(mgr.get_component<Position>(e)->x, 99.0f);
+        // Modify and verify
+        pos->x = 99.0f;
+        EXPECT_EQ(mgr.get_component<Position>(e)->x, 99.0f);
 
-    // Remove
-    mgr.remove_component<Position>(e);
-    EXPECT_FALSE(mgr.has_component<Position>(e));
-    EXPECT_EQ(mgr.get_component<Position>(e), nullptr);
+        // Remove
+        mgr.remove_component<Position>(e);
+        EXPECT_FALSE(mgr.has_component<Position>(e));
+        EXPECT_EQ(mgr.get_component<Position>(e), nullptr);
 
-    // Entity still valid after component removal
-    EXPECT_TRUE(mgr.valid(e));
+        // Entity still valid after component removal
+        EXPECT_TRUE(mgr.valid(e));
+    }
+
+    // Test 2: Get component with const manager
+    {
+        mgr.clear();
+        entity e = mgr.create();
+        mgr.add_component<Position>(e, Position{5.0f, 6.0f, 7.0f});
+
+        const entities &const_mgr = mgr;
+        const Position *pos = const_mgr.get_component<Position>(e);
+
+        EXPECT_NE(pos, nullptr);
+        EXPECT_EQ(pos->x, 5.0f);
+        static_assert(std::is_same_v<decltype(pos), const Position *>);
+    }
+
+    // Test 3: Get component returns nullptr for missing/invalid
+    {
+        mgr.clear();
+        entity e = mgr.create();
+        entity invalid = entity::invalid();
+
+        // Entity without the component
+        EXPECT_EQ(mgr.get_component<Position>(e), nullptr);
+
+        // Invalid entity handle
+        EXPECT_EQ(mgr.get_component<Position>(invalid), nullptr);
+    }
 }
 
-TEST_F(EntitiesTests, GetComponentConst)
-{
-    entity e = mgr.create();
-    mgr.add_component<Position>(e, Position{5.0f, 6.0f, 7.0f});
-
-    const entities &const_mgr = mgr;
-    const Position *pos = const_mgr.get_component<Position>(e);
-
-    EXPECT_NE(pos, nullptr);
-    EXPECT_EQ(pos->x, 5.0f);
-    static_assert(std::is_same_v<decltype(pos), const Position *>);
-}
-
-TEST_F(EntitiesTests, GetComponentNullptr)
-{
-    entity e = mgr.create();
-    entity invalid = entity::invalid();
-
-    // Entity without the component
-    EXPECT_EQ(mgr.get_component<Position>(e), nullptr);
-
-    // Invalid entity handle
-    EXPECT_EQ(mgr.get_component<Position>(invalid), nullptr);
-}
+//==============================================================================
+//                        Multi-Component Cleanup
+//==============================================================================
 
 TEST_F(EntitiesTests, DestroyRemovesAllComponents)
 {
@@ -260,5 +277,3 @@ TEST_F(EntitiesTests, Reserve)
     EXPECT_TRUE(mgr.valid(e));
     EXPECT_EQ(mgr.size(), 1);
 }
-
-

@@ -28,42 +28,45 @@ protected:
 //                        Entity Creation and Validity
 //==============================================================================
 
-TEST_F(EntityTests, CreateValidEntity)
+TEST_F(EntityTests, CreationAndValidity)
 {
-    auto e = entity::create(42, 5);
+    // Test 1: Create valid entity
+    {
+        auto e = entity::create(42, 5);
 
-    EXPECT_EQ(e.id(), 42);
-    EXPECT_EQ(e.generation(), 5);
-    EXPECT_TRUE(e != entity::invalid());
-}
+        EXPECT_EQ(e.id(), 42);
+        EXPECT_EQ(e.generation(), 5);
+        EXPECT_TRUE(e != entity::invalid());
+    }
 
-TEST_F(EntityTests, CreateBoundaryValues)
-{
-    // Test maximum ID (1,048,574)
-    auto max_id_entity = entity::create(entity::MAX_ENTITIES, 0);
-    EXPECT_EQ(max_id_entity.id(), entity::MAX_ENTITIES);
-    EXPECT_EQ(max_id_entity.generation(), 0);
-    EXPECT_TRUE(max_id_entity != entity::invalid());
+    // Test 2: Boundary values
+    {
+        // Test maximum ID (1,048,574)
+        auto max_id_entity = entity::create(entity::MAX_ENTITIES, 0);
+        EXPECT_EQ(max_id_entity.id(), entity::MAX_ENTITIES);
+        EXPECT_EQ(max_id_entity.generation(), 0);
+        EXPECT_TRUE(max_id_entity != entity::invalid());
 
-    // Test maximum generation (4,094)
-    auto max_gen_entity = entity::create(0, entity::MAX_GENERATIONS);
-    EXPECT_EQ(max_gen_entity.id(), 0);
-    EXPECT_EQ(max_gen_entity.generation(), entity::MAX_GENERATIONS);
-    EXPECT_TRUE(max_gen_entity != entity::invalid());
+        // Test maximum generation (4,094)
+        auto max_gen_entity = entity::create(0, entity::MAX_GENERATIONS);
+        EXPECT_EQ(max_gen_entity.id(), 0);
+        EXPECT_EQ(max_gen_entity.generation(), entity::MAX_GENERATIONS);
+        EXPECT_TRUE(max_gen_entity != entity::invalid());
 
-    // Test both at max
-    auto max_both = entity::create(entity::MAX_ENTITIES, entity::MAX_GENERATIONS);
-    EXPECT_EQ(max_both.id(), entity::MAX_ENTITIES);
-    EXPECT_EQ(max_both.generation(), entity::MAX_GENERATIONS);
-    EXPECT_TRUE(max_both != entity::invalid());
-}
+        // Test both at max
+        auto max_both = entity::create(entity::MAX_ENTITIES, entity::MAX_GENERATIONS);
+        EXPECT_EQ(max_both.id(), entity::MAX_ENTITIES);
+        EXPECT_EQ(max_both.generation(), entity::MAX_GENERATIONS);
+        EXPECT_TRUE(max_both != entity::invalid());
+    }
 
-TEST_F(EntityTests, InvalidEntity)
-{
-    auto invalid = entity::invalid();
+    // Test 3: Invalid entity sentinel
+    {
+        auto invalid = entity::invalid();
 
-    EXPECT_TRUE(invalid == entity::invalid());
-    EXPECT_EQ(invalid, entity::invalid()); // Two invalid entities are equal
+        EXPECT_TRUE(invalid == entity::invalid());
+        EXPECT_EQ(invalid, entity::invalid()); // Two invalid entities are equal
+    }
 }
 
 //==============================================================================
