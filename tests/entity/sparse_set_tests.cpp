@@ -15,107 +15,166 @@ protected:
 };
 
 //==============================================================================
-//                        Basic Insert and Contains
+//                        Insert Operations
 //==============================================================================
 
-TEST_F(SparseSetTests, InsertSingleEntity)
+TEST_F(SparseSetTests, InsertOperations)
 {
-    auto e = entity::create(42, 0);
+    // Test 1: Insert single entity
+    {
+        auto e = entity::create(42, 0);
 
-    set.insert(e);
-
-    EXPECT_TRUE(set.contains(e));
-    EXPECT_EQ(set.size(), 1);
-    EXPECT_FALSE(set.empty());
-
-    auto index = set.index(e);
-    EXPECT_TRUE(index.has_value());
-    EXPECT_EQ(index.value(), 0);
-}
-
-TEST_F(SparseSetTests, InsertMultiple)
-{
-    std::vector<entity> entities;
-
-    // Insert 100 entities
-    for (std::uint32_t i = 0; i < 100; ++i)
-        entities.push_back(entity::create(i, 0));
-
-    for (auto e : entities)
         set.insert(e);
 
-    EXPECT_EQ(set.size(), 100);
-
-    // Verify all are contained
-    for (auto e : entities)
         EXPECT_TRUE(set.contains(e));
-}
+        EXPECT_EQ(set.size(), 1);
+        EXPECT_FALSE(set.empty());
 
-TEST_F(SparseSetTests, InsertDuplicate)
-{
-    auto e = entity::create(42, 0);
+        auto index = set.index(e);
+        EXPECT_TRUE(index.has_value());
+        EXPECT_EQ(index.value(), 0);
+    }
 
-    set.insert(e);
-    set.insert(e); // Duplicate insert
+    // Test 2: Insert multiple entities
+    {
+        set.clear();
+        std::vector<entity> entities;
 
-    EXPECT_EQ(set.size(), 1); // Size unchanged
-    EXPECT_TRUE(set.contains(e));
+        // Insert 100 entities
+        for (std::uint32_t i = 0; i < 100; ++i)
+            entities.push_back(entity::create(i, 0));
+
+        for (auto e : entities)
+            set.insert(e);
+
+        EXPECT_EQ(set.size(), 100);
+
+        // Verify all are contained
+        for (auto e : entities)
+            EXPECT_TRUE(set.contains(e));
+    }
+
+    // Test 3: Insert duplicate (no-op)
+    {
+        set.clear();
+        auto e = entity::create(42, 0);
+
+        set.insert(e);
+        set.insert(e); // Duplicate insert
+
+        EXPECT_EQ(set.size(), 1); // Size unchanged
+        EXPECT_TRUE(set.contains(e));
+    }
 }
 
 //==============================================================================
 //                        Erase Operations
 //==============================================================================
 
-TEST_F(SparseSetTests, EraseSingleEntity)
+TEST_F(SparseSetTests, EraseOperations)
 {
-    auto e = entity::create(42, 0);
+    // Test 1: Erase single entity
+    {
+        auto e = entity::create(42, 0);
 
-    set.insert(e);
-    set.erase(e);
+        set.insert(e);
+        set.erase(e);
 
-    EXPECT_FALSE(set.contains(e));
-    EXPECT_EQ(set.size(), 0);
-    EXPECT_TRUE(set.empty());
+        EXPECT_FALSE(set.contains(e));
+        EXPECT_EQ(set.size(), 0);
+        EXPECT_TRUE(set.empty());
 
-    auto index = set.index(e);
-    EXPECT_FALSE(index.has_value());
+        auto index = set.index(e);
+        EXPECT_FALSE(index.has_value());
+    }
+
+    // Test 2: Erase with swap-and-pop
+    {
+        set.clear();
+        auto e1 = entity::create(10, 0);
+        auto e2 = entity::create(20, 0);
+        auto e3 = entity::create(30, 0);
+
+        set.insert(e1);
+        set.insert(e2);
+        set.insert(e3);
+
+        // Erase middle entity (e2)
+        set.erase(e2);
+
+        EXPECT_EQ(set.size(), 2);
+        EXPECT_TRUE(set.contains(e1));
+        EXPECT_FALSE(set.contains(e2));
+        EXPECT_TRUE(set.contains(e3));
+
+        // e3 should have been swapped to e2's old position
+        EXPECT_EQ(set.index(e1).value(), 0);
+        EXPECT_EQ(set.index(e3).value(), 1); // e3 moved to index 1 (e2's old position)
+    }
+
+    // Test 3: Erase non-existent entity (no-op)
+    {
+        set.clear();
+        auto e1 = entity::create(10, 0);
+        auto e2 = entity::create(20, 0);
+
+        set.insert(e1);
+        EXPECT_EQ(set.size(), 1);
+
+        set.erase(e2); // e2 not in set
+
+        EXPECT_EQ(set.size(), 1); // Size unchanged
+        EXPECT_TRUE(set.contains(e1));
+    }
 }
 
-TEST_F(SparseSetTests, EraseSwapAndPop)
+//==============================================================================
+//                        Erase At (by dense index)
+//==============================================================================
+
+TEST_F(SparseSetTests, EraseAtOperations)
 {
-    auto e1 = entity::create(10, 0);
-    auto e2 = entity::create(20, 0);
-    auto e3 = entity::create(30, 0);
+    // Test 1: Erase at with swap-and-pop
+    {
+        auto e1 = entity::create(10, 0);
+        auto e2 = entity::create(20, 0);
+        auto e3 = entity::create(30, 0);
 
-    set.insert(e1);
-    set.insert(e2);
-    set.insert(e3);
+        set.insert(e1);
+        set.insert(e2);
+        set.insert(e3);
 
-    // Erase middle entity (e2)
-    set.erase(e2);
+        // Erase middle entity by index (e2 is at dense index 1)
+        set.erase_at(1);
 
-    EXPECT_EQ(set.size(), 2);
-    EXPECT_TRUE(set.contains(e1));
-    EXPECT_FALSE(set.contains(e2));
-    EXPECT_TRUE(set.contains(e3));
+        EXPECT_EQ(set.size(), 2);
+        EXPECT_TRUE(set.contains(e1));
+        EXPECT_FALSE(set.contains(e2));
+        EXPECT_TRUE(set.contains(e3));
 
-    // e3 should have been swapped to e2's old position
-    EXPECT_EQ(set.index(e1).value(), 0);
-    EXPECT_EQ(set.index(e3).value(), 1); // e3 moved to index 1 (e2's old position)
-}
+        // e3 should have been swapped to index 1 (e2's old position)
+        EXPECT_EQ(set.index(e1).value(), 0);
+        EXPECT_EQ(set.index(e3).value(), 1);
 
-TEST_F(SparseSetTests, EraseNonExistent)
-{
-    auto e1 = entity::create(10, 0);
-    auto e2 = entity::create(20, 0);
+        // Erase last element by index (no swap needed)
+        set.erase_at(1); // e3 is now at index 1 (last)
 
-    set.insert(e1);
-    EXPECT_EQ(set.size(), 1);
+        EXPECT_EQ(set.size(), 1);
+        EXPECT_TRUE(set.contains(e1));
+        EXPECT_FALSE(set.contains(e3));
+    }
 
-    set.erase(e2); // e2 not in set
+    // Test 2: Erase at out of bounds (no-op)
+    {
+        set.clear();
+        auto e = entity::create(42, 0);
+        set.insert(e);
 
-    EXPECT_EQ(set.size(), 1); // Size unchanged
-    EXPECT_TRUE(set.contains(e1));
+        set.erase_at(5); // Out of bounds, should be no-op
+
+        EXPECT_EQ(set.size(), 1);
+        EXPECT_TRUE(set.contains(e));
+    }
 }
 
 //==============================================================================
@@ -239,51 +298,6 @@ TEST_F(SparseSetTests, MoveSemantics)
     EXPECT_EQ(set3.size(), 2);
     EXPECT_TRUE(set3.contains(e1));
     EXPECT_TRUE(set3.contains(e2));
-}
-
-//==============================================================================
-//                        Erase At (by dense index)
-//==============================================================================
-
-TEST_F(SparseSetTests, EraseAtSwapAndPop)
-{
-    auto e1 = entity::create(10, 0);
-    auto e2 = entity::create(20, 0);
-    auto e3 = entity::create(30, 0);
-
-    set.insert(e1);
-    set.insert(e2);
-    set.insert(e3);
-
-    // Erase middle entity by index (e2 is at dense index 1)
-    set.erase_at(1);
-
-    EXPECT_EQ(set.size(), 2);
-    EXPECT_TRUE(set.contains(e1));
-    EXPECT_FALSE(set.contains(e2));
-    EXPECT_TRUE(set.contains(e3));
-
-    // e3 should have been swapped to index 1 (e2's old position)
-    EXPECT_EQ(set.index(e1).value(), 0);
-    EXPECT_EQ(set.index(e3).value(), 1);
-
-    // Erase last element by index (no swap needed)
-    set.erase_at(1); // e3 is now at index 1 (last)
-
-    EXPECT_EQ(set.size(), 1);
-    EXPECT_TRUE(set.contains(e1));
-    EXPECT_FALSE(set.contains(e3));
-}
-
-TEST_F(SparseSetTests, EraseAtOutOfBounds)
-{
-    auto e = entity::create(42, 0);
-    set.insert(e);
-
-    set.erase_at(5); // Out of bounds, should be no-op
-
-    EXPECT_EQ(set.size(), 1);
-    EXPECT_TRUE(set.contains(e));
 }
 
 //==============================================================================

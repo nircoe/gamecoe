@@ -87,40 +87,44 @@ protected:
 };
 
 //==============================================================================
-//                        Add and Get Components
+//                        Add and Get Operations
 //==============================================================================
 
-TEST_F(ComponentPoolTests, AddAndGetComponent)
+TEST_F(ComponentPoolTests, AddAndGetOperations)
 {
-    auto e = entity::create(42, 0);
-
-    Position &pos = pool.add(e, Position{1.0f, 2.0f, 3.0f});
-
-    EXPECT_TRUE(pool.contains(e));
-    EXPECT_EQ(pool.size(), 1);
-    EXPECT_FALSE(pool.empty());
-    EXPECT_EQ(pool.get(e), pos);
-
-    // Modify and verify changes persist
-    pool.get(e).x = 99.0f;
-    EXPECT_EQ(pool.get(e).x, 99.0f);
-}
-
-TEST_F(ComponentPoolTests, AddMultiple)
-{
-    std::vector<entity> entities;
-
-    for (std::uint32_t i = 0; i < 50; ++i)
+    // Test 1: Add and get single component
     {
-        auto e = entity::create(i, 0);
-        entities.push_back(e);
-        pool.add(e, Position{static_cast<float>(i), 0.0f, 0.0f});
+        auto e = entity::create(42, 0);
+
+        Position &pos = pool.add(e, Position{1.0f, 2.0f, 3.0f});
+
+        EXPECT_TRUE(pool.contains(e));
+        EXPECT_EQ(pool.size(), 1);
+        EXPECT_FALSE(pool.empty());
+        EXPECT_EQ(pool.get(e), pos);
+
+        // Modify and verify changes persist
+        pool.get(e).x = 99.0f;
+        EXPECT_EQ(pool.get(e).x, 99.0f);
     }
 
-    EXPECT_EQ(pool.size(), 50);
+    // Test 2: Add multiple components
+    {
+        pool.clear();
+        std::vector<entity> entities;
 
-    for (std::size_t i = 0; i < entities.size(); ++i)
-        EXPECT_EQ(pool.get(entities[i]).x, static_cast<float>(i));
+        for (std::uint32_t i = 0; i < 50; ++i)
+        {
+            auto e = entity::create(i, 0);
+            entities.push_back(e);
+            pool.add(e, Position{static_cast<float>(i), 0.0f, 0.0f});
+        }
+
+        EXPECT_EQ(pool.size(), 50);
+
+        for (std::size_t i = 0; i < entities.size(); ++i)
+            EXPECT_EQ(pool.get(entities[i]).x, static_cast<float>(i));
+    }
 }
 
 //==============================================================================

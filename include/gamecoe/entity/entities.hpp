@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <gamecoe/entity/entity.hpp>
 #include <gamecoe/entity/component_pool.hpp>
+#include <gamecoe/entity/extraction.hpp>
+#include <type_traits>
 #include <utility>
 #include <vector>
 #include <memory>
@@ -122,7 +124,7 @@ namespace gamecoe
         }
 
         // Iterates over all entities and their components and run func() on each of them
-        template<typename T, typename Func>
+        template <typename T, typename Func>
         void for_each(Func &&func)
         {
             std::uint32_t comp_id = component_id<T>();
@@ -133,7 +135,7 @@ namespace gamecoe
         }
 
         // Iterates over all entities and their components and run func() on each of them
-        template<typename T, typename Func>
+        template <typename T, typename Func>
         void for_each(Func &&func) const
         {
             std::uint32_t comp_id = component_id<T>();
@@ -141,6 +143,18 @@ namespace gamecoe
 
             auto pool = static_cast<const component_pool<T>*>(m_pools[comp_id].get());
             pool->for_each(std::forward<Func>(func));
+        }
+
+        template <typename... Components>
+        extraction<Components...> extract()
+        {
+            return extraction<Components...>(get_pool<std::remove_const_t<Components>>()...);
+        }
+
+        template <typename... Components>
+        extraction<std::add_const_t<Components>...> extract() const
+        {
+            return extraction<std::add_const_t<Components>...>(const_cast<entities*>(this)->get_pool<Components>()...);
         }
     };
 } // namespace gamecoe

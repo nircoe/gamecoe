@@ -25,6 +25,8 @@ namespace gamecoe
         std::size_t size() const noexcept { return m_entities.size(); }
         bool empty() const noexcept { return m_entities.empty(); }
         void reserve(std::size_t capacity) { m_entities.reserve(capacity); do_reserve(capacity); }
+
+        entity get_entity_at_index(std::size_t index) const noexcept { return m_entities.get_entity_at_index(index); }
     };
 
     template <typename T>
