@@ -21,7 +21,7 @@ TEST_F(ParentTests, DefaultState)
 {
     // Test 1: Default-constructed parent has no parent entity
     {
-        EXPECT_EQ(p.parent, entity::invalid());
+        EXPECT_EQ(p.handle, entity::invalid());
         EXPECT_FALSE(p.has_parent());
     }
 }
@@ -35,10 +35,10 @@ TEST_F(ParentTests, AssignParent)
     // Test 1: Setting parent to a valid entity updates has_parent()
     {
         entity e = entity::create(5, 0);
-        p.parent = e;
+        p.handle = e;
 
         EXPECT_TRUE(p.has_parent());
-        EXPECT_EQ(p.parent, e);
+        EXPECT_EQ(p.handle, e);
     }
 }
 
@@ -60,7 +60,7 @@ TEST_F(ChildrenTests, DefaultState)
 {
     // Test 1: Default-constructed children has an empty list
     {
-        EXPECT_TRUE(c.children.empty());
+        EXPECT_TRUE(c.handles.empty());
         EXPECT_FALSE(c.has_children());
     }
 }
@@ -76,18 +76,18 @@ TEST_F(ChildrenTests, PopulateChildren)
 
     // Test 1: Adding a single child updates has_children()
     {
-        c.children.push_back(e1);
+        c.handles.push_back(e1);
 
         EXPECT_TRUE(c.has_children());
-        EXPECT_EQ(c.children.size(), 1);
+        EXPECT_EQ(c.handles.size(), 1);
     }
 
     // Test 2: Adding a second child preserves both entities, in order
     {
-        c.children.push_back(e2);
+        c.handles.push_back(e2);
 
-        EXPECT_EQ(c.children.size(), 2);
-        EXPECT_EQ(c.children[0], e1);
-        EXPECT_EQ(c.children[1], e2);
+        EXPECT_EQ(c.handles.size(), 2);
+        EXPECT_EQ(c.handles[0], e1);
+        EXPECT_EQ(c.handles[1], e2);
     }
 }
