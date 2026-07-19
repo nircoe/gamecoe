@@ -19,7 +19,7 @@ jobs:
           # Windows with MSVC
           - name: "Windows MSVC"
             compiler: msvc
-            cmake-generator: 'Visual Studio 17 2022'
+            cmake-generator: ''
             cmake-options: '-DGAMECOE_USE_TESTCOE=ON'
 
           # Windows with MinGW (GCC)
@@ -47,7 +47,12 @@ jobs:
 
     - name: Configure CMake
       run: |
-        cmake -B build -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }}
+        if [ -n "${{ matrix.cmake-generator }}" ]; then
+          cmake -B build -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }}
+        else
+          cmake -B build ${{ matrix.cmake-options }}
+        fi
+      shell: bash
 
     - name: Build
       run: |
