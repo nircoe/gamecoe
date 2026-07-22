@@ -7,6 +7,7 @@ add_executable(gamecoe_tests
     entity/extraction_tests.cpp
     component/transform_tests.cpp
     component/parent_child_tests.cpp
+    component/shape_renderer_tests.cpp
 )
 
 target_link_libraries(gamecoe_tests
