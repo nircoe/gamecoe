@@ -2,14 +2,14 @@
 
 namespace gamecoe
 {
-    enum class Shape
+    enum class shape
     {
-        Invalid,
-        Triangle,
-        Rectangle,
-        Box,
-        Circle,
-        Sphere,
+        invalid,
+        triangle,
+        rectangle,
+        box,
+        circle,
+        sphere,
         // TODO: Support more primitive shapes
     };
 } // namespace gamecoe
