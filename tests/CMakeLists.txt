@@ -8,6 +8,7 @@ add_executable(gamecoe_tests
     component/transform_tests.cpp
     component/parent_child_tests.cpp
     component/shape_renderer_tests.cpp
+    component/shape_collider_tests.cpp
 )
 
 target_link_libraries(gamecoe_tests

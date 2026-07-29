@@ -20,6 +20,7 @@ int printHelp()
     std::cout << "  ParentTests              - Parent component tests" << std::endl;
     std::cout << "  ChildrenTests            - Children component tests" << std::endl;
     std::cout << "  ShapeRendererTests       - Shape renderer component tests" << std::endl;
+    std::cout << "  ShapeColliderTests       - Shape collider component tests" << std::endl;
     std::cout << std::endl;
     std::cout << "Example usage:" << std::endl;
     std::cout << "  ./gamecoe_tests --suite=EntityTests" << std::endl;
@@ -35,7 +36,7 @@ int main(int argc, char **argv)
     std::cout << std::endl;
     std::cout << "Comprehensive testing for gamecoe." << std::endl;
     std::cout << "Testing Entity Module: entity, sparse_set, component_pool, entities" << std::endl;
-    std::cout << "Testing Component Module: transform, parent, children, shape_renderer" << std::endl;
+    std::cout << "Testing Component Module: transform, parent, children, shape_renderer, shape_collider" << std::endl;
     std::cout << std::endl;
 
     testcoe::init(&argc, argv);
