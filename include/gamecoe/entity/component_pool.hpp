@@ -71,10 +71,13 @@ namespace gamecoe
         template <typename... Args>
         T& add(entity e, Args&&... args)
         {
-            if(contains(e)) 
+            if (contains(e))
             {
                 assert(false && "component_pool::add(): entity already has this component");
-                return m_components[m_entities.index(e).value()];
+                // overwriting with the new value on release build mode
+                T &existing = m_components[m_entities.index(e).value()];
+                existing = T(std::forward<Args>(args)...);
+                return existing;
             }
 
             m_entities.insert(e);

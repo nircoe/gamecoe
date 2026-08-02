@@ -1,8 +1,19 @@
 #include <gtest/gtest.h>
 #include <gamecoe/entity/entities.hpp>
+#include <gamecoe/component/transform.hpp>
 #include <chrono>
 
 using namespace gamecoe;
+
+namespace
+{
+    void expect_vec3_near(const glm::vec3 &actual, const glm::vec3 &expected, float epsilon = 1e-5f)
+    {
+        EXPECT_NEAR(actual.x, expected.x, epsilon);
+        EXPECT_NEAR(actual.y, expected.y, epsilon);
+        EXPECT_NEAR(actual.z, expected.z, epsilon);
+    }
+} // namespace
 
 //==============================================================================
 //                    Test Component Types
@@ -276,4 +287,51 @@ TEST_F(EntitiesTests, Reserve)
     entity e = mgr.create();
     EXPECT_TRUE(mgr.valid(e));
     EXPECT_EQ(mgr.size(), 1);
+}
+
+//==============================================================================
+//                        Mandatory Transform
+//==============================================================================
+
+TEST_F(EntitiesTests, MandatoryTransform)
+{
+    // Test 1: Every entity has a transform immediately after create(), with default values
+    {
+        entity e = mgr.create();
+        EXPECT_TRUE(mgr.has_component<components::transform>(e));
+
+        components::transform *t = mgr.get_component<components::transform>(e);
+        ASSERT_NE(t, nullptr);
+        expect_vec3_near(t->position, glm::vec3(0.0f));
+        expect_vec3_near(t->scale, glm::vec3(1.0f));
+    }
+
+    // Test 2: transform is still present after removing other components (unaffected by unrelated removes)
+    {
+        mgr.clear();
+        entity e = mgr.create();
+        mgr.add_component<Position>(e, Position{1.0f, 2.0f, 3.0f});
+        mgr.remove_component<Position>(e);
+
+        EXPECT_TRUE(mgr.has_component<components::transform>(e));
+    }
+
+    // Test 3: transform cannot be added or removed via the public API (compile-time guard)
+    // Uncommenting either line below must fail to compile:
+    // mgr.add_component<components::transform>(e);
+    // mgr.remove_component<components::transform>(e);
+
+    // Test 4: transform() accessor returns the same component as get_component<transform>(), no null-check needed
+    {
+        mgr.clear();
+        entity e = mgr.create();
+        components::transform &t = mgr.transform(e);
+        t.position = glm::vec3(5.0f, 0.0f, 0.0f);
+
+        expect_vec3_near(mgr.get_component<components::transform>(e)->position, mgr.transform(e).position);
+
+        const entities &const_mgr = mgr;
+        const components::transform &const_t = const_mgr.transform(e);
+        expect_vec3_near(const_t.position, glm::vec3(5.0f, 0.0f, 0.0f));
+    }
 }

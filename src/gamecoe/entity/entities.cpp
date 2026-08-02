@@ -1,4 +1,5 @@
 #include <gamecoe/entity/entities.hpp>
+#include <gamecoe/component/transform.hpp>
 #include <cassert>
 #include <cstddef>
 
@@ -26,7 +27,26 @@ namespace gamecoe
             generation = m_generations[id];
         }
 
-        return entity::create(id, generation);
+        entity e = entity::create(id, generation);
+        get_pool<components::transform>()->add(e);
+
+        return e;
+    }
+
+    components::transform& entities::transform(entity e)
+    {
+        assert(valid(e) && "entities::transform(): entity is not valid");
+        components::transform* t = get_component<components::transform>(e);
+        assert(t && "entities::transform(): transform missing (should be impossible - mandatory component)");
+        return *t;
+    }
+
+    const components::transform& entities::transform(entity e) const
+    {
+        assert(valid(e) && "entities::transform(): entity is not valid");
+        const components::transform* t = get_component<components::transform>(e);
+        assert(t && "entities::transform(): transform missing (should be impossible - mandatory component)");
+        return *t;
     }
 
     void entities::destroy(entity e)
