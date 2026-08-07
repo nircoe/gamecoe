@@ -3,6 +3,7 @@
 #include <gamecoe/entity/entities.hpp>
 #include <gamecoe/component/transform.hpp>
 #include <gamecoe/component/scene_tag.hpp>
+#include <gamecoe/component/parent_child.hpp>
 #include "../test_utils.hpp"
 
 using namespace gamecoe;
@@ -194,5 +195,92 @@ TEST_F(CommandBufferTests, CallableResolution)
         EXPECT_NE(mgr.get_component<follow_target>(entity_a)->target, entity::invalid());
         
         // buf.add<components::parent>(p_a, components::parent{}); // compile error: hierarchy components are managed
+    }
+}
+
+//==============================================================================
+//                        Buffered Set Parent
+//==============================================================================
+
+TEST_F(CommandBufferTests, BufferedSetParent)
+{
+    // Test 1: buffered set_parent applies bidirectionally at flush via entities::set_parent()
+    {
+        mgr.clear();
+        command_buffer::placeholder p_child = buf.spawn();
+        command_buffer::placeholder p_parent = buf.spawn();
+        buf.add<Tag>(p_child, Tag{1});
+        buf.add<Tag>(p_parent, Tag{2});
+        buf.set_parent(p_child, p_parent);
+        buf.flush(mgr);
+
+        ASSERT_EQ(mgr.size(), 2);
+
+        entity real_child = entity::invalid();
+        entity real_parent = entity::invalid();
+        mgr.for_each<Tag>([&real_child, &real_parent](entity ent, const Tag &tag)
+        {
+            if (tag.value == 1) real_child = ent;
+            else if (tag.value == 2) real_parent = ent;
+        });
+
+        ASSERT_NE(real_child, entity::invalid());
+        ASSERT_NE(real_parent, entity::invalid());
+
+        ASSERT_TRUE(mgr.has_component<components::parent>(real_child));
+        EXPECT_EQ(mgr.get_component<components::parent>(real_child)->handle, real_parent);
+
+        ASSERT_TRUE(mgr.has_component<components::children>(real_parent));
+        const std::vector<entity> &handles = mgr.get_component<components::children>(real_parent)->handles;
+        ASSERT_EQ(handles.size(), 1);
+        EXPECT_EQ(handles[0], real_child);
+    }
+
+    // Test 2: multiple set_parent calls on the same parent accumulate in buffered order, interleaved with an unrelated add()
+    {
+        mgr.clear();
+        command_buffer::placeholder p_parent = buf.spawn();
+        command_buffer::placeholder p_child1 = buf.spawn();
+        command_buffer::placeholder p_child2 = buf.spawn();
+        command_buffer::placeholder p_child3 = buf.spawn();
+        command_buffer::placeholder p_other = buf.spawn();
+
+        buf.add<Tag>(p_parent, Tag{0});
+        buf.add<Tag>(p_child1, Tag{1});
+        buf.add<Tag>(p_child2, Tag{2});
+        buf.add<Tag>(p_child3, Tag{3});
+
+        buf.set_parent(p_child1, p_parent);
+        buf.add<Tag>(p_other, Tag{99});
+        buf.set_parent(p_child2, p_parent);
+        buf.set_parent(p_child3, p_parent);
+
+        buf.flush(mgr);
+
+        ASSERT_EQ(mgr.size(), 5);
+
+        entity real_parent = entity::invalid();
+        entity real_child1 = entity::invalid();
+        entity real_child2 = entity::invalid();
+        entity real_child3 = entity::invalid();
+        mgr.for_each<Tag>([&real_parent, &real_child1, &real_child2, &real_child3](entity ent, const Tag &tag)
+        {
+            if (tag.value == 0) real_parent = ent;
+            else if (tag.value == 1) real_child1 = ent;
+            else if (tag.value == 2) real_child2 = ent;
+            else if (tag.value == 3) real_child3 = ent;
+        });
+
+        ASSERT_NE(real_parent, entity::invalid());
+        ASSERT_NE(real_child1, entity::invalid());
+        ASSERT_NE(real_child2, entity::invalid());
+        ASSERT_NE(real_child3, entity::invalid());
+
+        ASSERT_TRUE(mgr.has_component<components::children>(real_parent));
+        const std::vector<entity> &handles = mgr.get_component<components::children>(real_parent)->handles;
+        ASSERT_EQ(handles.size(), 3);
+        EXPECT_EQ(handles[0], real_child1);
+        EXPECT_EQ(handles[1], real_child2);
+        EXPECT_EQ(handles[2], real_child3);
     }
 }

@@ -88,6 +88,9 @@ namespace gamecoe
             });
         }
 
+        // Queues a set_parent, applied at flush() via the live entities::set_parent().
+        void set_parent(placeholder child, placeholder parent);
+
         // Creates all queued entities, runs all queued commands, then clears. Stamps scene_tag on every created entity if `scene` is set.
         void flush(entities& ents, std::optional<scene_id> scene = std::nullopt);
 

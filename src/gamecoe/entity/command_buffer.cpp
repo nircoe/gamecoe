@@ -16,6 +16,14 @@ namespace gamecoe
         return m_created[p.m_index];
     }
 
+    void command_buffer::set_parent(placeholder child, placeholder parent)
+    {
+        m_commands.emplace_back([child, parent](entities& ents, const resolver& r)
+        {
+            ents.set_parent(r.resolve(child), r.resolve(parent));
+        });
+    }
+
     void command_buffer::flush(entities& ents, std::optional<scene_id> scene)
     {
         std::vector<entity> created;
