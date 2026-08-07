@@ -146,6 +146,15 @@ namespace gamecoe
         // Direct accessor for the mandatory transform component
         const components::transform& transform(entity e) const;
 
+        // Sets child's parent, updating both sides.
+        void set_parent(entity child, entity parent);
+
+        // Removes child's parent link, updating both sides.
+        void remove_parent(entity child);
+
+        // Removes all of the entity's children, updating both sides.
+        void remove_children(entity parent);
+
         // Iterates over all entities and their components and run func() on each of them
         template <typename T, typename Func>
         void for_each(Func &&func)

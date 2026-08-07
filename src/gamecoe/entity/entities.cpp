@@ -1,5 +1,6 @@
 #include <gamecoe/entity/entities.hpp>
 #include <gamecoe/component/transform.hpp>
+#include <gamecoe/component/parent_child.hpp>
 #include <cassert>
 #include <cstddef>
 
@@ -53,10 +54,20 @@ namespace gamecoe
     {
         if (!valid(e)) return;
 
-        for (auto &pool : m_pools) if (pool) pool->remove(e);
+        remove_parent(e);
+
+        auto children_pool = get_pool<components::children>();
+        std::vector<entity> children_to_destroy;
+        if (children_pool->contains(e))
+            children_to_destroy = children_pool->get(e).handles;
 
         m_generations[e.id()]++;
         m_recycle_ids.push_back(e.id());
+
+        for (entity child : children_to_destroy)
+            if (valid(child)) destroy(child);
+
+        for (auto &pool : m_pools) if (pool) pool->remove(e);
     }
 
     void entities::clear()
@@ -84,6 +95,78 @@ namespace gamecoe
     {
         assert(static_cast<std::size_t>(m_current_entity_id) >= m_recycle_ids.size());
         return static_cast<std::size_t>(m_current_entity_id) - m_recycle_ids.size();
+    }
+
+    void entities::set_parent(entity child, entity parent)
+    {
+        assert(valid(child) && valid(parent) && "entities::set_parent(): child/parent must be valid entities");
+        assert(child != parent && "entities::set_parent(): entity cannot be its own parent");
+
+        auto parent_pool = get_pool<components::parent>();
+        auto children_pool = get_pool<components::children>();
+
+        bool has_old = parent_pool->contains(child);
+        entity old_parent = has_old ? parent_pool->get(child).handle : entity::invalid();
+
+        if (has_old && old_parent == parent) return;
+
+        entity ancestor = parent;
+        std::size_t guard = 0;
+        while (guard < size())
+        {
+            assert(ancestor != child && "entities::set_parent(): would create a parent/child cycle");
+            if (!parent_pool->contains(ancestor)) break;
+            ancestor = parent_pool->get(ancestor).handle;
+            ++guard;
+        }
+
+        if (has_old)
+        {
+            if (children_pool->contains(old_parent))
+            {
+                auto& handles = children_pool->get(old_parent).handles;
+                std::erase(handles, child);
+                if (handles.empty()) children_pool->remove(old_parent);
+            }
+        }
+
+        if (has_old) parent_pool->get(child).handle = parent;
+        else parent_pool->add(child, components::parent{ parent });
+
+        if (children_pool->contains(parent)) children_pool->get(parent).handles.push_back(child);
+        else children_pool->add(parent, components::children{ { child } });
+    }
+
+    void entities::remove_parent(entity child)
+    {
+        auto parent_pool = get_pool<components::parent>();
+        if (!parent_pool->contains(child)) return;
+
+        entity old_parent = parent_pool->get(child).handle;
+
+        auto children_pool = get_pool<components::children>();
+        if (children_pool->contains(old_parent))
+        {
+            auto& handles = children_pool->get(old_parent).handles;
+            std::erase(handles, child);
+            if (handles.empty()) children_pool->remove(old_parent);
+        }
+
+        parent_pool->remove(child);
+    }
+
+    void entities::remove_children(entity parent)
+    {
+        auto children_pool = get_pool<components::children>();
+        if (!children_pool->contains(parent)) return;
+
+        std::vector<entity> handles = children_pool->get(parent).handles;
+
+        auto parent_pool = get_pool<components::parent>();
+        for (entity child : handles)
+            if (parent_pool->contains(child)) parent_pool->remove(child);
+
+        children_pool->remove(parent);
     }
 
 } // namespace gamecoe
