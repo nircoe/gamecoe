@@ -3,26 +3,10 @@
 #include <gamecoe/entity/entities.hpp>
 #include <gamecoe/component/transform.hpp>
 #include <gamecoe/component/scene_tag.hpp>
+#include "../test_utils.hpp"
 
 using namespace gamecoe;
-
-namespace
-{
-    void expect_vec3_near(const glm::vec3 &actual, const glm::vec3 &expected, float epsilon = 1e-5f)
-    {
-        EXPECT_NEAR(actual.x, expected.x, epsilon);
-        EXPECT_NEAR(actual.y, expected.y, epsilon);
-        EXPECT_NEAR(actual.z, expected.z, epsilon);
-    }
-
-    void expect_quat_near(const glm::quat &actual, const glm::quat &expected, float epsilon = 1e-5f)
-    {
-        EXPECT_NEAR(actual.w, expected.w, epsilon);
-        EXPECT_NEAR(actual.x, expected.x, epsilon);
-        EXPECT_NEAR(actual.y, expected.y, epsilon);
-        EXPECT_NEAR(actual.z, expected.z, epsilon);
-    }
-} // namespace
+using namespace test_utils;
 
 //==============================================================================
 //                    Test Component Types
