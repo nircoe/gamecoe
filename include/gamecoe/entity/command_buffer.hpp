@@ -18,7 +18,7 @@ namespace gamecoe
     // Placeholders from spawn() are invalidated by their buffer's own flush() - don't reuse them after.
     class command_buffer
     {
-    public:
+    public: // internal structs/classes
         struct placeholder
         {
         private:
@@ -36,7 +36,28 @@ namespace gamecoe
         public:
             entity resolve(placeholder p) const;
         };
+    
+    private:
+        using command = std::function<void(entities&, const resolver&)>;
+        std::vector<components::transform> m_spawn_transforms;
+        std::vector<command> m_commands;
 
+        template <typename T>
+        static void apply(entities& ents, entity e, T value)
+        {
+            static_assert(!std::is_same_v<T, components::parent> && !std::is_same_v<T, components::children>,
+                "command_buffer::add(): hierarchy components are managed - use command_buffer::set_parent() instead");
+
+            if constexpr (std::is_same_v<T, components::transform>)
+                ents.transform(e) = std::move(value);
+            else
+            {
+                if (T* c = ents.get_component<T>(e)) *c = std::move(value);
+                else ents.add_component<T>(e, std::move(value));
+            }
+        }
+    
+    public:
         // Queues an entity with the given transform (default if omitted). No real entity until flush().
         placeholder spawn(components::transform t = components::transform{});
 
@@ -45,14 +66,25 @@ namespace gamecoe
         requires (!std::invocable<T, const resolver&>)
         void add(placeholder p, T value)
         {
-            static_assert(!std::is_same_v<T, components::parent> && !std::is_same_v<T, components::children>,
-                "command_buffer::add(): hierarchy components are managed - use command_buffer::set_parent() instead");
-
             m_commands.emplace_back([p, value = std::move(value)](entities& ents, const resolver& r) mutable
             {
                 entity e = r.resolve(p);
-                if (T* c = ents.get_component<T>(e)) *c = std::move(value);
-                else ents.add_component<T>(e, std::move(value));
+                apply<T>(ents, e, std::move(value));
+            });
+        }
+
+        // Queues a component computed from a resolver callable, applied at flush().
+        template <typename Callable>
+        requires std::invocable<Callable, const resolver&>
+        void add(placeholder p, Callable&& fn)
+        {
+            using T = std::decay_t<std::invoke_result_t<Callable, const resolver&>>;
+            static_assert(!std::is_void_v<T>, "command_buffer::add(): callable must return a component value");
+
+            m_commands.emplace_back([p, fn = std::forward<Callable>(fn)](entities& ents, const resolver& r) mutable
+            {
+                entity e = r.resolve(p);
+                apply<T>(ents, e, fn(r));
             });
         }
 
@@ -62,10 +94,5 @@ namespace gamecoe
         std::size_t spawn_count() const noexcept { return m_spawn_transforms.size(); }
         bool empty() const noexcept { return m_spawn_transforms.empty() && m_commands.empty(); }
         void clear();
-
-    private:
-        using command = std::function<void(entities&, const resolver&)>;
-        std::vector<components::transform> m_spawn_transforms;
-        std::vector<command> m_commands;
     };
 } // namespace gamecoe

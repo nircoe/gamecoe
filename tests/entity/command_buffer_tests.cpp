@@ -17,6 +17,11 @@ struct Tag
     int value;
 };
 
+struct follow_target
+{
+    entity target;
+};
+
 //==============================================================================
 //                    CommandBufferTests - Command buffer tests
 //==============================================================================
@@ -149,5 +154,45 @@ TEST_F(CommandBufferTests, SceneTagging)
         });
 
         EXPECT_FALSE(mgr.has_component<components::scene_tag>(e));
+    }
+}
+
+//==============================================================================
+//                        Callable Resolution
+//==============================================================================
+
+TEST_F(CommandBufferTests, CallableResolution)
+{
+    // Test 1: callable add<T> resolves a placeholder to a real entity reference
+    {
+        mgr.clear();
+        command_buffer::placeholder p_a = buf.spawn();
+        command_buffer::placeholder p_b = buf.spawn();
+        buf.add(p_a, [=](const command_buffer::resolver& r) { return follow_target{r.resolve(p_b)}; });
+        buf.flush(mgr);
+
+        ASSERT_EQ(mgr.size(), 2);
+        std::vector<entity> entities_list;
+        mgr.for_each<components::transform>([&entities_list]([[maybe_unused]] entity ent, [[maybe_unused]] const components::transform &tr)
+        {
+            entities_list.push_back(ent);
+        });
+
+        // Identify entity_a (has follow_target) and entity_b (doesn't)
+        entity entity_a = entity::invalid();
+        entity entity_b = entity::invalid();
+        for (entity e : entities_list)
+        {
+            if (mgr.has_component<follow_target>(e))
+                entity_a = e;
+            else
+                entity_b = e;
+        }
+
+        ASSERT_TRUE(mgr.has_component<follow_target>(entity_a));
+        EXPECT_EQ(mgr.get_component<follow_target>(entity_a)->target, entity_b);
+        EXPECT_NE(mgr.get_component<follow_target>(entity_a)->target, entity::invalid());
+        
+        // buf.add<components::parent>(p_a, components::parent{}); // compile error: hierarchy components are managed
     }
 }
