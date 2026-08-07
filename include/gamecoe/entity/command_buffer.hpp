@@ -45,7 +45,7 @@ namespace gamecoe
         template <typename T>
         static void apply(entities& ents, entity e, T value)
         {
-            static_assert(!std::is_same_v<T, components::parent> && !std::is_same_v<T, components::children>,
+            static_assert(!hierarchy_component<T>,
                 "command_buffer::add(): hierarchy components are managed - use command_buffer::set_parent() instead");
 
             if constexpr (std::is_same_v<T, components::transform>)

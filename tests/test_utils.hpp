@@ -4,9 +4,22 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/epsilon.hpp>
 #include <gtest/gtest.h>
-
+#include <gamecoe/entity/entities.hpp>
+#include <gamecoe/component/transform.hpp>
 namespace test_utils
 {
+    // Returns the single entity in mgr (expects there's exactly one), for tests that flush one spawn and need its real handle
+    inline gamecoe::entity sole_entity(gamecoe::entities &mgr)
+    {
+        EXPECT_EQ(mgr.size(), 1u) << "test_utils::sole_entity(): expected exactly one entity in mgr";
+        gamecoe::entity e = gamecoe::entity::invalid();
+        mgr.for_each<gamecoe::components::transform>([&e](gamecoe::entity ent, [[maybe_unused]] const gamecoe::components::transform &tr)
+        {
+            e = ent;
+        });
+        return e;
+    }
+
     inline void expect_vec3_near(const glm::vec3 &actual, const glm::vec3 &expected, float epsilon = 1e-5f)
     {
         EXPECT_NEAR(actual.x, expected.x, epsilon);

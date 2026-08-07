@@ -58,11 +58,7 @@ TEST_F(CommandBufferTests, SpawnAndFlush)
         buf.flush(mgr);
 
         ASSERT_EQ(mgr.size(), 1);
-        entity e = entity::invalid();
-        mgr.for_each<components::transform>([&e]([[maybe_unused]] entity ent, [[maybe_unused]] const components::transform &tr)
-        {
-            e = ent;
-        });
+        entity e = sole_entity(mgr);
 
         expect_vec3_near(mgr.transform(e).position, t.position);
         expect_quat_near(mgr.transform(e).rotation, t.rotation);
@@ -76,11 +72,7 @@ TEST_F(CommandBufferTests, SpawnAndFlush)
         buf.flush(mgr);
 
         ASSERT_EQ(mgr.size(), 1);
-        entity e = entity::invalid();
-        mgr.for_each<components::transform>([&e]([[maybe_unused]] entity ent, [[maybe_unused]] const components::transform &tr)
-        {
-            e = ent;
-        });
+        entity e = sole_entity(mgr);
 
         expect_vec3_near(mgr.transform(e).position, glm::vec3(0.0f));
         expect_quat_near(mgr.transform(e).rotation, glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
@@ -95,11 +87,7 @@ TEST_F(CommandBufferTests, SpawnAndFlush)
         buf.flush(mgr);
 
         ASSERT_EQ(mgr.size(), 1);
-        entity e = entity::invalid();
-        mgr.for_each<components::transform>([&e]([[maybe_unused]] entity ent, [[maybe_unused]] const components::transform &tr)
-        {
-            e = ent;
-        });
+        entity e = sole_entity(mgr);
 
         ASSERT_TRUE(mgr.has_component<Tag>(e));
         EXPECT_EQ(mgr.get_component<Tag>(e)->value, 42);
@@ -131,11 +119,7 @@ TEST_F(CommandBufferTests, SceneTagging)
         buf.flush(mgr, scene_id{1});
 
         ASSERT_EQ(mgr.size(), 1);
-        entity e = entity::invalid();
-        mgr.for_each<components::transform>([&e]([[maybe_unused]] entity ent, [[maybe_unused]] const components::transform &tr)
-        {
-            e = ent;
-        });
+        entity e = sole_entity(mgr);
 
         ASSERT_TRUE(mgr.has_component<components::scene_tag>(e));
         EXPECT_EQ(mgr.get_component<components::scene_tag>(e)->id, scene_id{1});
@@ -148,11 +132,7 @@ TEST_F(CommandBufferTests, SceneTagging)
         buf.flush(mgr);
 
         ASSERT_EQ(mgr.size(), 1);
-        entity e = entity::invalid();
-        mgr.for_each<components::transform>([&e]([[maybe_unused]] entity ent, [[maybe_unused]] const components::transform &tr)
-        {
-            e = ent;
-        });
+        entity e = sole_entity(mgr);
 
         EXPECT_FALSE(mgr.has_component<components::scene_tag>(e));
     }
