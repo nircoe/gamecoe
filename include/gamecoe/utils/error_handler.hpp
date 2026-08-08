@@ -2,11 +2,15 @@
 
 #include <string>
 #include <stdexcept>
+#include <cassert>
 #include <gamecoe_config.hpp>
 
 #if GAMECOE_USE_LOGCOE
     #include <logcoe.hpp>
 #endif
+
+#define GAMECOE_ASSERT_LOG(condition, message) \
+    do { if (!(condition)) logcoe::error(message); assert((condition) && message); } while (0)
 
 namespace gamecoe
 {

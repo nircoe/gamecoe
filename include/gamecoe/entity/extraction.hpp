@@ -9,6 +9,8 @@
 
 namespace gamecoe
 {
+    // Iterates the smallest pool first and checks membership in the rest via contains(),
+    // minimizing total contains() calls across the whole extraction.
     template <typename... Components>
     class extraction
     {
@@ -22,6 +24,10 @@ namespace gamecoe
             const extraction* m_extracted;
             std::size_t m_index;
 
+            // std::get<Is> needs a compile-time index, but which pool is smallest is only known
+            // at runtime (m_smallest_pool_index), so this loops over indices via a fold expression.
+            // has_all_components() below can stay type-keyed (a plain fold over Components) since
+            // it doesn't need to single out one specific pool.
             template <std::size_t... Is>
             entity get_current_entity(std::index_sequence<Is...>) const
             {
@@ -48,7 +54,7 @@ namespace gamecoe
                     entity e = get_current_entity(std::index_sequence_for<Components...>{});
 
                     if (has_all_components(e)) return;
-                    ++m_index; // entity e is not in all pools -> check the next one
+                    ++m_index; // entity e is not in all pools, check the next one
                 }
             }
 

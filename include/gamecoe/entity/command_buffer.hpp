@@ -22,6 +22,8 @@ namespace gamecoe
         struct placeholder
         {
         private:
+            // Opaque token, not a real entity until flush() - same "safety over convenience"
+            // precedent as entity itself. Private ctor + friend keeps callers from forging one.
             std::uint32_t m_index;
             explicit constexpr placeholder(std::uint32_t index) noexcept : m_index(index) { }
             friend class command_buffer;
@@ -51,6 +53,8 @@ namespace gamecoe
                 "command_buffer::add(): hierarchy components are managed - use command_buffer::set_parent() instead");
 
             if constexpr (std::is_same_v<T, components::transform>)
+                // transform is assigned directly since add_component<transform>() is static_assert-blocked
+                // (transform is mandatory, always present, never added through this generic path).
                 ents.transform(e) = std::move(value);
             else
             {
@@ -63,7 +67,8 @@ namespace gamecoe
         // Queues an entity with the given transform (default if omitted). No real entity until flush().
         placeholder spawn(components::transform t = components::transform{});
 
-        // Queues a component add-or-assign, applied at flush().
+        // Queues a component add-or-assign, applied at flush(). Add-only would always fail for
+        // transform (every spawned entity already has one), so add-or-assign covers every component type the same way.
         template <typename T>
         requires (!std::invocable<T, const resolver&>)
         void add(placeholder p, T value)

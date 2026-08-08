@@ -1,8 +1,13 @@
 #include <gamecoe/entity/entities.hpp>
 #include <gamecoe/component/transform.hpp>
 #include <gamecoe/component/parent_child.hpp>
-#include <cassert>
 #include <cstddef>
+#include <string>
+#include <gamecoe_config.hpp>
+
+#if GAMECOE_USE_LOGCOE
+    #include <logcoe.hpp>
+#endif
 
 namespace gamecoe
 {
@@ -16,7 +21,7 @@ namespace gamecoe
         if (m_recycle_ids.empty())
         {
             id = m_current_entity_id;
-            assert(id <= entity::MAX_ENTITIES && "entities::create(): entity limit reached");
+            GAMECOE_ASSERT_LOG(id <= entity::MAX_ENTITIES, "entities::create(): entity limit reached");
             m_current_entity_id++;
             generation = 0;
             m_generations.push_back(generation);
@@ -36,23 +41,27 @@ namespace gamecoe
 
     components::transform& entities::transform(entity e)
     {
-        assert(valid(e) && "entities::transform(): entity is not valid");
+        GAMECOE_ASSERT_LOG(valid(e), "entities::transform(): entity is not valid");
         components::transform* t = get_component<components::transform>(e);
-        assert(t && "entities::transform(): transform missing (should be impossible - mandatory component)");
+        GAMECOE_ASSERT_LOG(t != nullptr, "entities::transform(): transform missing (should be impossible - mandatory component)");
         return *t;
     }
 
     const components::transform& entities::transform(entity e) const
     {
-        assert(valid(e) && "entities::transform(): entity is not valid");
+        GAMECOE_ASSERT_LOG(valid(e), "entities::transform(): entity is not valid");
         const components::transform* t = get_component<components::transform>(e);
-        assert(t && "entities::transform(): transform missing (should be impossible - mandatory component)");
+        GAMECOE_ASSERT_LOG(t != nullptr, "entities::transform(): transform missing (should be impossible - mandatory component)");
         return *t;
     }
 
     void entities::destroy(entity e)
     {
-        if (!valid(e)) return;
+        if (!valid(e))
+        {
+            logcoe::debug("entities::destroy(): entity already invalid, ignoring");
+            return;
+        }
 
         std::vector<entity> to_destroy{ e };
         while (!to_destroy.empty())
@@ -83,6 +92,7 @@ namespace gamecoe
         m_recycle_ids.clear();
         m_generations.clear();
         m_current_entity_id = 0;
+        logcoe::info("entities::clear(): cleared all entities");
     }
 
     bool entities::valid(entity e) const
@@ -96,29 +106,35 @@ namespace gamecoe
         m_recycle_ids.reserve(capacity);
 
         for (auto &pool : m_pools) if (pool) pool->reserve(capacity);
+
+        logcoe::debug("entities::reserve(): reserved capacity for " + std::to_string(capacity) + " entities");
     }
 
     std::size_t entities::size() const
     {
-        assert(static_cast<std::size_t>(m_current_entity_id) >= m_recycle_ids.size());
+        GAMECOE_ASSERT_LOG(static_cast<std::size_t>(m_current_entity_id) >= m_recycle_ids.size(), "entities::size(): recycle count exceeds allocated id count");
         return static_cast<std::size_t>(m_current_entity_id) - m_recycle_ids.size();
     }
 
     void entities::set_parent(entity child, entity parent)
     {
-        assert(valid(child) && valid(parent) && "entities::set_parent(): child/parent must be valid entities");
-        assert(child != parent && "entities::set_parent(): entity cannot be its own parent");
+        GAMECOE_ASSERT_LOG(valid(child) && valid(parent), "entities::set_parent(): child/parent must be valid entities");
+        GAMECOE_ASSERT_LOG(child != parent, "entities::set_parent(): entity cannot be its own parent");
 
         auto parent_pool = get_pool<components::parent>();
         auto children_pool = get_pool<components::children>();
 
         if (parent_pool->contains(child) && parent_pool->get(child).handle == parent) return;
 
+        // Walk up from parent toward the root, checking whether child appears as its own ancestor.
+        // guard bounds the walk to entities.size() so a corrupted parent chain
+        // (shouldn't happen — set_parent blocks cycles at insertion) can't loop forever.
         entity ancestor = parent;
         std::size_t guard = 0;
-        while (guard < size())
+        const std::size_t max_guard = size();
+        while (guard < max_guard)
         {
-            assert(ancestor != child && "entities::set_parent(): would create a parent/child cycle");
+            GAMECOE_ASSERT_LOG(ancestor != child, "entities::set_parent(): would create a parent/child cycle");
             // Only relevant in release mode - we should have already caught cycles via the assert above in debug builds
             if (ancestor == child) return;
             if (!parent_pool->contains(ancestor)) break;
@@ -144,6 +160,8 @@ namespace gamecoe
         {
             auto children_pool = get_pool<components::children>();
             std::erase(children_pool->get(old_parent).handles, child);
+            // A childless entity has no children component at all, not one with an empty list -
+            // so has_component<children>(e) alone tells you whether an entity has any children.
             if (!children_pool->get(old_parent).has_children()) children_pool->remove(old_parent);
         }
 

@@ -10,6 +10,7 @@
 #include <memory>
 #include <cstdint>
 #include <cassert>
+#include <gamecoe/utils/error_handler.hpp>
 
 namespace gamecoe
 {
@@ -26,6 +27,8 @@ namespace gamecoe
 
     class entities
     {
+        // Plain counters, not atomics. Atomics would imply a thread-safety guarantee
+        // this ECS doesn't have yet, revisit once the threading model is decided.
         static std::uint32_t s_component_id;
 
         std::vector<std::unique_ptr<basic_component_pool>> m_pools;
@@ -42,7 +45,7 @@ namespace gamecoe
             return s_componentT_id;
         }
 
-        // Returns a pointer to the realtime type component_pool<T> of the T component, creates a new pool if not exists
+        // Creates a new pool if not exists (lazy auto-registration).
         template <typename T>
         component_pool<T>* get_pool()
         {
@@ -63,25 +66,22 @@ namespace gamecoe
 
         ~entities() = default;
 
-        // Creates an entity (may be recycled id)
+        // May return a recycled id.
         entity create();
 
-        // Destroy an entity
+        // No-op if e is already invalid.
         void destroy(entity e);
 
-        // Destroys all entities
         void clear();
 
-        // Returns if the entity handle given is valid
         bool valid(entity e) const;
 
-        // Reserves capacity for a number of entities
+        // Also reserves capacity in every existing component pool, not just entity bookkeeping.
         void reserve(std::size_t capacity);
 
-        // Returns the number of alive entities
         std::size_t size() const;
 
-        // Emplaces a new T component to entity e
+        // Entity must already be valid, asserted.
         template <typename T, typename... Args>
         T& add_component(entity e, Args&&... args)
         {
@@ -90,13 +90,13 @@ namespace gamecoe
             static_assert(!hierarchy_component<T>,
                 "entities::add_component(): hierarchy components are managed - use entities::set_parent() instead");
 
-            assert(valid(e) && "entities::add_component(): entity is not valid");
+            GAMECOE_ASSERT_LOG(valid(e), "entities::add_component(): entity is not valid");
 
             auto pool = get_pool<T>();
             return pool->add(e, std::forward<Args>(args)...);
         }
 
-        // Returns if entity e has a component T
+        // Safe on an invalid entity, returns false rather than asserting.
         template <typename T>
         bool has_component(entity e) const
         {
@@ -108,7 +108,7 @@ namespace gamecoe
             return m_pools[comp_id]->contains(e);
         }
 
-        // Removes component T from entity e
+        // No-op if e doesn't have T, or e is invalid.
         template <typename T>
         void remove_component(entity e)
         {
@@ -122,8 +122,7 @@ namespace gamecoe
             m_pools[component_id<T>()]->remove(e);
         }
 
-        // Returns a pointer to component T of entity e (`nullptr` if entity doesn't have T component),
-        // also note that the pointer may invalidated by any `add_component` call
+        // Pointer may be invalidated by any add_component call (pool reallocation).
         template <typename T>
         T* get_component(entity e)
         {
@@ -133,8 +132,7 @@ namespace gamecoe
             return &(pool->get(e));
         }
 
-        // Returns a pointer to component T of entity e (`nullptr` if entity doesn't have T component),
-        // also note that the pointer may invalidated by any `add_component` call
+        // Pointer may be invalidated by any add_component call (pool reallocation).
         template <typename T>
         const T* get_component(entity e) const
         {
@@ -144,22 +142,21 @@ namespace gamecoe
             return &(pool->get(e));
         }
 
-        // Direct accessor for the mandatory transform component
+        // Transform always exists.
         components::transform& transform(entity e);
 
-        // Direct accessor for the mandatory transform component
+        // Transform always exists.
         const components::transform& transform(entity e) const;
 
-        // Sets child's parent, updating both sides.
+        // Updates both sides.
         void set_parent(entity child, entity parent);
 
-        // Removes child's parent link, updating both sides.
+        // Updates both sides.
         void remove_parent(entity child);
 
-        // Removes all of the entity's children, updating both sides.
+        // Updates both sides.
         void remove_children(entity parent);
 
-        // Iterates over all entities and their components and run func() on each of them
         template <typename T, typename Func>
         void for_each(Func &&func)
         {
@@ -170,7 +167,6 @@ namespace gamecoe
             pool->for_each(std::forward<Func>(func));
         }
 
-        // Iterates over all entities and their components and run func() on each of them
         template <typename T, typename Func>
         void for_each(Func &&func) const
         {

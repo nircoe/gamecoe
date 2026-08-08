@@ -18,6 +18,8 @@ namespace gamecoe
             glm::mat4 translation_matrix() const { return glm::translate(glm::mat4(1.0f), position); }
             glm::mat4 rotation_matrix() const { return glm::mat4_cast(rotation); }
             glm::mat4 scale_matrix() const { return glm::scale(glm::mat4(1.0f), scale); }
+            // Built by hand instead of translation_matrix() * rotation_matrix() * scale_matrix()
+            // to avoid two extra mat4 multiplications - this runs per-entity, per-frame.
             glm::mat4 local_matrix() const
             {
                 glm::mat4 m = glm::mat4_cast(rotation);
