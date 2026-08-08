@@ -8,12 +8,17 @@
 #include <vector>
 #include <memory>
 #include <array>
+#include <gamecoe/utils/error_handler.hpp>
 
 namespace gamecoe
 {
     class sparse_set
     {
+        // PAGE_SIZE = 1024 matches 4KB OS page (1024 * sizeof(uint32_t) == 4096),
+        // balances memory waste vs pointer-chasing overhead.
         static constexpr std::uint16_t PAGE_SIZE = 1024;
+        // Mirrors entity::invalid()'s all-1s pattern,
+        // safe for the same reason (create() can never produce this exact value).
         static constexpr std::uint32_t TOMBSTONE = std::numeric_limits<std::uint32_t>::max();
 
         using page_type = std::array<std::uint32_t, PAGE_SIZE>;
@@ -22,6 +27,8 @@ namespace gamecoe
         std::vector<page_ptr_type> m_sparse;
         std::vector<entity> m_dense;
 
+        // Generation packed alongside dense index in the sparse array itself,
+        // so contains() never touches the dense array, pure cache win.
         std::uint16_t index_in_page(entity e) const noexcept { return e.id() % PAGE_SIZE; }
         std::uint32_t page_index(entity e) const noexcept { return e.id() / PAGE_SIZE; }
 
@@ -46,7 +53,7 @@ namespace gamecoe
         void insert(entity e)
         {
             if (contains(e)) return;
-            assert(m_dense.size() <= entity::MAX_ENTITIES && "sparse_set::insert(): max entities exceeded"); // sanity check
+            GAMECOE_ASSERT_LOG(m_dense.size() <= entity::MAX_ENTITIES, "sparse_set::insert(): max entities exceeded");
 
             auto page_i = page_index(e);
             if (page_i >= m_sparse.size()) 
@@ -76,12 +83,16 @@ namespace gamecoe
 
             (*page)[index_in_page(e)] = TOMBSTONE;
 
+            // When erasing the last dense element, swapped == e, and the sparse-page slot was already tombstoned above.
+            // Touching it again via swapped's page would write stale data.
             if (swapped == e) return;
             
             auto &swapped_page = m_sparse[page_index(swapped)];
             (*swapped_page)[index_in_page(swapped)] = pack_dense_index(dense_index, swapped.generation());
         }
 
+        // Mirrors erase() but skips entity-to-index lookup, used by component_pool::remove()
+        // which has already resolved the index and would otherwise pay for redundant lookup.
         void erase_at(std::uint32_t dense_index)
         {
             if (dense_index >= m_dense.size()) return;
@@ -119,7 +130,7 @@ namespace gamecoe
 
         entity get_entity_at_index(std::size_t index) const noexcept
         {
-            assert(index < m_dense.size() && "sparse_set::get_entity_at_index(): index out of bounds");
+            GAMECOE_ASSERT_LOG(index < m_dense.size(), "sparse_set::get_entity_at_index(): index out of bounds");
             return m_dense[index];
         }
 

@@ -9,6 +9,10 @@ namespace gamecoe
 
     namespace components
     {
+        // Takes two entities& even though the engine only has one shared registry today -
+        // kept dual-parameter shaped for forward-compatibility,
+        // both are the same reference passed twice at the call site under the current single-registry model.
+        // Revisit collapsing to a single entities& parameter if a second registry never materializes.
         using collision_callback = void(*)(entity self, entities& self_registry, entity other, entities& other_registry);
 
         struct collision_callbacks

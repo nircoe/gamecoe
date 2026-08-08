@@ -4,7 +4,7 @@
 #include <gamecoe/entity/entity.hpp>
 #include <gamecoe/entity/sparse_set.hpp>
 #include <vector>
-#include <cassert>
+#include <gamecoe/utils/error_handler.hpp>
 
 namespace gamecoe
 {
@@ -12,8 +12,10 @@ namespace gamecoe
     {
     protected:
         sparse_set m_entities;
-        
+
     private:
+        // Base always reserves the sparse_set, derived always reserves its dense array through this override,
+        // so neither one can be forgotten.
         virtual void do_reserve(std::size_t capacity) = 0;
 
     public:
@@ -73,8 +75,8 @@ namespace gamecoe
         {
             if (contains(e))
             {
-                assert(false && "component_pool::add(): entity already has this component");
-                // overwriting with the new value on release build mode
+                GAMECOE_ASSERT_LOG(false, "component_pool::add(): entity already has this component");
+                // Release has no assert, so we overwrite instead of silently discarding the caller's new value.
                 T &existing = m_components[m_entities.index(e).value()];
                 existing = T(std::forward<Args>(args)...);
                 return existing;
@@ -86,10 +88,12 @@ namespace gamecoe
             return m_components.back();
         }
 
+        // Asserts and returns T& (not nullable), callers here already checked contains().
+        // entities::get_component<T>() returns a nullable pointer instead since its callers don't always know.
         T& get(entity e)
         {
             auto index = m_entities.index(e);
-            assert(index && "component_pool::get(): entity does not exist in the pool");
+            GAMECOE_ASSERT_LOG(index, "component_pool::get(): entity does not exist in the pool");
 
             return m_components[index.value()];
         }
@@ -97,7 +101,7 @@ namespace gamecoe
         const T& get(entity e) const
         {
             auto index = m_entities.index(e);
-            assert(index && "component_pool::get(): entity does not exist in the pool");
+            GAMECOE_ASSERT_LOG(index, "component_pool::get(): entity does not exist in the pool");
 
             return m_components[index.value()];
         }

@@ -1,6 +1,12 @@
 #include <gamecoe/entity/command_buffer.hpp>
 #include <gamecoe/component/scene_tag.hpp>
-#include <cassert>
+#include <string>
+#include <gamecoe/utils/error_handler.hpp>
+#include <gamecoe_config.hpp>
+
+#if GAMECOE_USE_LOGCOE
+    #include <logcoe.hpp>
+#endif
 
 namespace gamecoe
 {
@@ -12,7 +18,7 @@ namespace gamecoe
 
     entity command_buffer::resolver::resolve(placeholder p) const
     {
-        assert(p.m_index < m_created.size() && "command_buffer::resolver::resolve(): placeholder out of range");
+        GAMECOE_ASSERT_LOG(p.m_index < m_created.size(), "command_buffer::resolver::resolve(): placeholder out of range");
         return m_created[p.m_index];
     }
 
@@ -40,6 +46,8 @@ namespace gamecoe
         resolver r(created);
         for (auto& cmd : m_commands)
             cmd(ents, r);
+
+        logcoe::info("command_buffer::flush(): flushed " + std::to_string(created.size()) + " entities");
 
         clear();
     }
