@@ -5,8 +5,10 @@ add_executable(gamecoe_tests
     entity/component_pool_tests.cpp
     entity/entities_tests.cpp
     entity/extraction_tests.cpp
+    entity/command_buffer_tests.cpp
     component/transform_tests.cpp
     component/parent_child_tests.cpp
+    component/scene_tag_tests.cpp
     component/shape_renderer_tests.cpp
     component/shape_collider_tests.cpp
 )

@@ -13,6 +13,17 @@
 
 namespace gamecoe
 {
+    namespace components
+    {
+        struct transform;
+        struct parent;
+        struct children;
+    } // namespace components
+
+    // True for the hierarchy-managed relationship components - see entities::set_parent()/remove_parent()
+    template <typename T>
+    concept hierarchy_component = std::is_same_v<T, components::parent> || std::is_same_v<T, components::children>;
+
     class entities
     {
         static std::uint32_t s_component_id;
@@ -74,6 +85,11 @@ namespace gamecoe
         template <typename T, typename... Args>
         T& add_component(entity e, Args&&... args)
         {
+            static_assert(!std::is_same_v<T, components::transform>,
+                "entities::add_component(): transform is mandatory, added automatically by create()");
+            static_assert(!hierarchy_component<T>,
+                "entities::add_component(): hierarchy components are managed - use entities::set_parent() instead");
+
             assert(valid(e) && "entities::add_component(): entity is not valid");
 
             auto pool = get_pool<T>();
@@ -96,6 +112,11 @@ namespace gamecoe
         template <typename T>
         void remove_component(entity e)
         {
+            static_assert(!std::is_same_v<T, components::transform>,
+                "entities::remove_component(): transform is mandatory and cannot be removed");
+            static_assert(!hierarchy_component<T>,
+                "entities::remove_component(): hierarchy components are managed - use entities::remove_parent() instead");
+
             if (!has_component<T>(e)) return;
 
             m_pools[component_id<T>()]->remove(e);
@@ -122,6 +143,21 @@ namespace gamecoe
             auto pool = static_cast<const component_pool<T>*>(m_pools[component_id<T>()].get());
             return &(pool->get(e));
         }
+
+        // Direct accessor for the mandatory transform component
+        components::transform& transform(entity e);
+
+        // Direct accessor for the mandatory transform component
+        const components::transform& transform(entity e) const;
+
+        // Sets child's parent, updating both sides.
+        void set_parent(entity child, entity parent);
+
+        // Removes child's parent link, updating both sides.
+        void remove_parent(entity child);
+
+        // Removes all of the entity's children, updating both sides.
+        void remove_children(entity parent);
 
         // Iterates over all entities and their components and run func() on each of them
         template <typename T, typename Func>
