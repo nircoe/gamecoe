@@ -478,6 +478,10 @@ TEST_F(EntitiesTests, Hierarchy)
 
 TEST_F(EntitiesTests, SetParentCycleDetection)
 {
+#ifdef NDEBUG
+    GTEST_SKIP() << "cycle detection assert is compiled out under NDEBUG (Release build)";
+#endif
+
     // Test 1: direct 2-node cycle - A is already parent of B, then set_parent(A, B) would make B a
     // parent of its own ancestor A
     EXPECT_DEATH(

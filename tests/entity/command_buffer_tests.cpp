@@ -57,8 +57,8 @@ TEST_F(CommandBufferTests, SpawnAndFlush)
         buf.spawn(t);
         buf.flush(mgr);
 
-        ASSERT_EQ(mgr.size(), 1);
-        entity e = sole_entity(mgr);
+        entity e = entity::invalid();
+        ASSERT_NO_FATAL_FAILURE(sole_entity(mgr, e));
 
         expect_vec3_near(mgr.transform(e).position, t.position);
         expect_quat_near(mgr.transform(e).rotation, t.rotation);
@@ -71,8 +71,8 @@ TEST_F(CommandBufferTests, SpawnAndFlush)
         buf.spawn();
         buf.flush(mgr);
 
-        ASSERT_EQ(mgr.size(), 1);
-        entity e = sole_entity(mgr);
+        entity e = entity::invalid();
+        ASSERT_NO_FATAL_FAILURE(sole_entity(mgr, e));
 
         expect_vec3_near(mgr.transform(e).position, glm::vec3(0.0f));
         expect_quat_near(mgr.transform(e).rotation, glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
@@ -86,8 +86,8 @@ TEST_F(CommandBufferTests, SpawnAndFlush)
         buf.add<Tag>(p, Tag{42});
         buf.flush(mgr);
 
-        ASSERT_EQ(mgr.size(), 1);
-        entity e = sole_entity(mgr);
+        entity e = entity::invalid();
+        ASSERT_NO_FATAL_FAILURE(sole_entity(mgr, e));
 
         ASSERT_TRUE(mgr.has_component<Tag>(e));
         EXPECT_EQ(mgr.get_component<Tag>(e)->value, 42);
@@ -118,8 +118,8 @@ TEST_F(CommandBufferTests, SceneTagging)
         buf.spawn();
         buf.flush(mgr, scene_id{1});
 
-        ASSERT_EQ(mgr.size(), 1);
-        entity e = sole_entity(mgr);
+        entity e = entity::invalid();
+        ASSERT_NO_FATAL_FAILURE(sole_entity(mgr, e));
 
         ASSERT_TRUE(mgr.has_component<components::scene_tag>(e));
         EXPECT_EQ(mgr.get_component<components::scene_tag>(e)->id, scene_id{1});
@@ -131,8 +131,8 @@ TEST_F(CommandBufferTests, SceneTagging)
         buf.spawn();
         buf.flush(mgr);
 
-        ASSERT_EQ(mgr.size(), 1);
-        entity e = sole_entity(mgr);
+        entity e = entity::invalid();
+        ASSERT_NO_FATAL_FAILURE(sole_entity(mgr, e));
 
         EXPECT_FALSE(mgr.has_component<components::scene_tag>(e));
     }

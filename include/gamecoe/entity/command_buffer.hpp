@@ -38,6 +38,8 @@ namespace gamecoe
         };
     
     private:
+        // std::function requires copyable captured values (all current components qualify) -
+        // revisit std::move_only_function once CI toolchains confirm C++23 library support
         using command = std::function<void(entities&, const resolver&)>;
         std::vector<components::transform> m_spawn_transforms;
         std::vector<command> m_commands;

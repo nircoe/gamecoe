@@ -8,16 +8,16 @@
 #include <gamecoe/component/transform.hpp>
 namespace test_utils
 {
-    // Returns the single entity in mgr (expects there's exactly one), for tests that flush one spawn and need its real handle
-    inline gamecoe::entity sole_entity(gamecoe::entities &mgr)
+    // Fatally asserts mgr has exactly one entity, then writes its handle to out (for tests that flush one spawn and need its real handle).
+    // Callers MUST wrap the call in ASSERT_NO_FATAL_FAILURE(...) - a fatal assert inside this helper only unwinds this function, not the caller's TEST_F.
+    inline void sole_entity(gamecoe::entities &mgr, gamecoe::entity &out)
     {
-        EXPECT_EQ(mgr.size(), 1u) << "test_utils::sole_entity(): expected exactly one entity in mgr";
-        gamecoe::entity e = gamecoe::entity::invalid();
-        mgr.for_each<gamecoe::components::transform>([&e](gamecoe::entity ent, [[maybe_unused]] const gamecoe::components::transform &tr)
+        ASSERT_EQ(mgr.size(), 1u) << "test_utils::sole_entity(): expected exactly one entity in mgr";
+        out = gamecoe::entity::invalid();
+        mgr.for_each<gamecoe::components::transform>([&out](gamecoe::entity ent, [[maybe_unused]] const gamecoe::components::transform &tr)
         {
-            e = ent;
+            out = ent;
         });
-        return e;
     }
 
     inline void expect_vec3_near(const glm::vec3 &actual, const glm::vec3 &expected, float epsilon = 1e-5f)
