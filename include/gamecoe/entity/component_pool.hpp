@@ -18,6 +18,9 @@ namespace gamecoe
         // so neither one can be forgotten.
         virtual void do_reserve(std::size_t capacity) = 0;
 
+        // Derived mirrors the dense-array swap sparse_set performs internally onto its own parallel array.
+        virtual void swap_components(std::uint32_t a, std::uint32_t b) = 0;
+
     public:
         virtual ~basic_component_pool() = default;
         virtual void remove(entity e) = 0;
@@ -27,6 +30,45 @@ namespace gamecoe
         std::size_t size() const noexcept { return m_entities.size(); }
         bool empty() const noexcept { return m_entities.empty(); }
         void reserve(std::size_t capacity) { m_entities.reserve(capacity); do_reserve(capacity); }
+
+        std::size_t active_size() const noexcept { return m_entities.active_size(); }
+
+        bool is_active(entity e) const noexcept
+        {
+            auto index = m_entities.index(e);
+            return index && m_entities.is_active(index.value());   // absent entity -> false, mirrors contains()
+        }
+
+        // Every pool an entity belongs to must agree on its active state - see entities::activate()/
+        // deactivate(), which is the only caller that maintains that across all pools.
+        void deactivate(entity e)
+        {
+            auto index = m_entities.index(e);
+            if (!index) return;
+
+            std::uint32_t i = index.value();
+            if (!m_entities.is_active(i)) return;                                  // already inactive
+
+            // active_size() and i must be captured before deactivate_at(), since that call changes active_count.
+            std::uint32_t last_active = static_cast<std::uint32_t>(m_entities.active_size()) - 1;
+            m_entities.deactivate_at(i);                                           // moves e past the active/inactive boundary
+            if (i != last_active) swap_components(i, last_active);
+        }
+
+        // See deactivate() above for the shared active-state invariant this mirrors.
+        void activate(entity e)
+        {
+            auto index = m_entities.index(e);
+            if (!index) return;
+
+            std::uint32_t i = index.value();
+            if (m_entities.is_active(i)) return;                                   // already active
+
+            // active_size() and i must be captured before activate_at(), since that call changes active_count.
+            std::uint32_t first_inactive = static_cast<std::uint32_t>(m_entities.active_size());
+            m_entities.activate_at(i);                                             // moves e past the active/inactive boundary
+            if (i != first_inactive) swap_components(i, first_inactive);
+        }
 
         entity get_entity_at_index(std::size_t index) const noexcept { return m_entities.get_entity_at_index(index); }
     };
@@ -41,6 +83,8 @@ namespace gamecoe
             m_components.reserve(capacity);
         }
 
+        void swap_components(std::uint32_t a, std::uint32_t b) override { std::swap(m_components[a], m_components[b]); }
+
     public:
         component_pool() noexcept = default;
         component_pool(const component_pool&) = delete;
@@ -53,14 +97,24 @@ namespace gamecoe
         void remove(entity e) override
         {
             auto index = m_entities.index(e);
-            if(!index) return;
+            if (!index) return;
 
-            std::uint32_t i = index.value();
-            m_entities.erase_at(i);
+            std::uint32_t i      = index.value();
+            std::uint32_t last   = static_cast<std::uint32_t>(m_components.size()) - 1;
+            std::uint32_t active = static_cast<std::uint32_t>(m_entities.active_size());
 
-            if (i != m_components.size() - 1)
-                m_components[i] = std::move(m_components.back());
+            m_entities.erase_at(i);   // performs the boundary swap (if any) + swap-with-back + active_count fixup
 
+            // Mirror erase_at()'s first swap: route the removed entry out through the active boundary.
+            if (i < active)
+            {
+                std::uint32_t last_active = active - 1;
+                if (i != last_active) m_components[i] = std::move(m_components[last_active]);   // guard: no self-move
+                i = last_active;
+            }
+
+            // Mirror erase_at()'s swap-with-back.
+            if (i != last) m_components[i] = std::move(m_components[last]);
             m_components.pop_back();
         }
 
@@ -82,10 +136,17 @@ namespace gamecoe
                 return existing;
             }
 
-            m_entities.insert(e);
-            m_components.emplace_back(std::forward<Args>(args)...);
+            // sparse_set::insert() appends then swaps the new entity down into the active partition,
+            // so the component can't just be left at the back - mirror the same swap.
+            const std::uint32_t back_index   = static_cast<std::uint32_t>(m_components.size());
+            const std::uint32_t target_index = static_cast<std::uint32_t>(m_entities.active_size());
 
-            return m_components.back();
+            m_components.emplace_back(std::forward<Args>(args)...);   // emplace first: if it throws, m_entities is untouched
+            m_entities.insert(e);
+
+            if (target_index != back_index) std::swap(m_components[target_index], m_components[back_index]);
+
+            return m_components[target_index];
         }
 
         // Asserts and returns T& (not nullable), callers here already checked contains().
