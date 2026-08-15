@@ -34,6 +34,8 @@ namespace gamecoe
         std::vector<std::unique_ptr<basic_component_pool>> m_pools;
         std::vector<std::uint32_t> m_recycle_ids;
         std::vector<std::uint16_t> m_generations;
+        // Per-entity activate()/deactivate() request, independent of any inherited parent state.
+        std::vector<bool> m_self_active;
 
         std::uint32_t m_current_entity_id{0};
 
@@ -57,6 +59,13 @@ namespace gamecoe
             return static_cast<component_pool<T>*>(m_pools[comp_id].get());
         }
 
+        // Applies world_active to e and cascades to its subtree per each descendant's own self_active.
+        void set_active(entity e, bool world_active);
+
+        // Pool-unlink step of remove_parent() only, no active-state recompute - lets set_parent()
+        // call this directly when re-parenting, instead of recomputing active state twice.
+        void unlink_parent(entity child);
+
     public:
         entities() = default;
         entities(const entities&) = delete;
@@ -71,6 +80,12 @@ namespace gamecoe
 
         // No-op if e is already invalid.
         void destroy(entity e);
+
+        // activate()/deactivate()/is_active() read and move the same active/inactive partition
+        // that extract() and for_each() iterate over.
+        void activate(entity e);
+        void deactivate(entity e);
+        bool is_active(entity e) const;
 
         void clear();
 
@@ -93,7 +108,7 @@ namespace gamecoe
             GAMECOE_ASSERT_LOG(valid(e), "entities::add_component(): entity is not valid");
 
             auto pool = get_pool<T>();
-            return pool->add(e, true, std::forward<Args>(args)...);
+            return pool->add(e, is_active(e), std::forward<Args>(args)...);
         }
 
         // Safe on an invalid entity, returns false rather than asserting.
