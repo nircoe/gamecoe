@@ -169,10 +169,12 @@ namespace gamecoe
             return m_components[index.value()];
         }
 
+        // Active partition only - a deactivated entity (e.g. one in a paused scene) is skipped,
+        // same bound extract<>() uses.
         template<typename Func>
         void for_each(Func &&func)
         {
-            auto size = m_components.size();
+            auto size = active_size();
             for(std::size_t i = 0; i < size; ++i)
                 func(m_entities.get_entity_at_index(i), m_components[i]);
         }
@@ -180,12 +182,31 @@ namespace gamecoe
         template<typename Func>
         void for_each(Func &&func) const
         {
+            auto size = active_size();
+            for(std::size_t i = 0; i < size; ++i)
+                func(m_entities.get_entity_at_index(i), m_components[i]);
+        }
+
+        // Full scan over both partitions, for callers that need every entity regardless of
+        // active state.
+        template<typename Func>
+        void for_each_all(Func &&func)
+        {
             auto size = m_components.size();
             for(std::size_t i = 0; i < size; ++i)
                 func(m_entities.get_entity_at_index(i), m_components[i]);
         }
 
-        // Iterators invalidated by add/remove (dense array reallocation)
+        template<typename Func>
+        void for_each_all(Func &&func) const
+        {
+            auto size = m_components.size();
+            for(std::size_t i = 0; i < size; ++i)
+                func(m_entities.get_entity_at_index(i), m_components[i]);
+        }
+
+        // Iterators invalidated by add/remove (dense array reallocation). Span both partitions
+        // (active and inactive) - for active-only iteration use for_each()/extract() instead.
         T *begin() noexcept { return m_components.data(); }
         T *end() noexcept { return m_components.data() + m_components.size(); }
         const T *begin() const noexcept { return m_components.data(); }

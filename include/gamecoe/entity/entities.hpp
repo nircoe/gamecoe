@@ -192,6 +192,26 @@ namespace gamecoe
             pool->for_each(std::forward<Func>(func));
         }
 
+        template <typename T, typename Func>
+        void for_each_all(Func &&func)
+        {
+            std::uint32_t comp_id = component_id<T>();
+            if (comp_id >= m_pools.size() || !m_pools[comp_id]) return;
+
+            auto pool = static_cast<component_pool<T>*>(m_pools[comp_id].get());
+            pool->for_each_all(std::forward<Func>(func));
+        }
+
+        template <typename T, typename Func>
+        void for_each_all(Func &&func) const
+        {
+            std::uint32_t comp_id = component_id<T>();
+            if (comp_id >= m_pools.size() || !m_pools[comp_id]) return;
+
+            auto pool = static_cast<const component_pool<T>*>(m_pools[comp_id].get());
+            pool->for_each_all(std::forward<Func>(func));
+        }
+
         template <typename... Components>
         extraction<Components...> extract()
         {
