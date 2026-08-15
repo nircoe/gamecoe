@@ -36,7 +36,7 @@ namespace gamecoe
         bool is_active(entity e) const noexcept
         {
             auto index = m_entities.index(e);
-            return index && m_entities.is_active(index.value());   // absent entity -> false, mirrors contains()
+            return index && m_entities.is_active(index.value());
         }
 
         // Every pool an entity belongs to must agree on its active state - see entities::activate()/
@@ -47,27 +47,18 @@ namespace gamecoe
             if (!index) return;
 
             std::uint32_t i = index.value();
-            if (!m_entities.is_active(i)) return;                                  // already inactive
-
-            // active_size() and i must be captured before deactivate_at(), since that call changes active_count.
-            std::uint32_t last_active = static_cast<std::uint32_t>(m_entities.active_size()) - 1;
-            m_entities.deactivate_at(i);                                           // moves e past the active/inactive boundary
-            if (i != last_active) swap_components(i, last_active);
+            if (auto partner = m_entities.deactivate_at(i); partner && partner.value() != i)
+                swap_components(i, partner.value());
         }
 
-        // See deactivate() above for the shared active-state invariant this mirrors.
         void activate(entity e)
         {
             auto index = m_entities.index(e);
             if (!index) return;
 
             std::uint32_t i = index.value();
-            if (m_entities.is_active(i)) return;                                   // already active
-
-            // active_size() and i must be captured before activate_at(), since that call changes active_count.
-            std::uint32_t first_inactive = static_cast<std::uint32_t>(m_entities.active_size());
-            m_entities.activate_at(i);                                             // moves e past the active/inactive boundary
-            if (i != first_inactive) swap_components(i, first_inactive);
+            if (auto partner = m_entities.activate_at(i); partner && partner.value() != i)
+                swap_components(i, partner.value());
         }
 
         entity get_entity_at_index(std::size_t index) const noexcept { return m_entities.get_entity_at_index(index); }
@@ -99,21 +90,13 @@ namespace gamecoe
             auto index = m_entities.index(e);
             if (!index) return;
 
-            std::uint32_t i      = index.value();
-            std::uint32_t last   = static_cast<std::uint32_t>(m_components.size()) - 1;
-            std::uint32_t active = static_cast<std::uint32_t>(m_entities.active_size());
+            deactivate(e);   // No-op if e is already inactive. Otherwise moves e (and its component) to the first-inactive slot.
 
-            m_entities.erase_at(i);   // performs the boundary swap (if any) + swap-with-back + active_count fixup
+            std::uint32_t i    = m_entities.index(e).value();   // re-resolve: deactivate() may have moved it
+            std::uint32_t last = static_cast<std::uint32_t>(m_components.size()) - 1;
 
-            // Mirror erase_at()'s first swap: route the removed entry out through the active boundary.
-            if (i < active)
-            {
-                std::uint32_t last_active = active - 1;
-                if (i != last_active) m_components[i] = std::move(m_components[last_active]);   // guard: no self-move
-                i = last_active;
-            }
+            m_entities.erase_at(i);   // both endpoints are now inactive, so this is a pure swap-with-back + pop
 
-            // Mirror erase_at()'s swap-with-back.
             if (i != last) m_components[i] = std::move(m_components[last]);
             m_components.pop_back();
         }
@@ -133,22 +116,23 @@ namespace gamecoe
                 // Release has no assert, so we overwrite instead of silently discarding the caller's new value.
                 T &existing = m_components[m_entities.index(e).value()];
                 existing = T(std::forward<Args>(args)...);
-                return existing;   // active untouched - an existing entity's state isn't this call's business
+                return existing;   // active is ignored when the entity already exists. An existing entry keeps its current state.
             }
 
-            // sparse_set::insert() appends then swaps the new entity down into the active partition,
-            // so the component can't just be left at the back - mirror the same swap.
             const std::uint32_t back_index   = static_cast<std::uint32_t>(m_components.size());
             const std::uint32_t target_index = static_cast<std::uint32_t>(m_entities.active_size());
 
             m_components.emplace_back(std::forward<Args>(args)...);   // emplace first: if it throws, m_entities is untouched
-            m_entities.insert(e);
+            m_entities.insert(e, active);
+
+            // An inactive entry stays at the back, where both arrays already agree. An active one is
+            // swapped down into the boundary slot by insert(), so mirror that swap here to keep
+            // m_components[i] paired with the entity at dense index i.
+            if (!active) return m_components[back_index];
 
             if (target_index != back_index) std::swap(m_components[target_index], m_components[back_index]);
 
-            if (!active) deactivate(e);   // may relocate the entry again - re-resolve below either way
-
-            return get(e);
+            return m_components[target_index];
         }
 
         // Asserts and returns T& (not nullable), callers here already checked contains().
@@ -187,8 +171,7 @@ namespace gamecoe
                 func(m_entities.get_entity_at_index(i), m_components[i]);
         }
 
-        // Full scan over both partitions, for callers that need every entity regardless of
-        // active state.
+        // Full scan over both partitions, unlike for_each().
         template<typename Func>
         void for_each_all(Func &&func)
         {

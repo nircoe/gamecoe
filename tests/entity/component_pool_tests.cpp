@@ -342,6 +342,35 @@ TEST_F(ComponentPoolTests, AddIntoPoolWithInactiveEntities)
         EXPECT_TRUE(pool.is_active(a));
         EXPECT_FALSE(pool.is_active(d));
     }
+
+    // Test 3: add() a new entity directly as inactive into a pool with BOTH active and
+    // inactive entries already present
+    {
+        pool.clear();
+        auto a = entity::create(1, 0);
+        auto b = entity::create(2, 0);
+        auto e = entity::create(5, 0);
+
+        Position pos_a{1.0f, 0.0f, 0.0f};
+        Position pos_b{2.0f, 0.0f, 0.0f};
+        Position pos_e{5.0f, 0.0f, 0.0f};
+
+        pool.add(a, true, pos_a);
+        pool.add(b, true, pos_b);
+        pool.deactivate(b); // active=[a], inactive=[b]
+        ASSERT_EQ(pool.active_size(), 1);
+
+        Position &ref_e = pool.add(e, false, pos_e);
+
+        EXPECT_EQ(ref_e, pos_e);
+        EXPECT_EQ(pool.get(e), pos_e);
+        EXPECT_EQ(pool.get(a), pos_a); // untouched by the insert
+        EXPECT_EQ(pool.get(b), pos_b); // untouched by the insert
+        EXPECT_EQ(pool.active_size(), 1); // unchanged by the new inactive insert
+        EXPECT_TRUE(pool.is_active(a));
+        EXPECT_FALSE(pool.is_active(b));
+        EXPECT_FALSE(pool.is_active(e));
+    }
 }
 
 //==============================================================================

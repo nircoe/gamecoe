@@ -623,9 +623,9 @@ TEST_F(EntitiesTests, DestroyKeepsActivePartitionIntact)
             active_found.push_back(e);
 
         EXPECT_EQ(active_found.size(), 3u); // es[2], es[4], es[5]
-        EXPECT_TRUE(std::find(active_found.begin(), active_found.end(), es[2]) != active_found.end());
-        EXPECT_TRUE(std::find(active_found.begin(), active_found.end(), es[4]) != active_found.end());
-        EXPECT_TRUE(std::find(active_found.begin(), active_found.end(), es[5]) != active_found.end());
+        EXPECT_TRUE(test_utils::has(active_found, es[2]));
+        EXPECT_TRUE(test_utils::has(active_found, es[4]));
+        EXPECT_TRUE(test_utils::has(active_found, es[5]));
 
         EXPECT_FALSE(mgr.is_active(es[1]));
         EXPECT_TRUE(mgr.is_active(es[2]));
@@ -671,10 +671,10 @@ TEST_F(EntitiesTests, DestroyKeepsActivePartitionIntact)
 
         // Active survivor count unchanged from before the destroy: es[0], es[2], es[4], es[5]
         EXPECT_EQ(active_found.size(), 4u);
-        EXPECT_TRUE(std::find(active_found.begin(), active_found.end(), es[0]) != active_found.end());
-        EXPECT_TRUE(std::find(active_found.begin(), active_found.end(), es[2]) != active_found.end());
-        EXPECT_TRUE(std::find(active_found.begin(), active_found.end(), es[4]) != active_found.end());
-        EXPECT_TRUE(std::find(active_found.begin(), active_found.end(), es[5]) != active_found.end());
+        EXPECT_TRUE(test_utils::has(active_found, es[0]));
+        EXPECT_TRUE(test_utils::has(active_found, es[2]));
+        EXPECT_TRUE(test_utils::has(active_found, es[4]));
+        EXPECT_TRUE(test_utils::has(active_found, es[5]));
 
         EXPECT_TRUE(mgr.is_active(es[0]));
         EXPECT_TRUE(mgr.is_active(es[2]));
@@ -737,7 +737,7 @@ TEST_F(EntitiesTests, DestroyKeepsActivePartitionIntact)
             active_found.push_back(e);
 
         EXPECT_EQ(active_found.size(), 1u); // only other_active survives in the active partition
-        EXPECT_TRUE(std::find(active_found.begin(), active_found.end(), other_active) != active_found.end());
+        EXPECT_TRUE(test_utils::has(active_found, other_active));
     }
 }
 
@@ -804,8 +804,8 @@ TEST_F(EntitiesTests, ActivateDeactivate)
 
 TEST_F(EntitiesTests, SelfActiveCascade)
 {
-    // Test 1: weapon-slot regression - reactivating a parent must restore each descendant to
-    // its OWN self_active state, not force every descendant active
+    // Test 1: reactivating a parent must restore each descendant to its OWN self_active
+    // state, not force every descendant active (independently-toggled siblings)
     {
         mgr.clear();
         entity player = mgr.create();

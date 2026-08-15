@@ -2,6 +2,7 @@
 #include <gamecoe/entity/entities.hpp>
 #include <vector>
 #include <algorithm>
+#include "../test_utils.hpp"
 
 using namespace gamecoe;
 
@@ -84,10 +85,10 @@ TEST_F(ExtractionTests, BasicExtractionAndFiltering)
         }
 
         EXPECT_EQ(found_entities.size(), 4); // e1, e3, e4, e5
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e1) != found_entities.end());
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e3) != found_entities.end());
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e4) != found_entities.end());
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e5) != found_entities.end());
+        EXPECT_TRUE(test_utils::has(found_entities, e1));
+        EXPECT_TRUE(test_utils::has(found_entities, e3));
+        EXPECT_TRUE(test_utils::has(found_entities, e4));
+        EXPECT_TRUE(test_utils::has(found_entities, e5));
     }
 
     // Test 2: Extract single component (Velocity)
@@ -101,9 +102,9 @@ TEST_F(ExtractionTests, BasicExtractionAndFiltering)
         }
 
         EXPECT_EQ(found_entities.size(), 3); // e2, e3, e4
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e2) != found_entities.end());
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e3) != found_entities.end());
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e4) != found_entities.end());
+        EXPECT_TRUE(test_utils::has(found_entities, e2));
+        EXPECT_TRUE(test_utils::has(found_entities, e3));
+        EXPECT_TRUE(test_utils::has(found_entities, e4));
     }
 
     // Test 3: Extract multiple components (Transform + Velocity)
@@ -120,8 +121,8 @@ TEST_F(ExtractionTests, BasicExtractionAndFiltering)
         }
 
         EXPECT_EQ(found_entities.size(), 2); // Only e3 and e4
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e3) != found_entities.end());
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e4) != found_entities.end());
+        EXPECT_TRUE(test_utils::has(found_entities, e3));
+        EXPECT_TRUE(test_utils::has(found_entities, e4));
     }
 
     // Test 4: Verify component values can be read correctly
@@ -464,9 +465,9 @@ TEST_F(ExtractionTests, IteratorProtocol)
         }
 
         EXPECT_EQ(x_values.size(), 3);
-        EXPECT_TRUE(std::find(x_values.begin(), x_values.end(), 1.0f) != x_values.end());
-        EXPECT_TRUE(std::find(x_values.begin(), x_values.end(), 2.0f) != x_values.end());
-        EXPECT_TRUE(std::find(x_values.begin(), x_values.end(), 3.0f) != x_values.end());
+        EXPECT_TRUE(test_utils::has(x_values, 1.0f));
+        EXPECT_TRUE(test_utils::has(x_values, 2.0f));
+        EXPECT_TRUE(test_utils::has(x_values, 3.0f));
     }
 
     // Test 7: Manual iteration with begin/end

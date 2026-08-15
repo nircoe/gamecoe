@@ -25,7 +25,7 @@ TEST_F(SparseSetTests, InsertOperations)
     {
         auto e = entity::create(42, 0);
 
-        set.insert(e);
+        set.insert(e, true);
 
         EXPECT_TRUE(set.contains(e));
         EXPECT_EQ(set.size(), 1);
@@ -46,7 +46,7 @@ TEST_F(SparseSetTests, InsertOperations)
             entities.push_back(entity::create(i, 0));
 
         for (auto e : entities)
-            set.insert(e);
+            set.insert(e, true);
 
         EXPECT_EQ(set.size(), 100);
 
@@ -60,11 +60,52 @@ TEST_F(SparseSetTests, InsertOperations)
         set.clear();
         auto e = entity::create(42, 0);
 
-        set.insert(e);
-        set.insert(e); // Duplicate insert
+        set.insert(e, true);
+        set.insert(e, true); // Duplicate insert
 
         EXPECT_EQ(set.size(), 1); // Size unchanged
         EXPECT_TRUE(set.contains(e));
+    }
+
+    // Test 4: Insert inactive entity into an empty set
+    {
+        set.clear();
+        auto e = entity::create(42, 0);
+
+        set.insert(e, false);
+
+        EXPECT_EQ(set.active_size(), 0);
+        EXPECT_FALSE(set.is_active(set.index(e).value()));
+        EXPECT_TRUE(set.contains(e));
+
+        auto index = set.index(e);
+        EXPECT_TRUE(index.has_value());
+    }
+
+    // Test 5: Insert inactive entity into a set with existing active AND inactive entries
+    {
+        set.clear();
+        auto a = entity::create(1, 0);
+        auto b = entity::create(2, 0);
+        auto c = entity::create(3, 0);
+        set.insert(a, true);
+        set.insert(b, true);
+        set.insert(c, true);
+        set.deactivate(b); // active=[a,c], inactive=[b]
+        ASSERT_EQ(set.active_size(), 2);
+
+        auto d = entity::create(4, 0);
+        set.insert(d, false);
+
+        EXPECT_EQ(set.active_size(), 2); // unchanged by the new inactive insert
+        EXPECT_EQ(set.size(), 4);
+        EXPECT_TRUE(set.contains(d));
+        EXPECT_FALSE(set.is_active(set.index(d).value()));
+
+        // Existing partition undisturbed
+        EXPECT_TRUE(set.is_active(set.index(a).value()));
+        EXPECT_TRUE(set.is_active(set.index(c).value()));
+        EXPECT_FALSE(set.is_active(set.index(b).value()));
     }
 }
 
@@ -78,7 +119,7 @@ TEST_F(SparseSetTests, EraseOperations)
     {
         auto e = entity::create(42, 0);
 
-        set.insert(e);
+        set.insert(e, true);
         set.erase(e);
 
         EXPECT_FALSE(set.contains(e));
@@ -96,9 +137,9 @@ TEST_F(SparseSetTests, EraseOperations)
         auto e2 = entity::create(20, 0);
         auto e3 = entity::create(30, 0);
 
-        set.insert(e1);
-        set.insert(e2);
-        set.insert(e3);
+        set.insert(e1, true);
+        set.insert(e2, true);
+        set.insert(e3, true);
 
         // Erase middle entity (e2)
         set.erase(e2);
@@ -119,7 +160,7 @@ TEST_F(SparseSetTests, EraseOperations)
         auto e1 = entity::create(10, 0);
         auto e2 = entity::create(20, 0);
 
-        set.insert(e1);
+        set.insert(e1, true);
         EXPECT_EQ(set.size(), 1);
 
         set.erase(e2); // e2 not in set
@@ -141,9 +182,9 @@ TEST_F(SparseSetTests, EraseAtOperations)
         auto e2 = entity::create(20, 0);
         auto e3 = entity::create(30, 0);
 
-        set.insert(e1);
-        set.insert(e2);
-        set.insert(e3);
+        set.insert(e1, true);
+        set.insert(e2, true);
+        set.insert(e3, true);
 
         // Erase middle entity by index (e2 is at dense index 1)
         set.erase_at(1);
@@ -169,7 +210,7 @@ TEST_F(SparseSetTests, EraseAtOperations)
     {
         set.clear();
         auto e = entity::create(42, 0);
-        set.insert(e);
+        set.insert(e, true);
 
         set.erase_at(5); // Out of bounds, should be no-op
 
@@ -191,7 +232,7 @@ TEST_F(SparseSetTests, ActivePartition)
         {
             auto e = entity::create(i, 0);
             entities.push_back(e);
-            set.insert(e);
+            set.insert(e, true);
         }
 
         EXPECT_EQ(set.active_size(), set.size());
@@ -204,9 +245,9 @@ TEST_F(SparseSetTests, ActivePartition)
     auto e1 = entity::create(1, 0);
     auto e2 = entity::create(2, 0);
     auto e3 = entity::create(3, 0);
-    set.insert(e1);
-    set.insert(e2);
-    set.insert(e3);
+    set.insert(e1, true);
+    set.insert(e2, true);
+    set.insert(e3, true);
     auto original_active = set.active_size();
 
     // Test 2: deactivate(e) decrements active_size(), keeps contains() true, moves index past the boundary
@@ -259,7 +300,7 @@ TEST_F(SparseSetTests, ActivePartition)
         {
             auto e = entity::create(i, 0);
             inserted.push_back(e);
-            set.insert(e);
+            set.insert(e, true);
         }
 
         // Deactivate every other entity
@@ -307,9 +348,9 @@ TEST_F(SparseSetTests, EraseAcrossActiveBoundary)
         auto b = entity::create(2, 0);
         auto c = entity::create(3, 0);
 
-        set.insert(a);
-        set.insert(b);
-        set.insert(c);
+        set.insert(a, true);
+        set.insert(b, true);
+        set.insert(c, true);
         set.deactivate(c); // active=[a,b], inactive=[c]
         ASSERT_EQ(set.active_size(), 2);
 
@@ -335,10 +376,10 @@ TEST_F(SparseSetTests, EraseAcrossActiveBoundary)
         auto c = entity::create(3, 0);
         auto d = entity::create(4, 0);
 
-        set.insert(a);
-        set.insert(b);
-        set.insert(c);
-        set.insert(d);
+        set.insert(a, true);
+        set.insert(b, true);
+        set.insert(c, true);
+        set.insert(d, true);
         set.deactivate(d); // active=[a,b,c], inactive=[d]
 
         set.erase(b); // b is active, not the last active entity (c is)
@@ -361,10 +402,10 @@ TEST_F(SparseSetTests, EraseAcrossActiveBoundary)
         auto c = entity::create(3, 0);
         auto d = entity::create(4, 0);
 
-        set.insert(a);
-        set.insert(b);
-        set.insert(c);
-        set.insert(d);
+        set.insert(a, true);
+        set.insert(b, true);
+        set.insert(c, true);
+        set.insert(d, true);
         set.deactivate(d); // active=[a,b,c], inactive=[d]
 
         set.erase(c); // c is the last active entity
@@ -388,11 +429,11 @@ TEST_F(SparseSetTests, EraseAcrossActiveBoundary)
         auto d = entity::create(4, 0);
         auto e = entity::create(5, 0);
 
-        set.insert(a);
-        set.insert(b);
-        set.insert(c);
-        set.insert(d);
-        set.insert(e);
+        set.insert(a, true);
+        set.insert(b, true);
+        set.insert(c, true);
+        set.insert(d, true);
+        set.insert(e, true);
         set.deactivate(c);
         set.deactivate(d); // active=[a,b,e], inactive=[d,c] with d NOT at the dense-back position
 
@@ -417,9 +458,9 @@ TEST_F(SparseSetTests, EraseAcrossActiveBoundary)
         auto b = entity::create(2, 0);
         auto c = entity::create(3, 0);
 
-        set.insert(a);
-        set.insert(b);
-        set.insert(c);
+        set.insert(a, true);
+        set.insert(b, true);
+        set.insert(c, true);
         set.deactivate(c); // active=[a,b], inactive=[c], c is the dense-back element
 
         ASSERT_EQ(set.index(c).value(), static_cast<std::uint32_t>(set.size() - 1));
@@ -437,7 +478,7 @@ TEST_F(SparseSetTests, EraseAcrossActiveBoundary)
     {
         set.clear();
         auto a = entity::create(1, 0);
-        set.insert(a);
+        set.insert(a, true);
 
         set.erase(a);
 
@@ -455,10 +496,10 @@ TEST_F(SparseSetTests, EraseAcrossActiveBoundary)
         auto c = entity::create(3, 0);
         auto d = entity::create(4, 0);
 
-        set.insert(a);
-        set.insert(b);
-        set.insert(c);
-        set.insert(d);
+        set.insert(a, true);
+        set.insert(b, true);
+        set.insert(c, true);
+        set.insert(d, true);
         set.deactivate(b);
         set.deactivate(d); // active=[a,c], inactive contains b and d
 
@@ -484,9 +525,9 @@ TEST_F(SparseSetTests, EraseAcrossActiveBoundary)
         auto b = entity::create(2, 0);
         auto c = entity::create(3, 0);
 
-        set.insert(a);
-        set.insert(b);
-        set.insert(c);
+        set.insert(a, true);
+        set.insert(b, true);
+        set.insert(c, true);
 
         set.erase(b); // mid element, everything active
 
@@ -512,7 +553,7 @@ TEST_F(SparseSetTests, GenerationMismatch)
     auto e_gen0 = entity::create(42, 0);
     auto e_gen1 = entity::create(42, 1);
 
-    set.insert(e_gen0);
+    set.insert(e_gen0, true);
 
     // e_gen0 is contained, but e_gen1 (same id, different gen) is NOT
     EXPECT_TRUE(set.contains(e_gen0));
@@ -535,10 +576,10 @@ TEST_F(SparseSetTests, PagingBehavior)
     auto e2048 = entity::create(2048, 0); // Page 2
     auto e5000 = entity::create(5000, 0); // Page 4
 
-    set.insert(e0);
-    set.insert(e1024);
-    set.insert(e2048);
-    set.insert(e5000);
+    set.insert(e0, true);
+    set.insert(e1024, true);
+    set.insert(e2048, true);
+    set.insert(e5000, true);
 
     EXPECT_EQ(set.size(), 4);
     EXPECT_TRUE(set.contains(e0));
@@ -554,7 +595,7 @@ TEST_F(SparseSetTests, PagingBehavior)
 TEST_F(SparseSetTests, ClearSet)
 {
     for (std::uint32_t i = 0; i < 50; ++i)
-        set.insert(entity::create(i, 0));
+        set.insert(entity::create(i, 0), true);
 
     EXPECT_EQ(set.size(), 50);
 
@@ -581,7 +622,7 @@ TEST_F(SparseSetTests, IterateDense)
     {
         auto e = entity::create(i * 10, 0); // IDs: 0, 10, 20, ..., 90
         entities.push_back(e);
-        set.insert(e);
+        set.insert(e, true);
     }
 
     // Iterate using begin()/end()
@@ -606,8 +647,8 @@ TEST_F(SparseSetTests, MoveSemantics)
     auto e1 = entity::create(10, 0);
     auto e2 = entity::create(20, 0);
 
-    set1.insert(e1);
-    set1.insert(e2);
+    set1.insert(e1, true);
+    set1.insert(e2, true);
     set1.deactivate(e2);
     EXPECT_EQ(set1.size(), 2);
     EXPECT_EQ(set1.active_size(), 1);
@@ -643,7 +684,7 @@ TEST_F(SparseSetTests, ReserveCapacity)
 
     // Insert 500 entities (should not trigger reallocation)
     for (std::uint32_t i = 0; i < 500; ++i)
-        set.insert(entity::create(i, 0));
+        set.insert(entity::create(i, 0), true);
 
     EXPECT_EQ(set.size(), 500);
 

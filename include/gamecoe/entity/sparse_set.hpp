@@ -41,12 +41,12 @@ namespace gamecoe
             return (generation << entity::ID_BITS) | dense_index;
         }
 
-        // Swaps two dense slots and repoints both sparse entries. 
-        // Safe when a == b (writes the same packed value twice). 
-        // Pages are guaranteed live: both slots hold entities currently in m_dense, 
-        // so their pages were allocated by insert().
+        // Swaps two dense slots and repoints both sparse entries. A self-swap is a no-op: the
+        // sparse entry already names slot a. Pages are guaranteed live: both slots hold entities
+        // currently in m_dense, so their pages were allocated by insert().
         void swap_dense(std::uint32_t a, std::uint32_t b) noexcept
         {
+            if (a == b) return;
             std::swap(m_dense[a], m_dense[b]);
             entity ea = m_dense[a];
             entity eb = m_dense[b];
@@ -74,27 +74,29 @@ namespace gamecoe
 
         void reserve(std::size_t capacity) { m_dense.reserve(capacity); }
 
-        void insert(entity e)
+        // A new entry is appended at the back, which the active_count <= size invariant guarantees
+        // is at or past the active/inactive boundary - so an inactive insert is a plain append, and
+        // only the active path pays for a swap down into the active partition.
+        void insert(entity e, bool active)
         {
             if (contains(e)) return;
             GAMECOE_ASSERT_LOG(m_dense.size() <= entity::MAX_ENTITIES, "sparse_set::insert(): max entities exceeded");
 
             auto page_i = page_index(e);
-            if (page_i >= m_sparse.size()) 
+            if (page_i >= m_sparse.size())
                 m_sparse.resize(page_i + 1);
 
             auto &page = m_sparse[page_i];
-            if (!page) 
+            if (!page)
             {
                 page = std::make_unique<page_type>();
                 page->fill(TOMBSTONE);
             }
-            
+
             (*page)[index_in_page(e)] = pack_dense_index(static_cast<std::uint32_t>(m_dense.size()), e.generation());
             m_dense.push_back(e);
 
-            // Entities are active by default when inserted.
-            activate_at(static_cast<std::uint32_t>(m_dense.size() - 1));
+            if (active) activate_at(static_cast<std::uint32_t>(m_dense.size() - 1));
         }
 
         // Mirrors erase() but skips entity-to-index lookup, used by component_pool::remove()
@@ -103,15 +105,10 @@ namespace gamecoe
         {
             if (dense_index >= m_dense.size()) return;
 
-            // Move the entity out of the active partition first (the same swap deactivate does), so the
-            // swap-with-back below can never drop an inactive entity into an active slot.
-            if (dense_index < m_active_count)
-            {
-                deactivate_at(dense_index);
-                dense_index = m_active_count;   // deactivate_at() left it in the first inactive slot
-            }
+            // Route an active entry out through the boundary first, so the swap-with-back below
+            // can never drop an inactive entity into an active slot.
+            if (auto partner = deactivate_at(dense_index)) dense_index = partner.value();
 
-            // Both endpoints are now inactive, so the swap-with-back below can never disturb the active partition.
             entity e = m_dense[dense_index];
             auto page_i = page_index(e);
             auto i_in_page = index_in_page(e);
@@ -136,22 +133,24 @@ namespace gamecoe
         void deactivate(entity e) { if (auto i = index(e)) deactivate_at(i.value()); }
         void activate(entity e)   { if (auto i = index(e)) activate_at(i.value()); }
 
-        // Index-taking forms mirror erase_at(): used by component_pool, which has already
-        // resolved the index and would otherwise pay for a redundant lookup.
-        void deactivate_at(std::uint32_t dense_index)
+        // Returns the dense index the entry was swapped with, or nullopt if it was already in the target state.
+        std::optional<std::uint32_t> deactivate_at(std::uint32_t dense_index)
         {
             GAMECOE_ASSERT_LOG(dense_index < m_dense.size(), "sparse_set::deactivate_at(): index out of bounds");
-            if (dense_index >= m_active_count) return;   // already inactive
+            if (dense_index >= m_active_count) return std::nullopt;   // already inactive
             --m_active_count;
             swap_dense(dense_index, m_active_count);     // m_active_count now names the old last-active slot
+            return m_active_count;
         }
 
-        void activate_at(std::uint32_t dense_index)
+        std::optional<std::uint32_t> activate_at(std::uint32_t dense_index)
         {
             GAMECOE_ASSERT_LOG(dense_index < m_dense.size(), "sparse_set::activate_at(): index out of bounds");
-            if (dense_index < m_active_count) return;    // already active
-            swap_dense(dense_index, m_active_count);     // m_active_count names the first inactive slot
+            if (dense_index < m_active_count) return std::nullopt;    // already active
+            std::uint32_t partner = m_active_count;
+            swap_dense(dense_index, partner);            // m_active_count names the first inactive slot
             ++m_active_count;
+            return partner;
         }
 
         std::optional<std::uint32_t> index(entity e) const
@@ -162,10 +161,10 @@ namespace gamecoe
         }
 
         bool contains(entity e) const noexcept
-        { 
+        {
             auto page_i = page_index(e);
 
-            return page_i < m_sparse.size() && m_sparse[page_i] && 
+            return page_i < m_sparse.size() && m_sparse[page_i] &&
                    unpack_generation((*m_sparse[page_i])[index_in_page(e)]) == e.generation();
         }
 

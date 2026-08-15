@@ -6,6 +6,8 @@
 #include <gtest/gtest.h>
 #include <gamecoe/entity/entities.hpp>
 #include <gamecoe/component/transform.hpp>
+#include <vector>
+#include <algorithm>
 namespace test_utils
 {
     // Fatally asserts mgr has exactly one entity, then writes its handle to out (for tests that flush one spawn and need its real handle).
@@ -18,6 +20,12 @@ namespace test_utils
         {
             out = ent;
         });
+    }
+
+    template <typename T>
+    bool has(const std::vector<T> &values, const T &value)
+    {
+        return std::find(values.begin(), values.end(), value) != values.end();
     }
 
     inline void expect_vec3_near(const glm::vec3 &actual, const glm::vec3 &expected, float epsilon = 1e-5f)
