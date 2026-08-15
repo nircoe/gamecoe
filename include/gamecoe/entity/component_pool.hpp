@@ -125,7 +125,7 @@ namespace gamecoe
         }
 
         template <typename... Args>
-        T& add(entity e, Args&&... args)
+        T& add(entity e, bool active, Args&&... args)
         {
             if (contains(e))
             {
@@ -133,7 +133,7 @@ namespace gamecoe
                 // Release has no assert, so we overwrite instead of silently discarding the caller's new value.
                 T &existing = m_components[m_entities.index(e).value()];
                 existing = T(std::forward<Args>(args)...);
-                return existing;
+                return existing;   // active untouched - an existing entity's state isn't this call's business
             }
 
             // sparse_set::insert() appends then swaps the new entity down into the active partition,
@@ -146,7 +146,9 @@ namespace gamecoe
 
             if (target_index != back_index) std::swap(m_components[target_index], m_components[back_index]);
 
-            return m_components[target_index];
+            if (!active) deactivate(e);   // may relocate the entry again - re-resolve below either way
+
+            return get(e);
         }
 
         // Asserts and returns T& (not nullable), callers here already checked contains().

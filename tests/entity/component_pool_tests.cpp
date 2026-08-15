@@ -96,7 +96,7 @@ TEST_F(ComponentPoolTests, AddAndGetOperations)
     {
         auto e = entity::create(42, 0);
 
-        Position &pos = pool.add(e, Position{1.0f, 2.0f, 3.0f});
+        Position &pos = pool.add(e, true, Position{1.0f, 2.0f, 3.0f});
 
         EXPECT_TRUE(pool.contains(e));
         EXPECT_EQ(pool.size(), 1);
@@ -117,7 +117,7 @@ TEST_F(ComponentPoolTests, AddAndGetOperations)
         {
             auto e = entity::create(i, 0);
             entities.push_back(e);
-            pool.add(e, Position{static_cast<float>(i), 0.0f, 0.0f});
+            pool.add(e, true, Position{static_cast<float>(i), 0.0f, 0.0f});
         }
 
         EXPECT_EQ(pool.size(), 50);
@@ -137,9 +137,9 @@ TEST_F(ComponentPoolTests, RemoveSwapAndPop)
     auto e2 = entity::create(20, 0);
     auto e3 = entity::create(30, 0);
 
-    pool.add(e1, Position{1.0f, 0.0f, 0.0f});
-    pool.add(e2, Position{2.0f, 0.0f, 0.0f});
-    pool.add(e3, Position{3.0f, 0.0f, 0.0f});
+    pool.add(e1, true, Position{1.0f, 0.0f, 0.0f});
+    pool.add(e2, true, Position{2.0f, 0.0f, 0.0f});
+    pool.add(e3, true, Position{3.0f, 0.0f, 0.0f});
 
     pool.remove(e2);
 
@@ -160,7 +160,7 @@ TEST_F(ComponentPoolTests, GetConst)
 {
     auto e = entity::create(42, 0);
 
-    pool.add(e, Position{1.0f, 2.0f, 3.0f});
+    pool.add(e, true, Position{1.0f, 2.0f, 3.0f});
 
     const auto &const_pool = pool;
     const Position &comp = const_pool.get(e);
@@ -181,7 +181,7 @@ TEST_F(ComponentPoolTests, ForEachIteration)
     {
         auto e = entity::create(i, 0);
         entities.push_back(e);
-        pool.add(e, Position{static_cast<float>(i), 0.0f, 0.0f});
+        pool.add(e, true, Position{static_cast<float>(i), 0.0f, 0.0f});
     }
 
     int count = 0;
@@ -205,7 +205,7 @@ TEST_F(ComponentPoolTests, PerfectForwarding)
     auto e = entity::create(42, 0);
 
     MoveOnlyComponent comp(123);
-    move_pool.add(e, std::move(comp));
+    move_pool.add(e, true, std::move(comp));
 
     EXPECT_TRUE(move_pool.contains(e));
     EXPECT_EQ(*move_pool.get(e).data, 123);
@@ -224,9 +224,9 @@ TEST_F(ComponentPoolTests, ComponentLifecycle)
     auto e2 = entity::create(2, 0);
     auto e3 = entity::create(3, 0);
 
-    trackers.add(e1, LifetimeTracker{&counter});
-    trackers.add(e2, LifetimeTracker{&counter});
-    trackers.add(e3, LifetimeTracker{&counter});
+    trackers.add(e1, true, LifetimeTracker{&counter});
+    trackers.add(e2, true, LifetimeTracker{&counter});
+    trackers.add(e3, true, LifetimeTracker{&counter});
 
     EXPECT_EQ(counter, 3);
 
@@ -244,7 +244,7 @@ TEST_F(ComponentPoolTests, ComponentLifecycle)
 TEST_F(ComponentPoolTests, ClearPool)
 {
     for (std::uint32_t i = 0; i < 20; ++i)
-        pool.add(entity::create(i, 0), Position{0.0f, 0.0f, 0.0f});
+        pool.add(entity::create(i, 0), true, Position{0.0f, 0.0f, 0.0f});
 
     EXPECT_EQ(pool.size(), 20);
 

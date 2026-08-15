@@ -34,7 +34,7 @@ namespace gamecoe
         }
 
         entity e = entity::create(id, generation);
-        get_pool<components::transform>()->add(e);
+        get_pool<components::transform>()->add(e, true);
 
         return e;
     }
@@ -143,10 +143,10 @@ namespace gamecoe
         }
 
         remove_parent(child);
-        parent_pool->add(child, components::parent{ parent });
+        parent_pool->add(child, true, components::parent{ parent });
 
         if (children_pool->contains(parent)) children_pool->get(parent).handles.push_back(child);
-        else children_pool->add(parent, components::children{ { child } });
+        else children_pool->add(parent, true, components::children{ { child } });
     }
 
     void entities::remove_parent(entity child)
