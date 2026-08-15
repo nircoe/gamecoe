@@ -476,6 +476,56 @@ TEST_F(EntitiesTests, Hierarchy)
 }
 
 //==============================================================================
+//                        RemoveChildren With Grandchildren (copy-before-iterate guard)
+//==============================================================================
+
+TEST_F(EntitiesTests, RemoveChildrenWithGrandchildren)
+{
+    // remove_children() copies parent's children handles before iterating, specifically because
+    // detaching one child can itself cascade set_active() into that child's own children -
+    // mutating storage the loop would otherwise still be reading from. Every other
+    // remove_children() test in this file uses flat children (no grandchildren), so none of them
+    // exercise that cascade; this is the one guard that would catch the copy being reverted to a
+    // reference.
+    mgr.clear();
+    entity parent = mgr.create();
+    entity child_a = mgr.create();
+    entity child_b = mgr.create();
+    entity grandchild = mgr.create();
+    mgr.set_parent(child_a, parent);
+    mgr.set_parent(child_b, parent);
+    mgr.set_parent(grandchild, child_a);
+
+    mgr.deactivate(parent);
+    mgr.deactivate(grandchild); // grandchild's own self_active is now false; child_a's stays true
+
+    // Setup check: parent's inactivity suppresses the whole subtree, including the grandchild
+    EXPECT_FALSE(mgr.is_active(child_a));
+    EXPECT_FALSE(mgr.is_active(child_b));
+    EXPECT_FALSE(mgr.is_active(grandchild));
+
+    mgr.remove_children(parent);
+
+    // Test 1: detaching child_a/child_b from parent leaves grandchild's own link untouched -
+    // it's still parented to child_a, not orphaned or reparented to parent
+    EXPECT_FALSE(mgr.has_component<components::children>(parent));
+    EXPECT_FALSE(mgr.has_component<components::parent>(child_a));
+    EXPECT_FALSE(mgr.has_component<components::parent>(child_b));
+    EXPECT_TRUE(mgr.valid(child_a));
+    EXPECT_TRUE(mgr.valid(child_b));
+    EXPECT_TRUE(mgr.valid(grandchild));
+    ASSERT_TRUE(mgr.has_component<components::parent>(grandchild));
+    EXPECT_EQ(mgr.get_component<components::parent>(grandchild)->handle, child_a);
+
+    // Test 2: each detached child's world_active recomputes from its own self_active as a new
+    // parentless root; grandchild's world_active recomputes relative to child_a's new state, not
+    // parent's old one, and still respects grandchild's own self_active independently
+    EXPECT_TRUE(mgr.is_active(child_a));   // parentless root now - self_active alone decides
+    EXPECT_TRUE(mgr.is_active(child_b));   // same
+    EXPECT_FALSE(mgr.is_active(grandchild)); // follows child_a (now active), but own self_active is false
+}
+
+//==============================================================================
 //                        SetParent Cycle Detection (debug-time assert)
 //==============================================================================
 
@@ -1091,5 +1141,78 @@ TEST_F(EntitiesTests, AddComponentToInactiveEntity)
         EXPECT_TRUE(mgr.has_component<components::parent>(child));
         ASSERT_NE(mgr.get_component<components::parent>(child), nullptr);
         EXPECT_EQ(mgr.get_component<components::parent>(child)->handle, parent);
+    }
+}
+
+//==============================================================================
+//                        Deep Hierarchy Cascade (iterative worklist, not recursion)
+//==============================================================================
+
+TEST_F(EntitiesTests, DeepHierarchyCascade)
+{
+    // destroy()/set_active() cascade a hierarchy via an explicit std::vector-backed worklist,
+    // deliberately not recursion, so a malformed/deep parent chain can't stack-overflow. Every
+    // other test in this file tops out at 2-3 levels deep, so a recursive rewrite of either
+    // cascade would pass the whole suite - this is the one guard deep enough to actually catch
+    // that regression. Chain is built leaf-first (each new entity becomes the parent of the
+    // previous one) so set_parent()'s own cycle-detection ancestor walk stays O(1) per call -
+    // the walk starts at the brand-new parent, which has no ancestors yet.
+    constexpr std::size_t DEPTH = 50000;
+
+    std::vector<entity> chain;
+    chain.reserve(DEPTH + 1);
+
+    entity leaf = mgr.create();
+    chain.push_back(leaf);
+    entity current = leaf;
+    for (std::size_t i = 0; i < DEPTH; ++i)
+    {
+        entity next = mgr.create();
+        mgr.set_parent(current, next);
+        chain.push_back(next);
+        current = next;
+    }
+
+    entity deepest = chain.front();
+    entity root = chain.back();
+
+    // Test 1: deactivate(root) cascades world_active = false all the way down to the deepest
+    // descendant, tens of thousands of levels away
+    {
+        mgr.deactivate(root);
+        EXPECT_FALSE(mgr.is_active(deepest));
+    }
+
+    // Test 2: activate(root) cascades world_active = true back down to the deepest descendant
+    {
+        mgr.activate(root);
+        EXPECT_TRUE(mgr.is_active(deepest));
+    }
+
+    // Test 3: a self-deactivated midpoint still suppresses everything below it (down to deepest)
+    // through a root-level deactivate()/activate() cycle, while everything between root and the
+    // midpoint - never touched itself - comes back active. Same self/world-split invariant as
+    // SelfActiveCascade, just exercised at depth instead of on a 2-3 node tree.
+    {
+        entity midpoint = chain[chain.size() / 2];
+        entity near_root = chain[chain.size() - 2]; // ancestor of midpoint, child of root
+
+        mgr.deactivate(midpoint); // self_active(midpoint) = false, doesn't touch anyone else
+
+        mgr.deactivate(root);
+        mgr.activate(root);
+
+        EXPECT_FALSE(mgr.is_active(midpoint)); // own self_active still false
+        EXPECT_FALSE(mgr.is_active(deepest));  // descendant of a world-inactive midpoint
+        EXPECT_TRUE(mgr.is_active(near_root)); // ancestor of midpoint, restored with root
+    }
+
+    // Test 4: destroy(root) cascades removal all the way down to the deepest descendant
+    {
+        mgr.destroy(root);
+
+        EXPECT_FALSE(mgr.valid(root));
+        EXPECT_FALSE(mgr.valid(deepest));
+        EXPECT_EQ(mgr.size(), 0u);
     }
 }

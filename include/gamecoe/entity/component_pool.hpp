@@ -137,6 +137,8 @@ namespace gamecoe
 
         // Asserts and returns T& (not nullable), callers here already checked contains().
         // entities::get_component<T>() returns a nullable pointer instead since its callers don't always know.
+        // try_get() below is for callers in neither position: they haven't already checked contains(),
+        // but want the single lookup either way instead of a separate contains() + get() pair.
         T& get(entity e)
         {
             auto index = m_entities.index(e);
@@ -153,8 +155,23 @@ namespace gamecoe
             return m_components[index.value()];
         }
 
+        // Single lookup, nullable - for callers that don't already know the entity is present
+        // (unlike get(), which asserts and is for callers that already checked contains()).
+        T* try_get(entity e)
+        {
+            auto index = m_entities.index(e);
+            return index ? &m_components[index.value()] : nullptr;
+        }
+
+        const T* try_get(entity e) const
+        {
+            auto index = m_entities.index(e);
+            return index ? &m_components[index.value()] : nullptr;
+        }
+
         // Active partition only - a deactivated entity (e.g. one in a paused scene) is skipped,
-        // same bound extract<>() uses.
+        // same bound extract<>() uses. Activating/deactivating an entity from inside the callback
+        // reorders the dense array mid-loop, same hazard as extraction (see extraction.hpp).
         template<typename Func>
         void for_each(Func &&func)
         {
@@ -171,7 +188,8 @@ namespace gamecoe
                 func(m_entities.get_entity_at_index(i), m_components[i]);
         }
 
-        // Full scan over both partitions, unlike for_each().
+        // Full scan over both partitions, unlike for_each(). Mutating any pool (activate/deactivate/add/remove)
+        // during iteration invalidates the cached bound (see begin()/end() comment).
         template<typename Func>
         void for_each_all(Func &&func)
         {

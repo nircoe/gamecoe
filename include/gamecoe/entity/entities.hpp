@@ -88,7 +88,8 @@ namespace gamecoe
 
         // Pool-unlink half of remove_parent(), with no active-state recompute - set_parent()
         // calls it directly so re-parenting recomputes once.
-        void unlink_parent(entity child);
+        // Returns true if child had a parent link that was removed, false if it had none.
+        bool unlink_parent(entity child);
 
     public:
         entities() = default;

@@ -137,6 +137,7 @@ namespace gamecoe
         std::optional<std::uint32_t> deactivate_at(std::uint32_t dense_index)
         {
             GAMECOE_ASSERT_LOG(dense_index < m_dense.size(), "sparse_set::deactivate_at(): index out of bounds");
+            if (dense_index >= m_dense.size()) return std::nullopt;   // release-mode only - debug already caught it via the assert above
             if (dense_index >= m_active_count) return std::nullopt;   // already inactive
             --m_active_count;
             swap_dense(dense_index, m_active_count);     // m_active_count now names the old last-active slot
@@ -146,6 +147,7 @@ namespace gamecoe
         std::optional<std::uint32_t> activate_at(std::uint32_t dense_index)
         {
             GAMECOE_ASSERT_LOG(dense_index < m_dense.size(), "sparse_set::activate_at(): index out of bounds");
+            if (dense_index >= m_dense.size()) return std::nullopt;   // release-mode only - debug already caught it via the assert above
             if (dense_index < m_active_count) return std::nullopt;    // already active
             std::uint32_t partner = m_active_count;
             swap_dense(dense_index, partner);            // m_active_count names the first inactive slot
