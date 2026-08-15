@@ -34,6 +34,8 @@ namespace gamecoe
         std::vector<std::unique_ptr<basic_component_pool>> m_pools;
         std::vector<std::uint32_t> m_recycle_ids;
         std::vector<std::uint16_t> m_generations;
+        // Per-entity activate()/deactivate() request, independent of any inherited parent state.
+        std::vector<bool> m_self_active;
 
         std::uint32_t m_current_entity_id{0};
 
@@ -57,6 +59,38 @@ namespace gamecoe
             return static_cast<component_pool<T>*>(m_pools[comp_id].get());
         }
 
+        // Non-creating lookup - nullptr if T's pool doesn't exist yet. The const-safe
+        // counterpart to get_pool<T>() above, for callers that must not mutate m_pools.
+        template <typename T>
+        component_pool<T>* find_pool()
+        {
+            std::uint32_t comp_id = component_id<T>();
+            if (comp_id >= m_pools.size() || !m_pools[comp_id]) return nullptr;
+            return static_cast<component_pool<T>*>(m_pools[comp_id].get());
+        }
+
+        template <typename T>
+        const component_pool<T>* find_pool() const
+        {
+            std::uint32_t comp_id = component_id<T>();
+            if (comp_id >= m_pools.size() || !m_pools[comp_id]) return nullptr;
+            return static_cast<const component_pool<T>*>(m_pools[comp_id].get());
+        }
+
+        // Applies world_active to e and cascades to its subtree per each descendant's own self_active.
+        void set_active(entity e, bool world_active);
+
+        // self_active AND (no parent OR the parent's own world-active state) - the formula every
+        // hierarchy-aware active-state recompute in this file is built on. Reads e's *current*
+        // self_active and parent link, so callers update those first if this call means to reflect
+        // a change (e.g. activate() sets m_self_active[e.id()] = true before calling this).
+        bool compute_world_active(entity e);
+
+        // Pool-unlink half of remove_parent(), with no active-state recompute - set_parent()
+        // calls it directly so re-parenting recomputes once.
+        // Returns true if child had a parent link that was removed, false if it had none.
+        bool unlink_parent(entity child);
+
     public:
         entities() = default;
         entities(const entities&) = delete;
@@ -71,6 +105,12 @@ namespace gamecoe
 
         // No-op if e is already invalid.
         void destroy(entity e);
+
+        // activate()/deactivate()/is_active() read and move the same active/inactive partition
+        // that extract() and for_each() iterate over.
+        void activate(entity e);
+        void deactivate(entity e);
+        bool is_active(entity e) const;
 
         void clear();
 
@@ -93,7 +133,7 @@ namespace gamecoe
             GAMECOE_ASSERT_LOG(valid(e), "entities::add_component(): entity is not valid");
 
             auto pool = get_pool<T>();
-            return pool->add(e, std::forward<Args>(args)...);
+            return pool->add(e, is_active(e), std::forward<Args>(args)...);
         }
 
         // Safe on an invalid entity, returns false rather than asserting.
@@ -102,10 +142,8 @@ namespace gamecoe
         {
             if (!valid(e)) return false;
 
-            std::uint32_t comp_id = component_id<T>();
-            if (comp_id >= m_pools.size() || !m_pools[comp_id]) return false;
-
-            return m_pools[comp_id]->contains(e);
+            auto pool = find_pool<T>();
+            return pool && pool->contains(e);
         }
 
         // No-op if e doesn't have T, or e is invalid.
@@ -160,21 +198,29 @@ namespace gamecoe
         template <typename T, typename Func>
         void for_each(Func &&func)
         {
-            std::uint32_t comp_id = component_id<T>();
-            if (comp_id >= m_pools.size() || !m_pools[comp_id]) return;
-
-            auto pool = static_cast<component_pool<T>*>(m_pools[comp_id].get());
-            pool->for_each(std::forward<Func>(func));
+            auto pool = find_pool<T>();
+            if (pool) pool->for_each(std::forward<Func>(func));
         }
 
         template <typename T, typename Func>
         void for_each(Func &&func) const
         {
-            std::uint32_t comp_id = component_id<T>();
-            if (comp_id >= m_pools.size() || !m_pools[comp_id]) return;
+            auto pool = find_pool<T>();
+            if (pool) pool->for_each(std::forward<Func>(func));
+        }
 
-            auto pool = static_cast<const component_pool<T>*>(m_pools[comp_id].get());
-            pool->for_each(std::forward<Func>(func));
+        template <typename T, typename Func>
+        void for_each_all(Func &&func)
+        {
+            auto pool = find_pool<T>();
+            if (pool) pool->for_each_all(std::forward<Func>(func));
+        }
+
+        template <typename T, typename Func>
+        void for_each_all(Func &&func) const
+        {
+            auto pool = find_pool<T>();
+            if (pool) pool->for_each_all(std::forward<Func>(func));
         }
 
         template <typename... Components>

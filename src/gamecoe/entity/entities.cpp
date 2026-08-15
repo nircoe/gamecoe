@@ -25,16 +25,18 @@ namespace gamecoe
             m_current_entity_id++;
             generation = 0;
             m_generations.push_back(generation);
+            m_self_active.push_back(true);
         }
         else
         {
             id = m_recycle_ids.back();
             m_recycle_ids.pop_back();
             generation = m_generations[id];
+            m_self_active[id] = true;
         }
 
         entity e = entity::create(id, generation);
-        get_pool<components::transform>()->add(e);
+        get_pool<components::transform>()->add(e, true);
 
         return e;
     }
@@ -71,13 +73,10 @@ namespace gamecoe
 
             if (!valid(current)) continue;
 
-            remove_parent(current);
+            unlink_parent(current);
 
-            if (has_component<components::children>(current))
-            {
-                const auto& handles = get_pool<components::children>()->get(current).handles;
-                to_destroy.insert(to_destroy.end(), handles.begin(), handles.end());
-            }
+            if (auto* kids = get_pool<components::children>()->try_get(current))
+                to_destroy.insert(to_destroy.end(), kids->handles.begin(), kids->handles.end());
 
             m_generations[current.id()]++;
             m_recycle_ids.push_back(current.id());
@@ -91,6 +90,7 @@ namespace gamecoe
         m_pools.clear();
         m_recycle_ids.clear();
         m_generations.clear();
+        m_self_active.clear();
         m_current_entity_id = 0;
         logcoe::info("entities::clear(): cleared all entities");
     }
@@ -100,10 +100,81 @@ namespace gamecoe
         return e.id() < m_generations.size() && m_generations[e.id()] == e.generation();
     }
 
+    void entities::activate(entity e)
+    {
+        GAMECOE_ASSERT_LOG(valid(e), "entities::activate(): entity is not valid");
+        if (!valid(e)) return;
+
+        if (m_self_active[e.id()])
+        {
+            logcoe::debug("entities::activate(): entity already active, ignoring");
+            return;
+        }
+        m_self_active[e.id()] = true;
+        set_active(e, compute_world_active(e));
+    }
+
+    void entities::deactivate(entity e)
+    {
+        GAMECOE_ASSERT_LOG(valid(e), "entities::deactivate(): entity is not valid");
+        if (!valid(e)) return;
+
+        if (!m_self_active[e.id()])
+        {
+            logcoe::debug("entities::deactivate(): entity already inactive, ignoring");
+            return;
+        }
+        m_self_active[e.id()] = false;
+        set_active(e, false);
+    }
+
+    // Each node carries its own target: a self-inactive descendant stays inactive even when
+    // an ancestor above it reactivates.
+    void entities::set_active(entity e, bool world_active)
+    {
+        std::vector<std::pair<entity, bool>> worklist{ { e, world_active } };
+
+        while (!worklist.empty())
+        {
+            auto [current, target] = worklist.back();
+            worklist.pop_back();
+
+            if (!valid(current) || is_active(current) == target) continue;
+
+            for (auto &pool : m_pools) if (pool) (target ? pool->activate(current) : pool->deactivate(current));
+
+            if (auto* kids = get_pool<components::children>()->try_get(current))
+                for (entity child : kids->handles)
+                    worklist.emplace_back(child, m_self_active[child.id()] && target);
+        }
+    }
+
+    bool entities::compute_world_active(entity e)
+    {
+        if (!m_self_active[e.id()]) return false;
+        auto* p = get_pool<components::parent>()->try_get(e);
+        return !p || is_active(p->handle);
+    }
+
+    // Reads the transform pool's partition boundary directly - transform is mandatory, so
+    // is_active() can never disagree with the pools.
+    bool entities::is_active(entity e) const
+    {
+        GAMECOE_ASSERT_LOG(valid(e), "entities::is_active(): entity is not valid");
+        if (!valid(e)) return false;   // release-mode only - debug already caught it via the assert above
+
+        auto pool = find_pool<components::transform>();
+        GAMECOE_ASSERT_LOG(pool != nullptr && pool->contains(e), "entities::is_active(): transform missing (should be impossible - mandatory component)");
+        if (!pool || !pool->contains(e)) return false;   // release-mode only - debug already caught it via the assert above
+
+        return pool->is_active(e);
+    }
+
     void entities::reserve(std::size_t capacity)
     {
         m_generations.reserve(capacity);
         m_recycle_ids.reserve(capacity);
+        m_self_active.reserve(capacity);
 
         for (auto &pool : m_pools) if (pool) pool->reserve(capacity);
 
@@ -142,41 +213,68 @@ namespace gamecoe
             ++guard;
         }
 
-        remove_parent(child);
-        parent_pool->add(child, components::parent{ parent });
+        unlink_parent(child);
+        parent_pool->add(child, is_active(child), components::parent{ parent });
 
         if (children_pool->contains(parent)) children_pool->get(parent).handles.push_back(child);
-        else children_pool->add(parent, components::children{ { child } });
+        else children_pool->add(parent, is_active(parent), components::children{ { child } });
+
+        set_active(child, compute_world_active(child));
+    }
+
+    bool entities::unlink_parent(entity child)
+    {
+        auto parent_pool = get_pool<components::parent>();
+        auto* parent_comp = parent_pool->try_get(child);
+        if (!parent_comp) return false;
+
+        entity old_parent = parent_comp->handle;
+
+        auto children_pool = get_pool<components::children>();
+        if (auto* kids = children_pool->try_get(old_parent))
+        {
+            std::erase(kids->handles, child);
+            // A childless entity has no children component at all, not one with an empty list -
+            // so has_children() alone tells you whether an entity has any children.
+            if (!kids->has_children()) children_pool->remove(old_parent);
+        }
+
+        parent_pool->remove(child);
+        return true;
     }
 
     void entities::remove_parent(entity child)
     {
-        if (!has_component<components::parent>(child)) return;
-
-        auto parent_pool = get_pool<components::parent>();
-        entity old_parent = parent_pool->get(child).handle;
-
-        if (has_component<components::children>(old_parent))
+        if (!unlink_parent(child))
         {
-            auto children_pool = get_pool<components::children>();
-            std::erase(children_pool->get(old_parent).handles, child);
-            // A childless entity has no children component at all, not one with an empty list -
-            // so has_component<children>(e) alone tells you whether an entity has any children.
-            if (!children_pool->get(old_parent).has_children()) children_pool->remove(old_parent);
+            logcoe::debug("entities::remove_parent(): entity has no parent, ignoring");
+            return;
         }
 
-        parent_pool->remove(child);
+        set_active(child, compute_world_active(child));
     }
 
     void entities::remove_children(entity parent)
     {
-        if (!has_component<components::children>(parent)) return;
-
         auto children_pool = get_pool<components::children>();
-        const auto& handles = children_pool->get(parent).handles;
+        auto* kids = children_pool->try_get(parent);
+        if (!kids)
+        {
+            logcoe::debug("entities::remove_children(): entity has no children, ignoring");
+            return;
+        }
+
+        // Copy protects iteration against set_active() swapping storage within children_pool
+        std::vector<entity> handles = kids->handles;
 
         for (entity child : handles)
-            if (has_component<components::parent>(child)) get_pool<components::parent>()->remove(child);
+        {
+            if (has_component<components::parent>(child))
+            {
+                get_pool<components::parent>()->remove(child);
+                set_active(child, compute_world_active(child));
+            }
+        }
 
         children_pool->remove(parent);
     }

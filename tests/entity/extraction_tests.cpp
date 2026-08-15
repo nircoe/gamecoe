@@ -2,6 +2,7 @@
 #include <gamecoe/entity/entities.hpp>
 #include <vector>
 #include <algorithm>
+#include "../test_utils.hpp"
 
 using namespace gamecoe;
 
@@ -84,10 +85,10 @@ TEST_F(ExtractionTests, BasicExtractionAndFiltering)
         }
 
         EXPECT_EQ(found_entities.size(), 4); // e1, e3, e4, e5
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e1) != found_entities.end());
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e3) != found_entities.end());
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e4) != found_entities.end());
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e5) != found_entities.end());
+        EXPECT_TRUE(test_utils::has(found_entities, e1));
+        EXPECT_TRUE(test_utils::has(found_entities, e3));
+        EXPECT_TRUE(test_utils::has(found_entities, e4));
+        EXPECT_TRUE(test_utils::has(found_entities, e5));
     }
 
     // Test 2: Extract single component (Velocity)
@@ -101,9 +102,9 @@ TEST_F(ExtractionTests, BasicExtractionAndFiltering)
         }
 
         EXPECT_EQ(found_entities.size(), 3); // e2, e3, e4
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e2) != found_entities.end());
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e3) != found_entities.end());
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e4) != found_entities.end());
+        EXPECT_TRUE(test_utils::has(found_entities, e2));
+        EXPECT_TRUE(test_utils::has(found_entities, e3));
+        EXPECT_TRUE(test_utils::has(found_entities, e4));
     }
 
     // Test 3: Extract multiple components (Transform + Velocity)
@@ -120,8 +121,8 @@ TEST_F(ExtractionTests, BasicExtractionAndFiltering)
         }
 
         EXPECT_EQ(found_entities.size(), 2); // Only e3 and e4
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e3) != found_entities.end());
-        EXPECT_TRUE(std::find(found_entities.begin(), found_entities.end(), e4) != found_entities.end());
+        EXPECT_TRUE(test_utils::has(found_entities, e3));
+        EXPECT_TRUE(test_utils::has(found_entities, e4));
     }
 
     // Test 4: Verify component values can be read correctly
@@ -228,6 +229,89 @@ TEST_F(ExtractionTests, EmptyAndEdgeCases)
 
         auto extracted = mgr.extract<Health>();
         EXPECT_EQ(extracted.begin(), extracted.end());
+    }
+}
+
+//==============================================================================
+//                        Active Partition Bound
+//==============================================================================
+
+TEST_F(ExtractionTests, ActivePartitionBound)
+{
+    // Test 1: pool selection is driven by active_size(), not size() - construct two pools
+    // where the two metrics disagree on which pool is "smallest" and confirm extract<>()
+    // still returns the correct (small) result set.
+    //
+    // Transform pool: 100 total entities, only 1 stays active (99 deactivated).
+    // Health pool: 5 total entities, all 5 active.
+    // Old selection (by size()): Health (5) < Transform (100) -> Health chosen as primary.
+    // New selection (by active_size()): Transform (1) < Health (5) -> Transform chosen as primary.
+    // This makes old vs. new pool selection disagree; the matching entity below is the only
+    // one with both components, so a correct result here means the smallest ACTIVE partition
+    // was iterated correctly regardless of which pool ended up driving the loop.
+    {
+        entity match = mgr.create();
+        mgr.add_component<Transform>(match, Transform{1.0f, 2.0f, 3.0f});
+        mgr.add_component<Health>(match, Health{50});
+
+        for (int i = 0; i < 99; ++i)
+        {
+            entity e = mgr.create();
+            mgr.add_component<Transform>(e, Transform{static_cast<float>(i), 0.0f, 0.0f});
+            mgr.deactivate(e);
+        }
+
+        for (int i = 0; i < 4; ++i)
+        {
+            entity e = mgr.create();
+            mgr.add_component<Health>(e, Health{i});
+        }
+
+        auto extracted = mgr.extract<Transform, Health>();
+
+        std::vector<entity> found_entities;
+        for (auto [e, t, h] : extracted)
+        {
+            found_entities.push_back(e);
+            EXPECT_EQ(t.x, 1.0f);
+            EXPECT_EQ(t.y, 2.0f);
+            EXPECT_EQ(t.z, 3.0f);
+            EXPECT_EQ(h.value, 50);
+        }
+
+        EXPECT_EQ(found_entities.size(), 1);
+        EXPECT_EQ(found_entities[0], match);
+    }
+
+    // Test 2: a pool with active_size() == 0 (but size() > 0) makes the extraction empty,
+    // regardless of which pool is picked as primary. This is the case that actually breaks
+    // if active_size() weren't wired into the selection: the smallest-active-partition bound
+    // must be 0, so the driving loop must never execute.
+    {
+        mgr.clear();
+
+        for (int i = 0; i < 50; ++i)
+        {
+            entity e = mgr.create();
+            mgr.add_component<Transform>(e, Transform{static_cast<float>(i), 0.0f, 0.0f});
+            mgr.deactivate(e);
+        }
+
+        for (int i = 0; i < 3; ++i)
+        {
+            entity e = mgr.create();
+            mgr.add_component<Health>(e, Health{i});
+        }
+
+        auto extracted = mgr.extract<Transform, Health>();
+        EXPECT_EQ(extracted.begin(), extracted.end());
+
+        int count = 0;
+        for ([[maybe_unused]] auto [e, t, h] : extracted)
+        {
+            ++count;
+        }
+        EXPECT_EQ(count, 0);
     }
 }
 
@@ -381,9 +465,9 @@ TEST_F(ExtractionTests, IteratorProtocol)
         }
 
         EXPECT_EQ(x_values.size(), 3);
-        EXPECT_TRUE(std::find(x_values.begin(), x_values.end(), 1.0f) != x_values.end());
-        EXPECT_TRUE(std::find(x_values.begin(), x_values.end(), 2.0f) != x_values.end());
-        EXPECT_TRUE(std::find(x_values.begin(), x_values.end(), 3.0f) != x_values.end());
+        EXPECT_TRUE(test_utils::has(x_values, 1.0f));
+        EXPECT_TRUE(test_utils::has(x_values, 2.0f));
+        EXPECT_TRUE(test_utils::has(x_values, 3.0f));
     }
 
     // Test 7: Manual iteration with begin/end

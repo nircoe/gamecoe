@@ -9,8 +9,9 @@
 
 namespace gamecoe
 {
-    // Iterates the smallest pool first and checks membership in the rest via contains(),
-    // minimizing total contains() calls across the whole extraction.
+    // Iterates the smallest pool's active partition and checks membership in the rest via
+    // contains(), minimizing total contains() calls across the whole extraction. Mutating any
+    // pool (activate/deactivate/add/remove) during iteration invalidates the cached bound.
     template <typename... Components>
     class extraction
     {
@@ -36,7 +37,7 @@ namespace gamecoe
                 entity e = entity::invalid();
 
                 ((Is == m_extracted->m_smallest_pool_index ?
-                    (e = std::get<Is>(m_extracted->m_pools)->get_entity_at_index(m_index), true) : false) 
+                    (e = std::get<Is>(m_extracted->m_pools)->get_entity_at_index(m_index), true) : false)
                 || ...);
 
                 return e;
@@ -86,7 +87,7 @@ namespace gamecoe
 
         explicit extraction(component_pool<std::remove_const_t<Components>>*... pools) : m_pools(pools...)
         {
-            std::size_t sizes[] = { pools->size()... };
+            std::size_t sizes[] = { pools->active_size()... };
 
             m_smallest_pool_index = 0;
             m_smallest_pool_size = sizes[0];
