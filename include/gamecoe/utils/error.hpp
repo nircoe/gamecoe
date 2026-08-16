@@ -6,7 +6,7 @@ namespace gamecoe
 {
     enum class error_code
     {
-        invalid_format,
+        invalid_argument,
         opengl_error,
         path_resolution_failed,
         unsupported_platform

@@ -48,19 +48,23 @@ namespace gamecoe
         return Color(clamp(red), clamp(green), clamp(blue), clamp(alpha));
     }
 
-    Color Color::fromHex(const std::string &hex)
+    std::expected<Color, error> Color::fromHex(const std::string &hex)
     {
         if (!hex.starts_with('#') || (hex.length() != 7 && hex.length() != 9))
-            detail::invalidArgument("Color::fromHex(): The string argument should be in format of \"#RRGGBBAA\" or \"#RRGGBB\" in hexadecimal");
+            return std::unexpected(
+                    detail::invalid_argument(
+                        "Color::fromHex(): The string argument should be in format of \"#RRGGBBAA\" or \"#RRGGBB\" in hexadecimal"));
 
-        auto parseHexDigit = [](char c) -> std::uint8_t {
+        auto parseHexDigit = [](char c) -> std::expected<std::uint8_t, error> {
             if ('0' <= c && c <= '9')       return c - '0';
             else if ('A' <= c && c <= 'F')  return 10U + (c - 'A');
             else if ('a' <= c && c <= 'f')  return 10U + (c - 'a');
 
-            detail::invalidArgument("Color::fromHex(): The string argument should be in format of \"#RRGGBBAA\" or \"#RRGGBB\" in hexadecimal");
+            return std::unexpected(
+                    detail::invalid_argument(
+                        "Color::fromHex(): The string argument should be in format of \"#RRGGBBAA\" or \"#RRGGBB\" in hexadecimal"));
         };
-        
+
         std::uint8_t values[4] = { 0U, 0U, 0U, 255U };
         std::size_t iterations = (hex.length() - 1) / 2; // 3 or 4
         for(std::size_t i = 0; i < iterations; ++i)
@@ -68,7 +72,13 @@ namespace gamecoe
             char first = hex[(2 * i) + 1];
             char second = hex[(2 * i) + 2];
 
-            values[i] = (parseHexDigit(first) << 4) | parseHexDigit(second);
+            auto firstResult = parseHexDigit(first);
+            if (!firstResult) return std::unexpected(firstResult.error());
+
+            auto secondResult = parseHexDigit(second);
+            if (!secondResult) return std::unexpected(secondResult.error());
+
+            values[i] = (firstResult.value() << 4) | secondResult.value();
         }
 
         return Color(values[0], values[1], values[2], values[3]);

@@ -1,9 +1,10 @@
 #pragma once
 
 #include <string>
-#include <stdexcept>
 #include <cassert>
+#include <expected>
 #include <gamecoe_config.hpp>
+#include <gamecoe/utils/error.hpp>
 
 #if GAMECOE_USE_LOGCOE
     #include <logcoe.hpp>
@@ -16,22 +17,18 @@ namespace gamecoe
 {
     namespace detail
     {
-        [[noreturn]] static inline void throwError(const std::string &message)
+        // Centralizes the "always log on error construction" behavior.
+        [[nodiscard]] error make_error(error_code code, const std::string &message);
+
+        [[nodiscard]] inline error invalid_argument(const std::string &message)
         {
-            logcoe::error(message);
-            throw std::runtime_error(message);
+            return make_error(error_code::invalid_argument, message);
         }
 
-        [[noreturn]] static inline void invalidArgument(const std::string &message)
-        {
-            logcoe::error(message);
-            throw std::invalid_argument(message);
-        }
-
-        // Checks for API error and throws if exists (currently only OpenGL supported)
-        void checkAndThrowError(const std::string &method);
+        // Checks for API error (currently only OpenGL supported)
+        [[nodiscard]] std::expected<void, error> check_error(const std::string &method);
 
         // Clears any existing API errors (currently only OpenGL supported)
-        void clearError();
+        void clear_error();
     } // namespace detail
 } // namespace gamecoe

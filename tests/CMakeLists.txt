@@ -1,5 +1,6 @@
 add_executable(gamecoe_tests
     main.cpp
+    colorcoe_tests.cpp
     entity/entity_tests.cpp
     entity/sparse_set_tests.cpp
     entity/component_pool_tests.cpp
