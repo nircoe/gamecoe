@@ -106,7 +106,7 @@ jobs:
       run: |
         New-Item -ItemType Directory -Force -Path build\tests, build\tests\Release | Out-Null
         foreach ($dir in 'build\tests', 'build\tests\Release') {
-          Copy-Item mesa3d-cache\x64\opengl32.dll, mesa3d-cache\x64\libglapi.dll, mesa3d-cache\x64\libgallium_wgl.dll -Destination $dir
+          Copy-Item mesa3d-cache\x64\*.dll -Destination $dir
         }
         echo "GALLIUM_DRIVER=llvmpipe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 

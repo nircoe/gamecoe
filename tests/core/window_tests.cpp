@@ -35,12 +35,12 @@ TEST_F(WindowTests, AspectRatio)
         EXPECT_FLOAT_EQ(result->aspect_ratio(), 800.0f / 600.0f);
     }
 
-    // Test 2: 1920x1080
+    // Test 2: 640x360
     {
-        auto result = window::create("WindowTests.AspectRatio.2", 1920, 1080);
+        auto result = window::create("WindowTests.AspectRatio.2", 640, 360);
         SKIP_IF_NO_WINDOW(result);
 
-        EXPECT_FLOAT_EQ(result->aspect_ratio(), 1920.0f / 1080.0f);
+        EXPECT_FLOAT_EQ(result->aspect_ratio(), 640.0f / 360.0f);
     }
 }
 

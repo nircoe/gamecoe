@@ -5,7 +5,6 @@
 #include <gamecoe/component/scene_tag.hpp>
 #include <chrono>
 #include <vector>
-#include <algorithm>
 #include "../test_utils.hpp"
 
 using namespace gamecoe;
