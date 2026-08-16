@@ -9,7 +9,8 @@ namespace gamecoe
         invalid_argument,
         opengl_error,
         path_resolution_failed,
-        unsupported_platform
+        unsupported_platform,
+        window_creation_failed
     };
 
     struct error
