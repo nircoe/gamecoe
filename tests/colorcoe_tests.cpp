@@ -8,10 +8,7 @@ using namespace gamecoe;
 //                 ColorcoeTests - Color::fromHex() tests
 //==============================================================================
 
-class ColorcoeTests : public ::testing::Test
-{
-protected:
-};
+class ColorcoeTests : public ::testing::Test { };
 
 //==============================================================================
 //                         Successful Decoding

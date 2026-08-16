@@ -13,6 +13,7 @@ int printHelp()
     std::cout << std::endl;
     std::cout << "Available test suites:" << std::endl;
     std::cout << "  ColorcoeTests            - Color hex decoding tests" << std::endl;
+    std::cout << "  PathsTests               - Executable path resolution tests" << std::endl;
     std::cout << "  EntityTests              - Entity handle tests" << std::endl;
     std::cout << "  SparseSetTests           - Sparse set data structure tests" << std::endl;
     std::cout << "  ComponentPoolTests       - Component pool wrapper tests" << std::endl;
