@@ -56,9 +56,9 @@ namespace gamecoe
                         "Color::fromHex(): The string argument should be in format of \"#RRGGBBAA\" or \"#RRGGBB\" in hexadecimal"));
 
         auto parseHexDigit = [](char c) -> std::expected<std::uint8_t, error> {
-            if ('0' <= c && c <= '9')       return c - '0';
-            else if ('A' <= c && c <= 'F')  return 10U + (c - 'A');
-            else if ('a' <= c && c <= 'f')  return 10U + (c - 'a');
+            if ('0' <= c && c <= '9')       return static_cast<std::uint8_t>(c - '0');
+            else if ('A' <= c && c <= 'F')  return static_cast<std::uint8_t>(10U + (c - 'A'));
+            else if ('a' <= c && c <= 'f')  return static_cast<std::uint8_t>(10U + (c - 'a'));
 
             return std::unexpected(
                     detail::invalid_argument(
