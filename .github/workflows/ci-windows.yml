@@ -20,13 +20,13 @@ jobs:
           - name: "Windows MSVC"
             compiler: msvc
             cmake-generator: ''
-            cmake-options: '-DGAMECOE_USE_TESTCOE=ON'
+            cmake-options: '-DGAMECOE_USE_TESTCOE=ON -DGAMECOE_GRAPHICS_VERSION_MINOR=5'
 
           # Windows with MinGW (GCC)
           - name: "Windows MinGW"
             compiler: gcc
             cmake-generator: 'MinGW Makefiles'
-            cmake-options: '-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DGAMECOE_USE_TESTCOE=ON'
+            cmake-options: '-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DGAMECOE_USE_TESTCOE=ON -DGAMECOE_GRAPHICS_VERSION_MINOR=5'
 
     steps:
     - name: Checkout repository
@@ -57,6 +57,19 @@ jobs:
     - name: Build
       run: |
         cmake --build build --config Release
+
+    - name: Install Mesa software OpenGL
+      working-directory: build
+      shell: pwsh
+      run: |
+        # Mesa's llvmpipe software rasterizer caps at OpenGL 4.5 core (see GAMECOE_GRAPHICS_VERSION_MINOR=5 above) -
+        # GitHub's Windows runners only ship a legacy ~1.1 fallback driver otherwise.
+        curl.exe -L --output mesa3d.7z --url https://github.com/pal1000/mesa-dist-win/releases/download/26.2.0/mesa3d-26.2.0-release-msvc.7z
+        C:\'Program Files'\7-Zip\7z.exe x mesa3d.7z
+        New-Item -ItemType Directory -Force -Path tests, tests\Release | Out-Null
+        Copy-Item .\x64\opengl32.dll, .\x64\libglapi.dll, .\x64\libgallium_wgl.dll -Destination tests
+        Copy-Item .\x64\opengl32.dll, .\x64\libglapi.dll, .\x64\libgallium_wgl.dll -Destination tests\Release
+        echo "GALLIUM_DRIVER=llvmpipe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
     - name: Run tests
       working-directory: build
