@@ -16,6 +16,7 @@ jobs:
       # Mesa's llvmpipe software rasterizer caps at OpenGL 4.5 core - GitHub's Windows runners
       # only ship a legacy ~1.1 fallback driver otherwise, so window tests need this override to
       # actually execute here instead of skipping.
+      GAMECOE_HEADLESS_GL_MAJOR: 4
       GAMECOE_HEADLESS_GL_MINOR: 5
       MESA_VERSION: 26.2.0
     strategy:
@@ -65,17 +66,18 @@ jobs:
         # started here, before Configure/Build, so the download overlaps with them instead of
         # adding its own wall-clock time on top.
         $proc = Start-Process -FilePath curl.exe -ArgumentList `
-          '-L', '--output', 'mesa3d.7z', '--url', `
+          '-L', '--fail', '--output', 'mesa3d.7z', '--url', `
           "https://github.com/pal1000/mesa-dist-win/releases/download/$env:MESA_VERSION/mesa3d-$env:MESA_VERSION-release-msvc.7z" `
           -PassThru -RedirectStandardOutput mesa_download.log -RedirectStandardError mesa_download.err.log
         $proc.Id | Out-File -FilePath mesa_download.pid
 
     - name: Configure CMake
       run: |
+        GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
         if [ -n "${{ matrix.cmake-generator }}" ]; then
-          cmake -B build -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }} -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR
+          cmake -B build -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }} $GL_VERSION_FLAGS
         else
-          cmake -B build ${{ matrix.cmake-options }} -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR
+          cmake -B build ${{ matrix.cmake-options }} $GL_VERSION_FLAGS
         fi
       shell: bash
 
@@ -87,7 +89,16 @@ jobs:
       if: steps.mesa-cache.outputs.cache-hit != 'true'
       shell: pwsh
       run: |
-        Wait-Process -Id (Get-Content mesa_download.pid)
+        # The download almost always finishes during Configure/Build above, so its process has
+        # already exited (and been reaped) by the time we get here - Get-Process + SilentlyContinue
+        # avoids Wait-Process throwing on the now-common "already gone" case.
+        $proc = Get-Process -Id (Get-Content mesa_download.pid) -ErrorAction SilentlyContinue
+        if ($proc) { $proc | Wait-Process }
+        Get-Content mesa_download.err.log
+        if (-not (Test-Path mesa3d.7z) -or (Get-Item mesa3d.7z).Length -eq 0) {
+          Write-Error "Mesa download failed - mesa3d.7z missing or empty"
+          exit 1
+        }
         C:\'Program Files'\7-Zip\7z.exe x mesa3d.7z -omesa3d-cache
 
     - name: Install Mesa software OpenGL
@@ -102,6 +113,7 @@ jobs:
     - name: Run tests
       working-directory: build
       run: |
+        set -o pipefail
         if [ "${{ matrix.compiler }}" == "gcc" ]; then
             # For MinGW - copy DLLs directly (no PATH manipulation)
             GCC_DIR=$(dirname $(which gcc))
@@ -112,9 +124,17 @@ jobs:
             cp "$GCC_DIR"/libwinpthread*.dll tests/ 2>/dev/null || echo "No libwinpthread DLLs found"
             echo "Running gamecoe tests"
             cd tests
-            ./gamecoe_tests.exe
+            ./gamecoe_tests.exe | tee test_output.log
+            if grep -q '\[  SKIPPED \] WindowTests' test_output.log; then
+              echo "::error::WindowTests were skipped - GL context creation failed unexpectedly in CI"
+              exit 1
+            fi
         else # MSVC
             echo "Running gamecoe tests"
-            ./tests/Release/gamecoe_tests.exe
+            ./tests/Release/gamecoe_tests.exe | tee test_output.log
+            if grep -q '\[  SKIPPED \] WindowTests' test_output.log; then
+              echo "::error::WindowTests were skipped - GL context creation failed unexpectedly in CI"
+              exit 1
+            fi
         fi
       shell: bash

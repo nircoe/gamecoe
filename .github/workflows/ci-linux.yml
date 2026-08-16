@@ -16,6 +16,7 @@ jobs:
       # Mesa's llvmpipe software rasterizer (used via Xvfb, see the "Run tests" step) caps at
       # OpenGL 4.5 core, below gamecoe's real 4.6 default - CI-only override so window tests
       # actually execute here instead of skipping.
+      GAMECOE_HEADLESS_GL_MAJOR: 4
       GAMECOE_HEADLESS_GL_MINOR: 5
     strategy:
       fail-fast: false
@@ -43,12 +44,13 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ninja-build xvfb xorg-dev libgl1-mesa-dev libglu1-mesa-dev ${{ matrix.extra-packages }}
+        sudo apt-get install -y ninja-build xvfb xorg-dev libgl1-mesa-dev libglu1-mesa-dev libgl1-mesa-dri ${{ matrix.extra-packages }}
       shell: bash
 
     - name: Configure CMake
       run: |
-        cmake -B build -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }} -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR
+        GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
+        cmake -B build -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }} $GL_VERSION_FLAGS
 
     - name: Build
       run: |
@@ -58,5 +60,10 @@ jobs:
       working-directory: build
       run: |
         echo "Running gamecoe tests"
-        xvfb-run -a ./tests/gamecoe_tests
+        set -o pipefail
+        xvfb-run -a ./tests/gamecoe_tests | tee test_output.log
+        if grep -q '\[  SKIPPED \] WindowTests' test_output.log; then
+          echo "::error::WindowTests were skipped - GL context creation failed unexpectedly in CI"
+          exit 1
+        fi
       shell: bash

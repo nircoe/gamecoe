@@ -19,7 +19,7 @@ namespace gamecoe
         bool m_first_frame;
 
         window(GLFWwindow *glfwWindow, const std::string &title, std::uint32_t width, std::uint32_t height);
-        void framebuffer_size_callback(GLFWwindow *glfwWindow, int width, int height);
+        void framebuffer_size_callback(int width, int height);
 
     public:
         window(const window&) = delete;

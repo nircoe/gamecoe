@@ -6,7 +6,9 @@ using namespace gamecoe;
 
 #define SKIP_IF_NO_WINDOW(result) \
     if (!(result).has_value()) \
-        GTEST_SKIP() << "window::create() failed - no display/GL context available"
+    { \
+        GTEST_SKIP() << "window::create() failed - no display/GL context available"; \
+    }
 
 //==============================================================================
 //                    WindowTests - window class tests
@@ -65,7 +67,7 @@ TEST_F(WindowTests, MoveAssignmentNoDoubleDestroy)
     auto result1 = window::create("WindowTests.MoveAssignmentNoDoubleDestroy.1", 320, 240);
     SKIP_IF_NO_WINDOW(result1);
 
-    auto result2 = window::create("WindowTests.MoveAssignmentNoDoubleDestroy.2", 320, 240);
+    auto result2 = window::create("WindowTests.MoveAssignmentNoDoubleDestroy.2", 800, 600);
     SKIP_IF_NO_WINDOW(result2);
 
     window w1(std::move(*result1));
@@ -74,10 +76,8 @@ TEST_F(WindowTests, MoveAssignmentNoDoubleDestroy)
     w1 = std::move(w2);
     w1.active();
 
-    // No EXPECT_* here on purpose: m_window is private, there's nothing observable to assert
-    // on. The regression this guards against is a double glfwDestroyWindow() on the same
-    // GLFWwindow* at scope exit (the old = default move ops didn't null out the source's raw
-    // pointer) - that's undefined behavior and typically crashes/aborts the test binary. A
-    // clean return from this test function, letting both destructors run normally below, IS
-    // the pass signal.
+    // Different sizes so this proves state actually transferred, not just that nothing
+    // crashed. The still-implicit part: a clean return here lets both destructors run at
+    // scope exit without a double glfwDestroyWindow() on the same GLFWwindow*.
+    EXPECT_FLOAT_EQ(w1.aspect_ratio(), 800.0f / 600.0f);
 }
