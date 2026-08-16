@@ -12,6 +12,10 @@ jobs:
     name: ${{ matrix.name }}
     runs-on: macos-latest
     if: github.event.pull_request.draft == false || github.event_name == 'push'
+    env:
+      # Apple's OpenGL implementation caps at 4.1 core, below gamecoe's real 4.6 default
+      GAMECOE_HEADLESS_GL_MAJOR: 4
+      GAMECOE_HEADLESS_GL_MINOR: 1
     strategy:
       fail-fast: false
       matrix:
@@ -35,7 +39,8 @@ jobs:
 
     - name: Configure CMake
       run: |
-        cmake -B build -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }}
+        GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
+        cmake -B build -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }} $GL_VERSION_FLAGS
 
     - name: Build
       run: |
@@ -45,5 +50,10 @@ jobs:
       working-directory: build
       run: |
         echo "Running gamecoe tests"
-        ./tests/gamecoe_tests
+        set -o pipefail
+        ./tests/gamecoe_tests | tee test_output.log
+        if grep -q '\[  SKIPPED \] WindowTests' test_output.log; then
+          echo "::error::WindowTests were skipped - GL context creation failed unexpectedly in CI"
+          exit 1
+        fi
       shell: bash
