@@ -12,6 +12,12 @@ jobs:
     name: ${{ matrix.name }}
     runs-on: windows-latest
     if: github.event.pull_request.draft == false || github.event_name == 'push'
+    env:
+      # Mesa's llvmpipe software rasterizer caps at OpenGL 4.5 core - GitHub's Windows runners
+      # only ship a legacy ~1.1 fallback driver otherwise, so window tests need this override to
+      # actually execute here instead of skipping.
+      GAMECOE_HEADLESS_GL_MINOR: 5
+      MESA_VERSION: 26.2.0
     strategy:
       fail-fast: false
       matrix:
@@ -20,13 +26,13 @@ jobs:
           - name: "Windows MSVC"
             compiler: msvc
             cmake-generator: ''
-            cmake-options: '-DGAMECOE_USE_TESTCOE=ON -DGAMECOE_GRAPHICS_VERSION_MINOR=5'
+            cmake-options: '-DGAMECOE_USE_TESTCOE=ON'
 
           # Windows with MinGW (GCC)
           - name: "Windows MinGW"
             compiler: gcc
             cmake-generator: 'MinGW Makefiles'
-            cmake-options: '-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DGAMECOE_USE_TESTCOE=ON -DGAMECOE_GRAPHICS_VERSION_MINOR=5'
+            cmake-options: '-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DGAMECOE_USE_TESTCOE=ON'
 
     steps:
     - name: Checkout repository
@@ -44,13 +50,32 @@ jobs:
         fi
       shell: bash
 
+    - name: Cache Mesa software OpenGL
+      id: mesa-cache
+      uses: actions/cache@v4
+      with:
+        path: mesa3d-cache
+        key: mesa3d-${{ env.MESA_VERSION }}-x64
+
+    - name: Start Mesa download
+      if: steps.mesa-cache.outputs.cache-hit != 'true'
+      shell: pwsh
+      run: |
+        # Detached OS process (not a PowerShell background job) so it survives into later steps -
+        # started here, before Configure/Build, so the download overlaps with them instead of
+        # adding its own wall-clock time on top.
+        $proc = Start-Process -FilePath curl.exe -ArgumentList `
+          '-L', '--output', 'mesa3d.7z', '--url', `
+          "https://github.com/pal1000/mesa-dist-win/releases/download/$env:MESA_VERSION/mesa3d-$env:MESA_VERSION-release-msvc.7z" `
+          -PassThru -RedirectStandardOutput mesa_download.log -RedirectStandardError mesa_download.err.log
+        $proc.Id | Out-File -FilePath mesa_download.pid
 
     - name: Configure CMake
       run: |
         if [ -n "${{ matrix.cmake-generator }}" ]; then
-          cmake -B build -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }}
+          cmake -B build -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }} -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR
         else
-          cmake -B build ${{ matrix.cmake-options }}
+          cmake -B build ${{ matrix.cmake-options }} -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR
         fi
       shell: bash
 
@@ -58,17 +83,20 @@ jobs:
       run: |
         cmake --build build --config Release
 
-    - name: Install Mesa software OpenGL
-      working-directory: build
+    - name: Finish Mesa download
+      if: steps.mesa-cache.outputs.cache-hit != 'true'
       shell: pwsh
       run: |
-        # Mesa's llvmpipe software rasterizer caps at OpenGL 4.5 core (see GAMECOE_GRAPHICS_VERSION_MINOR=5 above) -
-        # GitHub's Windows runners only ship a legacy ~1.1 fallback driver otherwise.
-        curl.exe -L --output mesa3d.7z --url https://github.com/pal1000/mesa-dist-win/releases/download/26.2.0/mesa3d-26.2.0-release-msvc.7z
-        C:\'Program Files'\7-Zip\7z.exe x mesa3d.7z
-        New-Item -ItemType Directory -Force -Path tests, tests\Release | Out-Null
-        Copy-Item .\x64\opengl32.dll, .\x64\libglapi.dll, .\x64\libgallium_wgl.dll -Destination tests
-        Copy-Item .\x64\opengl32.dll, .\x64\libglapi.dll, .\x64\libgallium_wgl.dll -Destination tests\Release
+        Wait-Process -Id (Get-Content mesa_download.pid)
+        C:\'Program Files'\7-Zip\7z.exe x mesa3d.7z -omesa3d-cache
+
+    - name: Install Mesa software OpenGL
+      shell: pwsh
+      run: |
+        New-Item -ItemType Directory -Force -Path build\tests, build\tests\Release | Out-Null
+        foreach ($dir in 'build\tests', 'build\tests\Release') {
+          Copy-Item mesa3d-cache\x64\opengl32.dll, mesa3d-cache\x64\libglapi.dll, mesa3d-cache\x64\libgallium_wgl.dll -Destination $dir
+        }
         echo "GALLIUM_DRIVER=llvmpipe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
     - name: Run tests

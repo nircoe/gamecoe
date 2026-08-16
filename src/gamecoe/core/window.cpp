@@ -1,8 +1,8 @@
 #include <gamecoe/core/window.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 #include <gamecoe_config.hpp>
-#include <timecoe.hpp>
 #include <inputcoe.hpp>
+#include <utility>
 
 #if GAMECOE_USE_LOGCOE
     #include <logcoe.hpp>
@@ -58,23 +58,18 @@ namespace gamecoe
         if(this == &other)
             return *this;
 
-        if(m_window)
-        {
-            glfwSetWindowUserPointer(m_window, nullptr);
-            glfwDestroyWindow(m_window);
-        }
-
-        m_window = other.m_window;
-        m_title = std::move(other.m_title);
-        m_width = other.m_width;
-        m_height = other.m_height;
-        m_first_frame = other.m_first_frame;
-
-        other.m_window = nullptr;
+        std::swap(m_window, other.m_window);
+        std::swap(m_title, other.m_title);
+        std::swap(m_width, other.m_width);
+        std::swap(m_height, other.m_height);
+        std::swap(m_first_frame, other.m_first_frame);
 
         // resize callback dereferences the stored user pointer as window*, must point at the surviving object
+        // (other now owns this's old GLFWwindow* and destroys it normally when it goes out of scope)
         if(m_window)
             glfwSetWindowUserPointer(m_window, this);
+        if(other.m_window)
+            glfwSetWindowUserPointer(other.m_window, &other);
 
         return *this;
     }
@@ -98,7 +93,9 @@ namespace gamecoe
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 #endif
-        glfwWindowHint(GLFW_SAMPLES, 4); // which opengl version? work only on opengl?
+#if GAMECOE_USE_OPENGL
+        glfwWindowHint(GLFW_SAMPLES, 4);
+#endif
 
         GLFWwindow *current = glfwGetCurrentContext();
         GLFWwindow *glfwWindow = glfwCreateWindow(width, height, title.c_str(), nullptr, current);

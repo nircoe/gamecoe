@@ -4,6 +4,10 @@
 
 using namespace gamecoe;
 
+#define SKIP_IF_NO_WINDOW(result) \
+    if (!(result).has_value()) \
+        GTEST_SKIP() << "window::create() failed - no display/GL context available"
+
 //==============================================================================
 //                    WindowTests - window class tests
 //==============================================================================
@@ -24,8 +28,7 @@ TEST_F(WindowTests, AspectRatio)
     // Test 1: 800x600
     {
         auto result = window::create("WindowTests.AspectRatio.1", 800, 600);
-        if (!result.has_value())
-            GTEST_SKIP() << "window::create() failed - no display/GL context available";
+        SKIP_IF_NO_WINDOW(result);
 
         EXPECT_FLOAT_EQ(result->aspect_ratio(), 800.0f / 600.0f);
     }
@@ -33,8 +36,7 @@ TEST_F(WindowTests, AspectRatio)
     // Test 2: 1920x1080
     {
         auto result = window::create("WindowTests.AspectRatio.2", 1920, 1080);
-        if (!result.has_value())
-            GTEST_SKIP() << "window::create() failed - no display/GL context available";
+        SKIP_IF_NO_WINDOW(result);
 
         EXPECT_FLOAT_EQ(result->aspect_ratio(), 1920.0f / 1080.0f);
     }
@@ -47,8 +49,7 @@ TEST_F(WindowTests, AspectRatio)
 TEST_F(WindowTests, MoveConstruction)
 {
     auto result = window::create("WindowTests.MoveConstruction", 640, 480);
-    if (!result.has_value())
-        GTEST_SKIP() << "window::create() failed - no display/GL context available";
+    SKIP_IF_NO_WINDOW(result);
 
     window moved(std::move(*result));
 
@@ -62,12 +63,10 @@ TEST_F(WindowTests, MoveConstruction)
 TEST_F(WindowTests, MoveAssignmentNoDoubleDestroy)
 {
     auto result1 = window::create("WindowTests.MoveAssignmentNoDoubleDestroy.1", 320, 240);
-    if (!result1.has_value())
-        GTEST_SKIP() << "window::create() failed - no display/GL context available";
+    SKIP_IF_NO_WINDOW(result1);
 
     auto result2 = window::create("WindowTests.MoveAssignmentNoDoubleDestroy.2", 320, 240);
-    if (!result2.has_value())
-        GTEST_SKIP() << "window::create() failed - no display/GL context available";
+    SKIP_IF_NO_WINDOW(result2);
 
     window w1(std::move(*result1));
     window w2(std::move(*result2));
