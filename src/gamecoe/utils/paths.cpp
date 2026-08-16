@@ -56,14 +56,14 @@ namespace gamecoe
         }
     }
 
-    std::expected<std::string, error> getExecutableDirectory()
+    std::expected<std::string, error> executable_directory()
     {
         auto exe = getExecutablePath();
         if (!exe) return std::unexpected(exe.error());
         return exe->parent_path().string();
     }
 
-    std::expected<std::string, error> resolvePath(const std::string &relativePath)
+    std::expected<std::string, error> resolve_path(const std::string &relativePath)
     {
         auto exe = getExecutablePath();
         if (!exe) return std::unexpected(exe.error());
