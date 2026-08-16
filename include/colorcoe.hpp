@@ -2,7 +2,9 @@
 
 #include <cstdint>
 #include <string>
+#include <expected>
 #include <glm/glm.hpp>
+#include <gamecoe/utils/error.hpp>
 
 namespace gamecoe
 {
@@ -37,7 +39,7 @@ namespace gamecoe
         // Clamps values to [0.0f, 1.0f]
         static Color fromNormalized(float red, float green, float blue, float alpha = 1.0f);
         // Color::fromHex("#RRGGBBAA") or Color::fromHex("#RRGGBB")
-        static Color fromHex(const std::string &hex);
+        [[nodiscard]] static std::expected<Color, error> fromHex(const std::string &hex);
         // Lerps between Color a and Color b by t
         static Color lerp(const Color &a, const Color &b, float t);
     };

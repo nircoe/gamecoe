@@ -2,23 +2,30 @@
 #include <gamecoe_config.hpp>
 
 #if GAMECOE_USE_OPENGL
-#include <glad/gl.h>
+    #include <glad/gl.h>
 #endif
 
 namespace gamecoe
 {
     namespace detail
     {
-        void checkAndThrowError(const std::string &method)
+        error make_error(error_code code, const std::string &message)
         {
-#if GAMECOE_USE_OPENGL
-            GLenum error = glGetError();
-            if(error != GL_NO_ERROR) 
-                throwError(method + " OpenGL error: " + std::to_string(error));
-#endif
+            logcoe::error(message);
+            return error{code, message};
         }
 
-        void clearError()
+        std::expected<void, error> check_error(const std::string &method)
+        {
+#if GAMECOE_USE_OPENGL
+            GLenum err = glGetError();
+            if(err != GL_NO_ERROR)
+                return std::unexpected(make_error(error_code::opengl_error, method + " OpenGL error: " + std::to_string(err)));
+#endif
+            return {};
+        }
+
+        void clear_error()
         {
 #if GAMECOE_USE_OPENGL
             glGetError();
