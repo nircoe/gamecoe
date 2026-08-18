@@ -9,6 +9,8 @@ namespace gamecoe
         invalid_argument,
         opengl_error,
         path_resolution_failed,
+        resource_creation_failed,
+        unsupported_feature,
         unsupported_platform,
         window_creation_failed
     };
