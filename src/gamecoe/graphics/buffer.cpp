@@ -73,7 +73,7 @@ namespace gamecoe
             if (id == 0)
                 return std::unexpected(
                         detail::make_error(
-                            error_code::resource_creation_failed,
+                            error_code::resource_creation_failure,
                             "buffer::create(): Could not generate buffer"));
 
             std::uint32_t usage = (target == GL_UNIFORM_BUFFER) ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;

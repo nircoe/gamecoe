@@ -41,13 +41,13 @@ namespace gamecoe
 
         vertex_array::vertex_array(std::uint32_t id, buffer &&vertex_buffer, std::optional<buffer> &&index_buffer,
                                     std::size_t vertex_count, std::size_t index_count)
-            : m_id(id), m_vertex_buffer(std::move(vertex_buffer)), m_index_buffer(std::move(index_buffer)),
-              m_vertex_count(vertex_count), m_index_count(index_count) { }
+            : m_vertex_count(vertex_count), m_index_count(index_count), m_vertex_buffer(std::move(vertex_buffer)),
+              m_index_buffer(std::move(index_buffer)), m_id(id) { }
 
         vertex_array::vertex_array(vertex_array &&other) noexcept
-            : m_id(other.m_id), m_vertex_buffer(std::move(other.m_vertex_buffer)),
-              m_index_buffer(std::move(other.m_index_buffer)), m_vertex_count(other.m_vertex_count),
-              m_index_count(other.m_index_count)
+            : m_vertex_count(other.m_vertex_count), m_index_count(other.m_index_count),
+              m_vertex_buffer(std::move(other.m_vertex_buffer)), m_index_buffer(std::move(other.m_index_buffer)),
+              m_id(other.m_id)
         {
             other.m_id = 0;
             other.m_vertex_count = 0;
@@ -125,7 +125,7 @@ namespace gamecoe
             if (id == 0)
                 return std::unexpected(
                         detail::make_error(
-                            error_code::resource_creation_failed,
+                            error_code::resource_creation_failure,
                             "vertex_array::create(): Could not generate vertex array"));
 
             auto vertex_buffer_result = buffer::create_vertex_buffer();

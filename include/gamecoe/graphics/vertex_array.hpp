@@ -13,11 +13,11 @@ namespace gamecoe
     {
         class vertex_array
         {
-            std::uint32_t m_id;
-            buffer m_vertex_buffer;
-            std::optional<buffer> m_index_buffer;
             std::size_t m_vertex_count;
             std::size_t m_index_count;
+            buffer m_vertex_buffer;
+            std::optional<buffer> m_index_buffer;
+            std::uint32_t m_id;
 
             vertex_array(std::uint32_t id, buffer &&vertex_buffer, std::optional<buffer> &&index_buffer,
                          std::size_t vertex_count, std::size_t index_count);
