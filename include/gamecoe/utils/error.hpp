@@ -7,6 +7,7 @@ namespace gamecoe
     enum class error_code
     {
         file_read_failure,
+        image_load_failure,
         invalid_argument,
         opengl_error,
         path_resolution_failure,
