@@ -15,6 +15,10 @@ int printHelp()
     std::cout << "  ColorcoeTests            - Color hex decoding tests" << std::endl;
     std::cout << "  PathsTests               - Executable path resolution tests" << std::endl;
     std::cout << "  WindowTests              - Window class tests" << std::endl;
+    std::cout << "  GraphicsBufferTests      - Graphics buffer class tests" << std::endl;
+    std::cout << "  VertexArrayTests         - Vertex array class tests" << std::endl;
+    std::cout << "  ShaderTests              - Shader class tests" << std::endl;
+    std::cout << "  TextureTests             - Texture class tests" << std::endl;
     std::cout << "  EntityTests              - Entity handle tests" << std::endl;
     std::cout << "  SparseSetTests           - Sparse set data structure tests" << std::endl;
     std::cout << "  ComponentPoolTests       - Component pool wrapper tests" << std::endl;
@@ -41,6 +45,7 @@ int main(int argc, char **argv)
     std::cout << std::endl;
     std::cout << "Comprehensive testing for gamecoe." << std::endl;
     std::cout << "Testing Core Module: window" << std::endl;
+    std::cout << "Testing Graphics Module: buffer, vertex_array, shader, texture" << std::endl;
     std::cout << "Testing Entity Module: entity, sparse_set, component_pool, entities, command_buffer" << std::endl;
     std::cout << "Testing Component Module: transform, parent, children, scene_tag, shape_renderer, shape_collider" << std::endl;
     std::cout << std::endl;
