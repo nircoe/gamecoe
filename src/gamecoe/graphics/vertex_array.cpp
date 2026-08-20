@@ -59,10 +59,7 @@ namespace gamecoe
             if (this == &other)
                 return *this;
 
-#if GAMECOE_USE_OPENGL
-            if (m_id != 0)
-                glDeleteVertexArrays(1, &m_id);
-#endif
+            destroy();
 
             m_id = other.m_id;
             m_vertex_buffer = std::move(other.m_vertex_buffer);
@@ -77,12 +74,17 @@ namespace gamecoe
             return *this;
         }
 
-        vertex_array::~vertex_array()
+        void vertex_array::destroy()
         {
 #if GAMECOE_USE_OPENGL
             if (m_id != 0)
                 glDeleteVertexArrays(1, &m_id);
 #endif
+        }
+
+        vertex_array::~vertex_array()
+        {
+            destroy();
         }
 
         void vertex_array::bind() const

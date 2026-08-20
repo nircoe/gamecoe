@@ -27,10 +27,7 @@ namespace gamecoe
             if (this == &other)
                 return *this;
 
-#if GAMECOE_USE_OPENGL
-            if (m_id != 0)
-                glDeleteBuffers(1, &m_id);
-#endif
+            destroy();
 
             m_id = other.m_id;
             m_target = other.m_target;
@@ -45,12 +42,17 @@ namespace gamecoe
             return *this;
         }
 
-        buffer::~buffer()
+        void buffer::destroy()
         {
 #if GAMECOE_USE_OPENGL
             if (m_id != 0)
                 glDeleteBuffers(1, &m_id);
 #endif
+        }
+
+        buffer::~buffer()
+        {
+            destroy();
         }
 
         std::expected<buffer, error> buffer::create([[maybe_unused]] std::uint32_t target,

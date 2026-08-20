@@ -21,6 +21,7 @@ namespace gamecoe
 
             vertex_array(std::uint32_t id, buffer &&vertex_buffer, std::optional<buffer> &&index_buffer,
                          std::size_t vertex_count, std::size_t index_count);
+            void destroy();
 
         public:
             vertex_array(const vertex_array&) = delete;

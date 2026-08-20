@@ -19,6 +19,7 @@ namespace gamecoe
             std::int32_t m_dimension;
 
             texture(std::uint32_t id, std::int32_t dimension);
+            void destroy();
 
         public:
             texture(const texture&) = delete;

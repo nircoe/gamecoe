@@ -152,10 +152,7 @@ namespace gamecoe
             if (this == &other)
                 return *this;
 
-#if GAMECOE_USE_OPENGL
-            if (m_id != 0)
-                glDeleteProgram(m_id);
-#endif
+            destroy();
 
             m_id = other.m_id;
             m_uniform_locations = std::move(other.m_uniform_locations);
@@ -166,12 +163,17 @@ namespace gamecoe
             return *this;
         }
 
-        shader::~shader()
+        void shader::destroy()
         {
 #if GAMECOE_USE_OPENGL
             if (m_id != 0)
                 glDeleteProgram(m_id);
 #endif
+        }
+
+        shader::~shader()
+        {
+            destroy();
         }
 
         std::expected<shader, error> shader::create(

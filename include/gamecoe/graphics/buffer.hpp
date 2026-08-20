@@ -17,6 +17,7 @@ namespace gamecoe
             bool m_allocated;
 
             buffer(std::uint32_t id, std::uint32_t target, std::uint32_t usage);
+            void destroy();
 
             [[nodiscard]] static std::expected<buffer, error> create(std::uint32_t target, std::uint32_t binding_point = 0);
 

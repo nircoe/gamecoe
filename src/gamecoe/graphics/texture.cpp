@@ -61,10 +61,7 @@ namespace gamecoe
             if (this == &other)
                 return *this;
 
-#if GAMECOE_USE_OPENGL
-            if (m_id != 0)
-                glDeleteTextures(1, &m_id);
-#endif
+            destroy();
 
             m_id = other.m_id;
             m_dimension = other.m_dimension;
@@ -75,12 +72,17 @@ namespace gamecoe
             return *this;
         }
 
-        texture::~texture()
+        void texture::destroy()
         {
 #if GAMECOE_USE_OPENGL
             if (m_id != 0)
                 glDeleteTextures(1, &m_id);
 #endif
+        }
+
+        texture::~texture()
+        {
+            destroy();
         }
 
         std::expected<texture, error> texture::create_2d([[maybe_unused]] const std::string &image,

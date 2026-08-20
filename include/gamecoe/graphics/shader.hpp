@@ -19,6 +19,7 @@ namespace gamecoe
             std::uint32_t m_id;
 
             explicit shader(std::uint32_t program_id);
+            void destroy();
             std::int32_t uniform_location(const std::string &name) const;
 
         public:
