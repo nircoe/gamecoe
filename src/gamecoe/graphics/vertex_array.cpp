@@ -20,7 +20,7 @@ namespace gamecoe
                                          [[maybe_unused]] std::size_t vertex_size)
             {
 #if GAMECOE_HAS_DSA
-                glVertexArrayVertexBuffer(vao_id, 0, vertex_buffer_id, 0, vertex_size * sizeof(float));
+                glVertexArrayVertexBuffer(vao_id, 0, vertex_buffer_id, 0, static_cast<GLsizei>(vertex_size * sizeof(float)));
                 glVertexArrayAttribFormat(vao_id, 0, 3, GL_FLOAT, GL_FALSE, 0);
                 glVertexArrayAttribBinding(vao_id, 0, 0);
                 glEnableVertexArrayAttrib(vao_id, 0);
@@ -28,7 +28,7 @@ namespace gamecoe
                 if (index_buffer_id)
                     glVertexArrayElementBuffer(vao_id, *index_buffer_id);
 #else
-                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size * sizeof(float), (void*)0);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, static_cast<GLsizei>(vertex_size * sizeof(float)), (void*)0);
                 glEnableVertexAttribArray(0);
 #endif
             }

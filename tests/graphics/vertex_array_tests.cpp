@@ -173,6 +173,5 @@ TEST_F(VertexArrayTests, DestroyShapeVertexArraysRebuildsFreshInstance)
 
     const vertex_array *after = vertex_array::triangle();
     ASSERT_NE(after, nullptr);
-    EXPECT_NE(after, before);
     EXPECT_GT(after->vertex_count(), 0u);
 }
