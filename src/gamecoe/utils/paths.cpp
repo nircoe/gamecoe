@@ -24,7 +24,7 @@ namespace gamecoe
             if (result == 0 || result == MAX_PATH)
                 return std::unexpected(
                         detail::make_error(
-                            error_code::path_resolution_failed,
+                            error_code::path_resolution_failure,
                             "[gamecoe] Could not get the executable path on Windows"));
             exe = std::filesystem::path(path);
 #elif __APPLE__
@@ -33,7 +33,7 @@ namespace gamecoe
             if(_NSGetExecutablePath(path, &size))
                return std::unexpected(
                         detail::make_error(
-                            error_code::path_resolution_failed,
+                            error_code::path_resolution_failure,
                             "[gamecoe] Could not get the executable path on MacOS"));
             exe = std::filesystem::path(path);
 #elif __linux__
@@ -42,7 +42,7 @@ namespace gamecoe
             {
                 return std::unexpected(
                             detail::make_error(
-                                error_code::path_resolution_failed,
+                                error_code::path_resolution_failure,
                                 "[gamecoe] Could not get the executable path on Linux: " + std::string(e.what())));
             }
 #else

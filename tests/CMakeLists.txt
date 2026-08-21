@@ -3,6 +3,10 @@ add_executable(gamecoe_tests
     colorcoe_tests.cpp
     utils/paths_tests.cpp
     core/window_tests.cpp
+    graphics/buffer_tests.cpp
+    graphics/vertex_array_tests.cpp
+    graphics/shader_tests.cpp
+    graphics/texture_tests.cpp
     entity/entity_tests.cpp
     entity/sparse_set_tests.cpp
     entity/component_pool_tests.cpp
@@ -22,3 +26,5 @@ target_link_libraries(gamecoe_tests
         testcoe
         glfw
 )
+
+target_include_directories(gamecoe_tests PRIVATE ${GAMECOE_GLAD_OUTPUT_DIR}/include)

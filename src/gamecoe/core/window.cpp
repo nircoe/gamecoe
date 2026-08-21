@@ -113,7 +113,7 @@ namespace gamecoe
         if(!glfwWindow)
             return std::unexpected(
                         detail::make_error(
-                            error_code::window_creation_failed,
+                            error_code::window_creation_failure,
                             "window::create(): Failed to create glfw window"));
 
         if(!current) // multi-window support
