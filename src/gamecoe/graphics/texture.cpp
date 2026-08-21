@@ -52,8 +52,7 @@ namespace gamecoe
 
         texture::texture(texture &&other) noexcept : m_id(other.m_id), m_dimension(other.m_dimension)
         {
-            other.m_id = 0;
-            other.m_dimension = 0;
+            other.reset();
         }
 
         texture &texture::operator=(texture &&other) noexcept
@@ -66,8 +65,7 @@ namespace gamecoe
             m_id = other.m_id;
             m_dimension = other.m_dimension;
 
-            other.m_id = 0;
-            other.m_dimension = 0;
+            other.reset();
 
             return *this;
         }
@@ -78,6 +76,12 @@ namespace gamecoe
             if (m_id != 0)
                 glDeleteTextures(1, &m_id);
 #endif
+        }
+
+        void texture::reset() noexcept
+        {
+            m_id = 0;
+            m_dimension = 0;
         }
 
         texture::~texture()
@@ -93,12 +97,15 @@ namespace gamecoe
             struct garbage_collector
             {
                 unsigned char *m_data = nullptr;
+                std::uint32_t m_id = 0;
                 ~garbage_collector()
                 {
                     if (m_data)
                         stbi_image_free(m_data);
+                    if (m_id != 0)
+                        glDeleteTextures(1, &m_id);
                 }
-            } gb;
+            } gc;
 
             int width, height, nr_channels;
             stbi_set_flip_vertically_on_load(flip_vertically);
@@ -108,7 +115,7 @@ namespace gamecoe
                         detail::make_error(
                             error_code::image_load_failure,
                             "texture::create_2d(): Failed to load texture: " + image));
-            gb.m_data = data;
+            gc.m_data = data;
 
             std::uint32_t id = 0;
 #if GAMECOE_HAS_DSA
@@ -121,6 +128,7 @@ namespace gamecoe
                         detail::make_error(
                             error_code::resource_creation_failure,
                             "texture::create_2d(): Failed to generate OpenGL texture"));
+            gc.m_id = id;
 
             std::int32_t dimension = GL_TEXTURE_2D;
 #if !GAMECOE_HAS_DSA
@@ -136,13 +144,10 @@ namespace gamecoe
                                   (nr_channels == 3) ? GL_RGB8 :
                                   (nr_channels == 4) ? GL_RGBA8 : 0;
             if (format == 0 || internal_format == 0)
-            {
-                glDeleteTextures(1, &id);
                 return std::unexpected(
                         detail::make_error(
                             error_code::invalid_argument,
                             "texture::create_2d(): Unsupported image channel count"));
-            }
 
 #if GAMECOE_HAS_DSA
             int levels = generate_mipmap ? static_cast<int>(1 + std::floor(std::log2(std::max(width, height)))) : 1;
@@ -153,10 +158,7 @@ namespace gamecoe
 #endif
             auto result = detail::check_error("texture::create_2d():");
             if (!result)
-            {
-                glDeleteTextures(1, &id);
                 return std::unexpected(result.error());
-            }
 
             if (generate_mipmap)
             {
@@ -167,10 +169,7 @@ namespace gamecoe
 #endif
                 result = detail::check_error("texture::create_2d():");
                 if (!result)
-                {
-                    glDeleteTextures(1, &id);
                     return std::unexpected(result.error());
-                }
             }
 
 #if !GAMECOE_HAS_DSA
@@ -178,6 +177,7 @@ namespace gamecoe
 #endif
             detail::clear_error();
 
+            gc.m_id = 0;
             return texture{id, dimension};
 #else
             return std::unexpected(

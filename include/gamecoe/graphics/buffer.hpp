@@ -13,11 +13,11 @@ namespace gamecoe
         {
             std::uint32_t m_id;
             std::uint32_t m_target;
-            std::uint32_t m_usage;
             bool m_allocated;
 
-            buffer(std::uint32_t id, std::uint32_t target, std::uint32_t usage);
+            buffer(std::uint32_t id, std::uint32_t target);
             void destroy();
+            void reset() noexcept;
 
             [[nodiscard]] static std::expected<buffer, error> create(std::uint32_t target, std::uint32_t binding_point = 0);
 

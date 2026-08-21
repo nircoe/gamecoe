@@ -10,16 +10,13 @@ namespace gamecoe
 {
     namespace graphics
     {
-        buffer::buffer(std::uint32_t id, std::uint32_t target, std::uint32_t usage)
-            : m_id(id), m_target(target), m_usage(usage), m_allocated(false) { }
+        buffer::buffer(std::uint32_t id, std::uint32_t target)
+            : m_id(id), m_target(target), m_allocated(false) { }
 
         buffer::buffer(buffer &&other) noexcept
-            : m_id(other.m_id), m_target(other.m_target), m_usage(other.m_usage), m_allocated(other.m_allocated)
+            : m_id(other.m_id), m_target(other.m_target), m_allocated(other.m_allocated)
         {
-            other.m_id = 0;
-            other.m_target = 0;
-            other.m_usage = 0;
-            other.m_allocated = false;
+            other.reset();
         }
 
         buffer &buffer::operator=(buffer &&other) noexcept
@@ -31,13 +28,9 @@ namespace gamecoe
 
             m_id = other.m_id;
             m_target = other.m_target;
-            m_usage = other.m_usage;
             m_allocated = other.m_allocated;
 
-            other.m_id = 0;
-            other.m_target = 0;
-            other.m_usage = 0;
-            other.m_allocated = false;
+            other.reset();
 
             return *this;
         }
@@ -48,6 +41,13 @@ namespace gamecoe
             if (m_id != 0)
                 glDeleteBuffers(1, &m_id);
 #endif
+        }
+
+        void buffer::reset() noexcept
+        {
+            m_id = 0;
+            m_target = 0;
+            m_allocated = false;
         }
 
         buffer::~buffer()
@@ -78,10 +78,8 @@ namespace gamecoe
                             error_code::resource_creation_failure,
                             "buffer::create(): Could not generate buffer"));
 
-            std::uint32_t usage = (target == GL_UNIFORM_BUFFER) ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
-
             if (target != GL_UNIFORM_BUFFER)
-                return buffer{id, target, usage};
+                return buffer{id, target};
 
             glBindBufferBase(target, binding_point, id);
             auto result = detail::check_error("buffer::create(): Uniform Buffer:");
@@ -91,7 +89,7 @@ namespace gamecoe
                 return std::unexpected(result.error());
             }
 
-            return buffer{id, target, usage};
+            return buffer{id, target};
 #else
             return std::unexpected(
                     detail::make_error(
@@ -120,11 +118,12 @@ namespace gamecoe
 #if GAMECOE_USE_OPENGL
             if (!m_allocated)
             {
+                std::uint32_t usage = (m_target == GL_UNIFORM_BUFFER) ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
 #if GAMECOE_HAS_DSA
-                glNamedBufferData(m_id, size, nullptr, m_usage);
+                glNamedBufferData(m_id, size, nullptr, usage);
 #else
                 bind();
-                glBufferData(m_target, size, nullptr, m_usage);
+                glBufferData(m_target, size, nullptr, usage);
 #endif
                 auto result = detail::check_error("buffer::upload_data():");
                 if (!result)

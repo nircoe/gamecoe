@@ -143,8 +143,7 @@ namespace gamecoe
         shader::shader(shader &&other) noexcept
             : m_uniform_locations(std::move(other.m_uniform_locations)), m_id(other.m_id)
         {
-            other.m_id = 0;
-            other.m_uniform_locations.clear();
+            other.reset();
         }
 
         shader &shader::operator=(shader &&other) noexcept
@@ -157,8 +156,7 @@ namespace gamecoe
             m_id = other.m_id;
             m_uniform_locations = std::move(other.m_uniform_locations);
 
-            other.m_id = 0;
-            other.m_uniform_locations.clear();
+            other.reset();
 
             return *this;
         }
@@ -169,6 +167,12 @@ namespace gamecoe
             if (m_id != 0)
                 glDeleteProgram(m_id);
 #endif
+        }
+
+        void shader::reset() noexcept
+        {
+            m_id = 0;
+            m_uniform_locations.clear();
         }
 
         shader::~shader()
