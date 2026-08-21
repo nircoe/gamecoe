@@ -149,6 +149,8 @@ namespace gamecoe
                             error_code::invalid_argument,
                             "texture::create_2d(): Unsupported image channel count"));
 
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
 #if GAMECOE_HAS_DSA
             int levels = generate_mipmap ? static_cast<int>(1 + std::floor(std::log2(std::max(width, height)))) : 1;
             glTextureStorage2D(id, levels, internal_format, width, height);
@@ -199,6 +201,8 @@ namespace gamecoe
         void texture::unbind() const
         {
 #if GAMECOE_USE_OPENGL && !GAMECOE_HAS_DSA
+            GAMECOE_ASSERT_LOG(m_dimension != 0, "texture::unbind(): cannot unbind a moved-from texture");
+
             glBindTexture(m_dimension, 0);
 #endif
         }

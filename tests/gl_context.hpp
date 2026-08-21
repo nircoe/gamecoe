@@ -31,8 +31,7 @@ protected:
         if (result.has_value())
         {
             s_window = std::move(*result);
-            gladLoadGL(glfwGetProcAddress);
-            s_gl_ready = true;
+            s_gl_ready = gladLoadGL(glfwGetProcAddress);
         }
         else
         {

@@ -111,7 +111,7 @@ namespace gamecoe
             std::expected<void, error> check_compile_or_link_status(std::uint32_t id, bool is_program,
                                                                       error_code failure_code)
             {
-                GLint success;
+                GLint success = GL_FALSE;
                 is_program ? glGetProgramiv(id, GL_LINK_STATUS, &success) : glGetShaderiv(id, GL_COMPILE_STATUS, &success);
 
                 if (success)

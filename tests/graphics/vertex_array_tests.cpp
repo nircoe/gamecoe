@@ -9,7 +9,15 @@ using namespace gamecoe::graphics;
 //              VertexArrayTests - graphics::vertex_array class tests
 //==============================================================================
 
-class VertexArrayTests : public GLContextTest {};
+class VertexArrayTests : public GLContextTest
+{
+protected:
+    static void TearDownTestSuite()
+    {
+        vertex_array::destroy_shape_vertex_arrays();
+        GLContextTest::TearDownTestSuite();
+    }
+};
 
 //==============================================================================
 //                        Creation

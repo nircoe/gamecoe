@@ -14,11 +14,13 @@ namespace gamecoe
         namespace
         {
 #if GAMECOE_USE_OPENGL
-            void setup_vertex_attributes([[maybe_unused]] std::uint32_t vao_id, [[maybe_unused]] std::uint32_t vertex_buffer_id,
-                                          [[maybe_unused]] std::optional<std::uint32_t> index_buffer_id)
+            void setup_vertex_attributes([[maybe_unused]] std::uint32_t vao_id,
+                                         [[maybe_unused]] std::uint32_t vertex_buffer_id,
+                                         [[maybe_unused]] std::optional<std::uint32_t> index_buffer_id,
+                                         [[maybe_unused]] std::size_t vertex_size)
             {
 #if GAMECOE_HAS_DSA
-                glVertexArrayVertexBuffer(vao_id, 0, vertex_buffer_id, 0, 3 * sizeof(float));
+                glVertexArrayVertexBuffer(vao_id, 0, vertex_buffer_id, 0, vertex_size * sizeof(float));
                 glVertexArrayAttribFormat(vao_id, 0, 3, GL_FLOAT, GL_FALSE, 0);
                 glVertexArrayAttribBinding(vao_id, 0, 0);
                 glEnableVertexArrayAttrib(vao_id, 0);
@@ -26,7 +28,7 @@ namespace gamecoe
                 if (index_buffer_id)
                     glVertexArrayElementBuffer(vao_id, *index_buffer_id);
 #else
-                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, vertex_size * sizeof(float), (void*)0);
                 glEnableVertexAttribArray(0);
 #endif
             }
@@ -94,6 +96,7 @@ namespace gamecoe
             m_id = 0;
             m_vertex_count = 0;
             m_index_count = 0;
+            m_index_buffer.reset();
         }
 
         vertex_array::~vertex_array()
@@ -182,7 +185,7 @@ namespace gamecoe
             std::optional<std::uint32_t> index_buffer_id;
             if (index_buffer)
                 index_buffer_id = index_buffer->id();
-            setup_vertex_attributes(id, vertex_buffer.id(), index_buffer_id);
+            setup_vertex_attributes(id, vertex_buffer.id(), index_buffer_id, vertex_size);
 
 #if !GAMECOE_HAS_DSA
             glBindVertexArray(0);

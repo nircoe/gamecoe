@@ -11,9 +11,9 @@ namespace gamecoe
     {
         class buffer
         {
+            std::size_t m_allocated_size;
             std::uint32_t m_id;
             std::uint32_t m_target;
-            bool m_allocated;
 
             buffer(std::uint32_t id, std::uint32_t target);
             void destroy();

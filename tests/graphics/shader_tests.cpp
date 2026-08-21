@@ -136,6 +136,7 @@ TEST_F(ShaderTests, SetUniformsDoesNotCrash)
 
     auto result = shader::create(vertex_path.string(), fragment_path.string());
     ASSERT_TRUE(result.has_value());
+    result->use();
 
     // Test 1: representative spread of set() overloads on declared uniforms
     EXPECT_NO_FATAL_FAILURE({
@@ -209,9 +210,11 @@ TEST_F(ShaderTests, MoveAssignmentNoDoubleDestroy)
     // free to assign it a different location number in each, so populating s1's own cache
     // here (with s1's own program's location) before the move is what makes the post-move
     // check below a real regression guard rather than a coincidence.
+    s1.use();
     s1.set("u_float", 111.0f);
 
     s1 = std::move(s2);
+    s1.use();
 
     // Proves state actually transferred, not just that nothing crashed. The still-implicit
     // part: a clean return here lets both destructors run at scope exit without a double

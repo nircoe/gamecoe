@@ -11,10 +11,10 @@ namespace gamecoe
     namespace graphics
     {
         buffer::buffer(std::uint32_t id, std::uint32_t target)
-            : m_id(id), m_target(target), m_allocated(false) { }
+            : m_allocated_size(0), m_id(id), m_target(target) { }
 
         buffer::buffer(buffer &&other) noexcept
-            : m_id(other.m_id), m_target(other.m_target), m_allocated(other.m_allocated)
+            : m_allocated_size(other.m_allocated_size), m_id(other.m_id), m_target(other.m_target)
         {
             other.reset();
         }
@@ -26,9 +26,9 @@ namespace gamecoe
 
             destroy();
 
+            m_allocated_size = other.m_allocated_size;
             m_id = other.m_id;
             m_target = other.m_target;
-            m_allocated = other.m_allocated;
 
             other.reset();
 
@@ -45,9 +45,9 @@ namespace gamecoe
 
         void buffer::reset() noexcept
         {
+            m_allocated_size = 0;
             m_id = 0;
             m_target = 0;
-            m_allocated = false;
         }
 
         buffer::~buffer()
@@ -116,7 +116,7 @@ namespace gamecoe
                                                         [[maybe_unused]] std::size_t size)
         {
 #if GAMECOE_USE_OPENGL
-            if (!m_allocated)
+            if (size > m_allocated_size)
             {
                 std::uint32_t usage = (m_target == GL_UNIFORM_BUFFER) ? GL_DYNAMIC_DRAW : GL_STATIC_DRAW;
 #if GAMECOE_HAS_DSA
@@ -128,7 +128,7 @@ namespace gamecoe
                 auto result = detail::check_error("buffer::upload_data():");
                 if (!result)
                     return result;
-                m_allocated = true;
+                m_allocated_size = size;
             }
 
 #if GAMECOE_HAS_DSA
