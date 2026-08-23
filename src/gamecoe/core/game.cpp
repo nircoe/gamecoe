@@ -2,6 +2,8 @@
 #include <gamecoe/utils/error_handler.hpp>
 #include <gamecoe/utils/paths.hpp>
 #include <gamecoe_config.hpp>
+#include <inputcoe.hpp>
+#include <timecoe.hpp>
 #include <algorithm>
 #include <utility>
 #include <string>
@@ -280,5 +282,23 @@ namespace gamecoe
 
         logcoe::info("game::unload_scene(): unloaded scene \"" + to_string(id) + "\" (" +
                      std::to_string(destroyed_count) + " destroyed entities)");
+    }
+
+    void game::play()
+    {
+        while (m_window->active())
+        {
+            timecoe::detail::update();
+            inputcoe::detail::update();
+
+#if GAMECOE_USE_OPENGL
+            auto bg = m_background_color.normalized();
+            glClearColor(bg.r, bg.g, bg.b, bg.a);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+#endif
+            // System execution, rendering and collision wire in here via later tickets.
+
+            soundcoe::update();
+        }
     }
 } // namespace gamecoe
