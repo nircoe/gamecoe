@@ -94,9 +94,9 @@ namespace gamecoe
     public:
         entities() = default;
         entities(const entities&) = delete;
-        entities(entities&&) = delete;
+        entities(entities&&) = default;
         entities &operator=(const entities&) = delete;
-        entities &operator=(entities&&) = delete;
+        entities &operator=(entities&&) = default;
 
         ~entities() = default;
 
