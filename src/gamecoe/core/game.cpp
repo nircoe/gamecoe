@@ -142,4 +142,46 @@ namespace gamecoe
     {
         return m_active_scenes;
     }
+
+    void game::create_scene(scene_id id, scene_builder builder, std::int8_t layer)
+    {
+        GAMECOE_ASSERT_LOG(!m_scenes.contains(id), "game::create_scene(): scene is already registered");
+        if (m_scenes.contains(id)) return;
+        GAMECOE_ASSERT_LOG(builder != nullptr, "game::create_scene(): scene builder is null");
+        if (!builder) return;
+
+        m_scenes.emplace(id, scene_metadata{ command_buffer{}, {}, builder, layer, scene_status::unloaded });
+        logcoe::debug("game::create_scene(): registered scene \"" + to_string(id) + "\"");
+    }
+
+    void game::load_scene(scene_id id)
+    {
+        auto it = m_scenes.find(id);
+        GAMECOE_ASSERT_LOG(it != m_scenes.end(), "game::load_scene(): scene is not registered");
+        if (it == m_scenes.end()) return;
+
+        scene_metadata &meta = it->second;
+        GAMECOE_ASSERT_LOG(meta.status == scene_status::unloaded, "game::load_scene(): scene is not unloaded");
+        if (meta.status != scene_status::unloaded) return;
+
+        if (!soundcoe::preloadScene(to_string(id)))
+            logcoe::warning("game::load_scene(): no audio preloaded for scene \"" + to_string(id) + "\"");
+
+        meta.builder(meta.pending);
+
+        meta.status = scene_status::loaded;
+        logcoe::info("game::load_scene(): loaded scene \"" + to_string(id) + "\" (" +
+                     std::to_string(meta.pending.spawn_count()) + " pending entities)");
+    }
+
+    std::vector<entity> game::collect_scene_entities(scene_id id)
+    {
+        std::vector<entity> matches;
+        m_entities.for_each_all<components::scene_tag>(
+            [id, &matches](entity e, const components::scene_tag &tag)
+            {
+                if (tag.id == id) matches.push_back(e);
+            });
+        return matches;
+    }
 } // namespace gamecoe
