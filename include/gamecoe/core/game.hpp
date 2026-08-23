@@ -15,6 +15,7 @@
 #include <flat_map>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #if GAMECOE_USE_LOGCOE
@@ -90,4 +91,23 @@ namespace gamecoe
 
         void play();
     };
+
+    template <typename... Comps>
+    entity game::create_entity(scene_id id, Comps&&... comps)
+    {
+        static_assert((!std::is_same_v<std::decay_t<Comps>, components::scene_tag> && ...),
+            "game::create_entity(): scene_tag is stamped from the scene_id argument, don't pass one");
+
+        auto it = m_scenes.find(id);
+        GAMECOE_ASSERT_LOG(it != m_scenes.end(), "game::create_entity(): scene is not registered");
+        // entities can only be created into an active scene.
+        GAMECOE_ASSERT_LOG(it == m_scenes.end() || it->second.status == scene_status::active,
+                           "game::create_entity(): scene is not active");
+        if (it == m_scenes.end() || it->second.status != scene_status::active) return entity::invalid();
+
+        entity e = m_entities.create();
+        m_entities.add_component<components::scene_tag>(e, components::scene_tag{ id });
+        (detail::apply_component<std::decay_t<Comps>>(m_entities, e, std::forward<Comps>(comps)), ...);
+        return e;
+    }
 } // namespace gamecoe

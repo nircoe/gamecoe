@@ -14,7 +14,21 @@
 
 namespace gamecoe
 {
-    // Defers entity creation until flush() for building a scene async on a different thread. 
+    namespace detail
+    {
+        template <typename T>
+        void apply_component(entities &ents, entity e, T value)
+        {
+            static_assert(!hierarchy_component<T>,
+                "apply_component(): hierarchy components are managed - use entities::set_parent() instead");
+
+            if constexpr (std::is_same_v<T, components::transform>) ents.transform(e) = std::move(value);
+            else if (T *c = ents.get_component<T>(e))               *c = std::move(value);
+            else                                                     ents.add_component<T>(e, std::move(value));
+        }
+    } // namespace detail
+
+    // Defers entity creation until flush() for building a scene async on a different thread.
     // Placeholders from spawn() are invalidated by their buffer's own flush() - don't reuse them after.
     class command_buffer
     {
@@ -46,23 +60,6 @@ namespace gamecoe
         std::vector<components::transform> m_spawn_transforms;
         std::vector<command> m_commands;
 
-        template <typename T>
-        static void apply(entities& ents, entity e, T value)
-        {
-            static_assert(!hierarchy_component<T>,
-                "command_buffer::add(): hierarchy components are managed - use command_buffer::set_parent() instead");
-
-            if constexpr (std::is_same_v<T, components::transform>)
-                // transform is assigned directly since add_component<transform>() is static_assert-blocked
-                // (transform is mandatory, always present, never added through this generic path).
-                ents.transform(e) = std::move(value);
-            else
-            {
-                if (T* c = ents.get_component<T>(e)) *c = std::move(value);
-                else ents.add_component<T>(e, std::move(value));
-            }
-        }
-    
     public:
         // Queues an entity with the given transform (default if omitted). No real entity until flush().
         placeholder spawn(components::transform t = components::transform{});
@@ -76,7 +73,7 @@ namespace gamecoe
             m_commands.emplace_back([p, value = std::move(value)](entities& ents, const resolver& r) mutable
             {
                 entity e = r.resolve(p);
-                apply<T>(ents, e, std::move(value));
+                detail::apply_component<T>(ents, e, std::move(value));
             });
         }
 
@@ -91,7 +88,7 @@ namespace gamecoe
             m_commands.emplace_back([p, fn = std::forward<Callable>(fn)](entities& ents, const resolver& r) mutable
             {
                 entity e = r.resolve(p);
-                apply<T>(ents, e, fn(r));
+                detail::apply_component<T>(ents, e, fn(r));
             });
         }
 
