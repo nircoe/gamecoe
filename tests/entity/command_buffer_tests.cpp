@@ -4,7 +4,7 @@
 #include <gamecoe/component/transform.hpp>
 #include <gamecoe/component/scene_tag.hpp>
 #include <gamecoe/component/parent_child.hpp>
-#include "../test_utils.hpp"
+#include <support/test_utils.hpp>
 
 using namespace gamecoe;
 using namespace test_utils;

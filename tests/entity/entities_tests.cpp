@@ -5,7 +5,7 @@
 #include <gamecoe/component/scene_tag.hpp>
 #include <chrono>
 #include <vector>
-#include "../test_utils.hpp"
+#include <support/test_utils.hpp>
 
 using namespace gamecoe;
 using namespace test_utils;
@@ -530,10 +530,7 @@ TEST_F(EntitiesTests, RemoveChildrenWithGrandchildren)
 
 TEST_F(EntitiesTests, SetParentCycleDetection)
 {
-#ifdef NDEBUG
-    GTEST_SKIP() << "cycle detection assert is compiled out under NDEBUG (Release build)";
-#endif
-
+#ifndef NDEBUG
     // Test 1: direct 2-node cycle - A is already parent of B, then set_parent(A, B) would make B a
     // parent of its own ancestor A
     EXPECT_DEATH(
@@ -556,6 +553,7 @@ TEST_F(EntitiesTests, SetParentCycleDetection)
             mgr.set_parent(a, c); // would create a -> c -> b -> a cycle
         },
         "would create a parent/child cycle");
+#endif
 }
 
 //==============================================================================

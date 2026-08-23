@@ -1,16 +1,8 @@
 #include <gtest/gtest.h>
 #include <gamecoe/component/scene_tag.hpp>
+#include <support/scene_id.hpp>
 
 using namespace gamecoe;
-
-namespace gamecoe
-{
-    enum class scene_id : std::uint16_t
-    {
-        TestSceneA = 1,
-        TestSceneB = 2,
-    };
-} // namespace gamecoe
 
 //==============================================================================
 //                   SceneTagTests - scene_tag component tests

@@ -3,6 +3,7 @@ add_executable(gamecoe_tests
     colorcoe_tests.cpp
     utils/paths_tests.cpp
     core/window_tests.cpp
+    core/game_tests.cpp
     graphics/buffer_tests.cpp
     graphics/vertex_array_tests.cpp
     graphics/shader_tests.cpp
@@ -28,3 +29,4 @@ target_link_libraries(gamecoe_tests
 )
 
 target_include_directories(gamecoe_tests PRIVATE ${GAMECOE_GLAD_OUTPUT_DIR}/include)
+target_include_directories(gamecoe_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
