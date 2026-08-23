@@ -13,6 +13,12 @@ namespace gamecoe
     {
         namespace
         {
+            // Leaked if destroy_shape_vertex_arrays() is never called
+            // safer than an automatic destructor potentially running after the GL context is already gone.
+            vertex_array *g_triangle_va = nullptr;
+            vertex_array *g_rectangle_va = nullptr;
+            vertex_array *g_box_va = nullptr;
+
 #if GAMECOE_USE_OPENGL
             void setup_vertex_attributes([[maybe_unused]] std::uint32_t vao_id,
                                          [[maybe_unused]] std::uint32_t vertex_buffer_id,
@@ -33,12 +39,6 @@ namespace gamecoe
 #endif
             }
 #endif
-
-            // Leaked if destroy_shape_vertex_arrays() is never called
-            // safer than an automatic destructor potentially running after the GL context is already gone.
-            vertex_array *g_triangle_va = nullptr;
-            vertex_array *g_rectangle_va = nullptr;
-            vertex_array *g_box_va = nullptr;
 
 #define GET_OR_CREATE_SHAPE_VA(cache, vertices, vertex_count, indices, index_count, assert_msg) \
     do { \
