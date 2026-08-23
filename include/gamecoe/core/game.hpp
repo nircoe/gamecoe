@@ -37,7 +37,7 @@ namespace gamecoe
         std::vector<entity>  paused_active;   // snapshot of the active entities before the scene was deactivated
         scene_builder        builder = nullptr;
         std::int8_t          layer   = 0;
-        scene_status          status  = scene_status::unloaded;
+        scene_status         status  = scene_status::unloaded;
     };
 
     class game
