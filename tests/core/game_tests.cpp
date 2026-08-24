@@ -302,3 +302,213 @@ TEST_F(GameTests, MultipleActiveScenesShareOneRegistry)
     EXPECT_EQ(count_active_scene_entities(g, scene_b), 0u);
     EXPECT_FALSE(g.entities().is_active(child_in_b));
 }
+
+TEST_F(GameTests, CreateSceneDuplicateIdGuarded)
+{
+    auto result = game::create("GameTests.CreateSceneDuplicateIdGuarded");
+    SKIP_IF_NO_GAME(result);
+    game &g = *result;
+
+    g.create_scene(scene_a, build_scene_a);
+
+#ifndef NDEBUG
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    EXPECT_DEATH(g.create_scene(scene_a, build_scene_b), "scene is already registered");
+#else
+    // Release: guard-return leaves the original registration untouched, second call is a no-op.
+    g.create_scene(scene_a, build_scene_b);
+    g.load_scene(scene_a);
+    g.activate_scene(scene_a);
+    EXPECT_EQ(count_scene_entities(g, scene_a), 3u);
+#endif
+}
+
+TEST_F(GameTests, CreateSceneNullBuilderGuarded)
+{
+    auto result = game::create("GameTests.CreateSceneNullBuilderGuarded");
+    SKIP_IF_NO_GAME(result);
+    game &g = *result;
+
+#ifndef NDEBUG
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    EXPECT_DEATH(g.create_scene(scene_a, nullptr), "scene builder is null");
+#else
+    // Release: guard-return means the scene was never registered.
+    g.create_scene(scene_a, nullptr);
+    EXPECT_EQ(g.status(scene_a), scene_status::unloaded);
+#endif
+}
+
+TEST_F(GameTests, LoadSceneUnregisteredGuarded)
+{
+    auto result = game::create("GameTests.LoadSceneUnregisteredGuarded");
+    SKIP_IF_NO_GAME(result);
+    game &g = *result;
+
+#ifndef NDEBUG
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    EXPECT_DEATH(g.load_scene(scene_a), "scene is not registered");
+#else
+    // Release: guard-return, no entities flushed for an unregistered scene.
+    g.load_scene(scene_a);
+    EXPECT_EQ(g.status(scene_a), scene_status::unloaded);
+    EXPECT_EQ(g.entities().size(), 0u);
+#endif
+}
+
+TEST_F(GameTests, ActivateSceneUnregisteredGuarded)
+{
+    auto result = game::create("GameTests.ActivateSceneUnregisteredGuarded");
+    SKIP_IF_NO_GAME(result);
+    game &g = *result;
+
+#ifndef NDEBUG
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    EXPECT_DEATH(g.activate_scene(scene_a), "scene is not registered");
+#else
+    // Release: guard-return, no insertion into m_active_scenes for an unregistered scene.
+    g.activate_scene(scene_a);
+    EXPECT_EQ(g.status(scene_a), scene_status::unloaded);
+    EXPECT_TRUE(g.active_scenes().empty());
+#endif
+}
+
+TEST_F(GameTests, DeactivateSceneUnregisteredGuarded)
+{
+    auto result = game::create("GameTests.DeactivateSceneUnregisteredGuarded");
+    SKIP_IF_NO_GAME(result);
+    game &g = *result;
+
+#ifndef NDEBUG
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    EXPECT_DEATH(g.deactivate_scene(scene_a), "scene is not registered");
+#else
+    // Release: guard-return, no-op for an unregistered scene.
+    g.deactivate_scene(scene_a);
+    EXPECT_EQ(g.status(scene_a), scene_status::unloaded);
+#endif
+}
+
+TEST_F(GameTests, UnloadSceneUnregisteredGuarded)
+{
+    auto result = game::create("GameTests.UnloadSceneUnregisteredGuarded");
+    SKIP_IF_NO_GAME(result);
+    game &g = *result;
+
+#ifndef NDEBUG
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    EXPECT_DEATH(g.unload_scene(scene_a), "scene is not registered");
+#else
+    // Release: guard-return, no-op for an unregistered scene.
+    g.unload_scene(scene_a);
+    EXPECT_EQ(g.status(scene_a), scene_status::unloaded);
+#endif
+}
+
+TEST_F(GameTests, LoadSceneNotUnloadedGuarded)
+{
+    auto result = game::create("GameTests.LoadSceneNotUnloadedGuarded");
+    SKIP_IF_NO_GAME(result);
+    game &g = *result;
+
+    g.create_scene(scene_a, build_scene_a);
+    g.load_scene(scene_a);
+
+#ifndef NDEBUG
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    EXPECT_DEATH(g.load_scene(scene_a), "scene is not unloaded");
+#else
+    // Release: guard-return, second load doesn't double-flush the pending command_buffer.
+    g.load_scene(scene_a);
+    g.activate_scene(scene_a);
+    EXPECT_EQ(count_scene_entities(g, scene_a), 3u);
+#endif
+}
+
+TEST_F(GameTests, ActivateSceneAlreadyActiveGuarded)
+{
+    auto result = game::create("GameTests.ActivateSceneAlreadyActiveGuarded");
+    SKIP_IF_NO_GAME(result);
+    game &g = *result;
+
+    g.create_scene(scene_a, build_scene_a);
+    g.load_scene(scene_a);
+    g.activate_scene(scene_a);
+
+#ifndef NDEBUG
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    EXPECT_DEATH(g.activate_scene(scene_a), "scene is not loaded or inactive");
+#else
+    // Release: guard-return, second activate doesn't duplicate the m_active_scenes entry.
+    g.activate_scene(scene_a);
+    ASSERT_EQ(g.active_scenes().size(), 1u);
+    EXPECT_EQ(g.active_scenes()[0], scene_a);
+#endif
+}
+
+TEST_F(GameTests, DeactivateSceneNotActiveGuarded)
+{
+    auto result = game::create("GameTests.DeactivateSceneNotActiveGuarded");
+    SKIP_IF_NO_GAME(result);
+    game &g = *result;
+
+    g.create_scene(scene_a, build_scene_a);
+    g.load_scene(scene_a);
+
+#ifndef NDEBUG
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    EXPECT_DEATH(g.deactivate_scene(scene_a), "scene is not active");
+#else
+    // Release: guard-return, scene stays loaded, nothing to deactivate since it was never flushed.
+    g.deactivate_scene(scene_a);
+    EXPECT_EQ(g.status(scene_a), scene_status::loaded);
+    EXPECT_EQ(g.entities().size(), 0u);
+#endif
+}
+
+TEST_F(GameTests, UnloadSceneAlreadyUnloadedGuarded)
+{
+    auto result = game::create("GameTests.UnloadSceneAlreadyUnloadedGuarded");
+    SKIP_IF_NO_GAME(result);
+    game &g = *result;
+
+    g.create_scene(scene_a, build_scene_a);
+
+#ifndef NDEBUG
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    EXPECT_DEATH(g.unload_scene(scene_a), "scene is already unloaded");
+#else
+    // Release: guard-return, no-op on an already-unloaded scene.
+    g.unload_scene(scene_a);
+    EXPECT_EQ(g.status(scene_a), scene_status::unloaded);
+    EXPECT_EQ(g.entities().size(), 0u);
+#endif
+}
+
+TEST_F(GameTests, StatusUnregisteredIdGuarded)
+{
+    auto result = game::create("GameTests.StatusUnregisteredIdGuarded");
+    SKIP_IF_NO_GAME(result);
+    game &g = *result;
+
+#ifndef NDEBUG
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
+    EXPECT_DEATH(g.status(scene_a), "scene is not registered");
+#else
+    // Release: guard-return, unregistered id is a well-defined unloaded rather than UB.
+    EXPECT_EQ(g.status(scene_a), scene_status::unloaded);
+#endif
+}
+
+TEST_F(GameTests, MoveConstructorNoDoubleDestroy)
+{
+    auto result = game::create("GameTests.MoveConstructorNoDoubleDestroy", 320, 240, colorcoe::red());
+    SKIP_IF_NO_GAME(result);
+
+    game moved(std::move(*result));
+
+    // Different from create()'s default background_color, so this proves state actually
+    // transferred, not just that nothing crashed - both destructors run cleanly at scope
+    // exit with no double glfwTerminate()/logcoe::shutdown()/soundcoe::shutdown().
+    EXPECT_EQ(moved.background_color(), colorcoe::red());
+}
