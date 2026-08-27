@@ -55,6 +55,8 @@ namespace gamecoe
     void command_buffer::clear()
     {
         m_spawn_transforms.clear();
+        m_spawn_transforms.shrink_to_fit();
         m_commands.clear();
+        m_commands.shrink_to_fit();
     }
 } // namespace gamecoe

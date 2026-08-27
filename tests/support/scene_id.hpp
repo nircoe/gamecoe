@@ -8,8 +8,8 @@ namespace gamecoe
 {
     enum class scene_id : std::uint16_t
     {
-        TestSceneA = 1,
-        TestSceneB = 2,
+        TestScene1 = 1,
+        TestScene2 = 2,
     };
 
     inline std::string to_string(scene_id id)

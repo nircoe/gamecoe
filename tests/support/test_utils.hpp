@@ -8,6 +8,12 @@
 #include <gamecoe/component/transform.hpp>
 #include <vector>
 #include <algorithm>
+#define SKIP_IF_NOT(condition, message) \
+    if (!(condition)) \
+    { \
+        GTEST_SKIP() << message; \
+    }
+
 namespace test_utils
 {
     // Fatally asserts mgr has exactly one entity, then writes its handle to out (for tests that flush one spawn and need its real handle).

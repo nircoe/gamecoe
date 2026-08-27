@@ -17,9 +17,12 @@
 namespace gamecoe
 {
     game::game(window &&main_window, const Color &background_color)
-        : m_entities(), m_window(std::move(main_window)), m_scenes(), m_active_scenes(),
-          m_background_color(background_color)
+        : m_window(std::move(main_window)), m_background_color(background_color)
     {
+#if GAMECOE_USE_OPENGL
+        auto bg = m_background_color.normalized();
+        glClearColor(bg.r, bg.g, bg.b, bg.a);
+#endif
     }
 
     game::game(game&& other) noexcept
@@ -65,6 +68,8 @@ namespace gamecoe
             }
         } gc;
 
+        // Always init at DEBUG so window::create()'s own info log below isn't silently dropped;
+        // narrows to the caller's requested log_level right after.
         logcoe::initialize(logcoe::LogLevel::DEBUG, title);
         gc.logcoe_up = true;
 
@@ -92,7 +97,7 @@ namespace gamecoe
         if (!audio_dir) return std::unexpected(audio_dir.error());
 
         soundcoe::init_config resolved_config = soundcoe_config;
-        resolved_config.audioRootDirectory = *audio_dir;
+        resolved_config.audioRootDirectory = std::move(*audio_dir);
 
         if (!soundcoe::initialize(resolved_config))
             return std::unexpected(detail::make_error(error_code::soundcoe_init_failure,
@@ -126,6 +131,10 @@ namespace gamecoe
     void game::set_background_color(const Color &background_color)
     {
         m_background_color = background_color;
+#if GAMECOE_USE_OPENGL
+        auto bg = m_background_color.normalized();
+        glClearColor(bg.r, bg.g, bg.b, bg.a);
+#endif
     }
 
     void game::set_log_level(logcoe::LogLevel level)
@@ -148,12 +157,13 @@ namespace gamecoe
 
     void game::create_scene(scene_id id, scene_builder builder, std::int8_t layer)
     {
-        GAMECOE_ASSERT_LOG(!m_scenes.contains(id), "game::create_scene(): scene is already registered");
-        if (m_scenes.contains(id)) return;
+        const bool exists = m_scenes.contains(id);
+        GAMECOE_ASSERT_LOG(!exists, "game::create_scene(): scene is already registered");
+        if (exists) return;
         GAMECOE_ASSERT_LOG(builder != nullptr, "game::create_scene(): scene builder is null");
         if (!builder) return;
 
-        m_scenes.emplace(id, scene_metadata{ command_buffer{}, {}, builder, layer, scene_status::unloaded });
+        m_scenes.emplace(id, scene_metadata(builder, layer));
         logcoe::debug("game::create_scene(): registered scene \"" + to_string(id) + "\"");
     }
 
@@ -167,25 +177,33 @@ namespace gamecoe
         GAMECOE_ASSERT_LOG(meta.status == scene_status::unloaded, "game::load_scene(): scene is not unloaded");
         if (meta.status != scene_status::unloaded) return;
 
-        if (!soundcoe::preloadScene(to_string(id)))
-            logcoe::warning("game::load_scene(): no audio preloaded for scene \"" + to_string(id) + "\"");
+        const std::string scene_name = to_string(id);
+
+        if (!soundcoe::preloadScene(scene_name))
+            logcoe::warning("game::load_scene(): no audio preloaded for scene \"" + scene_name + "\"");
 
         meta.builder(meta.pending);
 
         meta.status = scene_status::loaded;
-        logcoe::info("game::load_scene(): loaded scene \"" + to_string(id) + "\" (" +
+        logcoe::info("game::load_scene(): loaded scene \"" + scene_name + "\" (" +
                      std::to_string(meta.pending.spawn_count()) + " pending entities)");
     }
 
     std::vector<entity> game::collect_scene_entities(scene_id id)
     {
         std::vector<entity> matches;
-        m_entities.for_each_all<components::scene_tag>(
-            [id, &matches](entity e, const components::scene_tag &tag)
-            {
-                if (tag.id == id) matches.push_back(e);
-            });
+        collect_scene_entities(id, matches);
         return matches;
+    }
+
+    void game::collect_scene_entities(scene_id id, std::vector<entity>& out)
+    {
+        out.clear();
+        m_entities.for_each_all<components::scene_tag>(
+            [id, &out](entity e, const components::scene_tag &tag)
+            {
+                if (tag.id == id) out.push_back(e);
+            });
     }
 
     void game::activate_scene(scene_id id)
@@ -217,8 +235,9 @@ namespace gamecoe
         meta.status = scene_status::active;
 
         // Inserted sorted by layer so play()'s iteration order is already correct, no later re-shuffle.
+        const std::int8_t new_layer = meta.layer;
         auto pos = std::upper_bound(m_active_scenes.begin(), m_active_scenes.end(), id,
-            [this](scene_id a, scene_id b) { return m_scenes.at(a).layer < m_scenes.at(b).layer; });
+            [this, new_layer](scene_id, scene_id b) { return new_layer < m_scenes.at(b).layer; });
         m_active_scenes.insert(pos, id);
 
         logcoe::info("game::activate_scene(): activated scene \"" + to_string(id) + "\" (" +
@@ -237,14 +256,16 @@ namespace gamecoe
 
         std::erase(m_active_scenes, id);
 
-        meta.paused_active.clear();
-        std::vector<entity> scene_entities = collect_scene_entities(id);
-        for (entity e : scene_entities)
+        collect_scene_entities(id, meta.paused_active);
+
+        std::size_t actives = 0;
+        for (entity e : meta.paused_active)
         {
             if (!m_entities.is_active(e)) continue;
-            meta.paused_active.push_back(e);
             m_entities.deactivate(e);
+            meta.paused_active[actives++] = e;
         }
+        meta.paused_active.erase(meta.paused_active.begin() + actives, meta.paused_active.end());
 
         meta.status = scene_status::inactive;
 
@@ -264,6 +285,8 @@ namespace gamecoe
 
         std::erase(m_active_scenes, id);
 
+        const std::string scene_name = to_string(id);
+
         std::size_t destroyed_count = 0;
         if (meta.status != scene_status::loaded)
         {
@@ -273,14 +296,14 @@ namespace gamecoe
                 m_entities.destroy(e);
         }
 
-        if (!soundcoe::unloadScene(to_string(id)))
-            logcoe::debug("game::unload_scene(): soundcoe had nothing loaded for scene \"" + to_string(id) + "\"");
+        if (!soundcoe::unloadScene(scene_name))
+            logcoe::debug("game::unload_scene(): soundcoe had nothing loaded for scene \"" + scene_name + "\"");
 
         meta.pending.clear();
         meta.paused_active.clear();
         meta.status = scene_status::unloaded;
 
-        logcoe::info("game::unload_scene(): unloaded scene \"" + to_string(id) + "\" (" +
+        logcoe::info("game::unload_scene(): unloaded scene \"" + scene_name + "\" (" +
                      std::to_string(destroyed_count) + " destroyed entities)");
     }
 
@@ -292,8 +315,6 @@ namespace gamecoe
             inputcoe::detail::update();
 
 #if GAMECOE_USE_OPENGL
-            auto bg = m_background_color.normalized();
-            glClearColor(bg.r, bg.g, bg.b, bg.a);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 #endif
             // System execution, rendering and collision wire in here via later tickets.

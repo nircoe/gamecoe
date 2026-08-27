@@ -4,13 +4,10 @@
 #include <gamecoe/core/window.hpp>
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
+#include <support/test_utils.hpp>
 #include <optional>
 
-#define SKIP_IF_NO_GL() \
-    if (!s_gl_ready) \
-    { \
-        GTEST_SKIP() << "no display/GL context available"; \
-    }
+#define SKIP_IF_NO_GL() SKIP_IF_NOT(s_gl_ready, "no display/GL context available")
 
 //==============================================================================
 //              GLContextTest - shared GL context fixture base
