@@ -157,6 +157,8 @@ namespace gamecoe
 
     void game::create_scene(scene_id id, scene_builder builder, std::int8_t layer)
     {
+        GAMECOE_ASSERT_LOG(!m_playing, "game::create_scene(): scene cannot be created during game::play()");
+        if (m_playing) return;
         const bool exists = m_scenes.contains(id);
         GAMECOE_ASSERT_LOG(!exists, "game::create_scene(): scene is already registered");
         if (exists) return;
@@ -176,6 +178,13 @@ namespace gamecoe
         scene_metadata &meta = it->second;
         GAMECOE_ASSERT_LOG(meta.status == scene_status::unloaded, "game::load_scene(): scene is not unloaded");
         if (meta.status != scene_status::unloaded) return;
+
+        if (!m_playing)
+        {
+            // Not playing yet, queue this for prepare_to_play()'s startup drain instead of running now.
+            m_pending_scene_ops.push_back({ id, scene_status::loaded });
+            return;
+        }
 
         const std::string scene_name = to_string(id);
 
@@ -217,8 +226,20 @@ namespace gamecoe
                            "game::activate_scene(): scene is not loaded or inactive");
         if (meta.status != scene_status::loaded && meta.status != scene_status::inactive) return;
 
+        if (!m_playing)
+        {
+            // Not playing yet, queue this for prepare_to_play()'s startup drain instead of running now.
+            m_pending_scene_ops.push_back({ id, scene_status::active });
+            return;
+        }
+
+        // meta.status is set to active before the pending command_buffer flushes,
+        // so if a potential command will call activate_scene on this id - it will see the status as active
+        const scene_status prev_status = meta.status;
+        meta.status = scene_status::active;
+
         std::size_t activated_count = 0;
-        if (meta.status == scene_status::loaded)
+        if (prev_status == scene_status::loaded)
         {
             activated_count = meta.pending.spawn_count();
             meta.pending.flush(m_entities, id);
@@ -231,8 +252,6 @@ namespace gamecoe
                 if (m_entities.valid(e)) m_entities.activate(e);
             meta.paused_active.clear();
         }
-
-        meta.status = scene_status::active;
 
         // Inserted sorted by layer so play()'s iteration order is already correct, no later re-shuffle.
         const std::int8_t new_layer = meta.layer;
@@ -253,6 +272,13 @@ namespace gamecoe
         scene_metadata &meta = it->second;
         GAMECOE_ASSERT_LOG(meta.status == scene_status::active, "game::deactivate_scene(): scene is not active");
         if (meta.status != scene_status::active) return;
+
+        if (!m_playing)
+        {
+            // Not playing yet, queue this for prepare_to_play()'s startup drain instead of running now.
+            m_pending_scene_ops.push_back({ id, scene_status::inactive });
+            return;
+        }
 
         std::erase(m_active_scenes, id);
 
@@ -283,6 +309,13 @@ namespace gamecoe
         GAMECOE_ASSERT_LOG(meta.status != scene_status::unloaded, "game::unload_scene(): scene is already unloaded");
         if (meta.status == scene_status::unloaded) return;
 
+        if (!m_playing)
+        {
+            // Not playing yet, queue this for prepare_to_play()'s startup drain instead of running now.
+            m_pending_scene_ops.push_back({ id, scene_status::unloaded });
+            return;
+        }
+
         std::erase(m_active_scenes, id);
 
         const std::string scene_name = to_string(id);
@@ -307,8 +340,28 @@ namespace gamecoe
                      std::to_string(destroyed_count) + " destroyed entities)");
     }
 
+    void game::prepare_to_play()
+    {
+        m_playing = true;
+
+        for (const pending_scene_op &op : m_pending_scene_ops)
+        {
+            switch (op.target_status)
+            {
+                case scene_status::unloaded: unload_scene(op.id);     break;
+                case scene_status::loaded:   load_scene(op.id);       break;
+                case scene_status::active:   activate_scene(op.id);   break;
+                case scene_status::inactive: deactivate_scene(op.id); break;
+            }
+        }
+
+        m_pending_scene_ops.clear();
+    }
+
     void game::play()
     {
+        prepare_to_play();
+
         while (m_window->active())
         {
             timecoe::detail::update();

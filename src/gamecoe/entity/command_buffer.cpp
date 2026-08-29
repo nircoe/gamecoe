@@ -44,8 +44,12 @@ namespace gamecoe
         }
 
         resolver r(created);
-        for (auto& cmd : m_commands)
-            cmd(ents, r);
+        while (!m_commands.empty())
+        {
+            auto batch = std::move(m_commands);
+            for (auto& cmd : batch)
+                cmd(ents, r);
+        }
 
         logcoe::info("command_buffer::flush(): flushed " + std::to_string(created.size()) + " entities");
 

@@ -12,6 +12,11 @@
 
 using namespace gamecoe;
 
+namespace gamecoe
+{
+    void test_prepare_to_play(game& g) { g.prepare_to_play(); }
+} // namespace gamecoe
+
 #define SKIP_IF_NO_GAME(result) \
     SKIP_IF_NOT((result).has_value(), "game::create() failed - no display/GL context available")
 
@@ -68,6 +73,7 @@ protected:
 TEST_F(GameTests, SceneLifecycleTransitions)
 {
     g->create_scene(scene_a, build_scene_a);
+    test_prepare_to_play(*g);
     EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
     EXPECT_EQ(to_string(scene_a), "TestScene1");
 
@@ -96,6 +102,7 @@ TEST_F(GameTests, SceneLifecycleTransitions)
 TEST_F(GameTests, LoadDefersFlushUntilActivate)
 {
     g->create_scene(scene_a, build_scene_a);
+    test_prepare_to_play(*g);
     g->load_scene(scene_a);
     EXPECT_EQ(g->entities().size(), 0u);
 
@@ -114,6 +121,7 @@ TEST_F(GameTests, LoadDefersFlushUntilActivate)
 TEST_F(GameTests, DeactivateReactivateMovesPartitions)
 {
     g->create_scene(scene_a, build_scene_a);
+    test_prepare_to_play(*g);
     g->load_scene(scene_a);
     g->activate_scene(scene_a);
 
@@ -136,6 +144,7 @@ TEST_F(GameTests, DeactivateReactivateMovesPartitions)
 TEST_F(GameTests, DeactivateReactivateSkipsIndividuallyDeactivated)
 {
     g->create_scene(scene_a, build_scene_a);
+    test_prepare_to_play(*g);
     g->load_scene(scene_a);
     g->activate_scene(scene_a);
 
@@ -157,6 +166,7 @@ TEST_F(GameTests, UnloadDestroysSceneEntities)
 {
     g->create_scene(scene_a, build_scene_a);
     g->create_scene(scene_b, build_scene_b);
+    test_prepare_to_play(*g);
     g->load_scene(scene_a);
     g->activate_scene(scene_a);
     g->load_scene(scene_b);
@@ -171,6 +181,7 @@ TEST_F(GameTests, UnloadDestroysSceneEntities)
 TEST_F(GameTests, UnloadThenReloadDoesNotDoubleQueue)
 {
     g->create_scene(scene_a, build_scene_a);
+    test_prepare_to_play(*g);
     g->load_scene(scene_a);
     g->unload_scene(scene_a);
     EXPECT_EQ(count_scene_entities(*g, scene_a), 0u);
@@ -185,6 +196,7 @@ TEST_F(GameTests, UnloadThenReloadDoesNotDoubleQueue)
 TEST_F(GameTests, CreateEntityTagsScene)
 {
     g->create_scene(scene_a, build_scene_a);
+    test_prepare_to_play(*g);
     g->load_scene(scene_a);
     g->activate_scene(scene_a);
 
@@ -213,6 +225,7 @@ TEST_F(GameTests, CreateEntityRequiresActiveScene)
 #ifndef NDEBUG
     g->create_scene(scene_a, build_scene_a);
     g->create_scene(scene_b, build_scene_b);
+    test_prepare_to_play(*g);
 
     EXPECT_DEATH(g->create_entity(static_cast<scene_id>(999)), "scene is not registered");
 
@@ -230,6 +243,7 @@ TEST_F(GameTests, MultipleActiveScenesShareOneRegistry)
 {
     g->create_scene(scene_a, build_scene_a);
     g->create_scene(scene_b, build_scene_b);
+    test_prepare_to_play(*g);
     g->load_scene(scene_a);
     g->activate_scene(scene_a);
     g->load_scene(scene_b);
@@ -319,6 +333,7 @@ TEST_F(GameTests, UnloadSceneUnregisteredGuarded)
 TEST_F(GameTests, LoadSceneNotUnloadedGuarded)
 {
     g->create_scene(scene_a, build_scene_a);
+    test_prepare_to_play(*g);
     g->load_scene(scene_a);
 
 #ifndef NDEBUG
@@ -334,6 +349,7 @@ TEST_F(GameTests, LoadSceneNotUnloadedGuarded)
 TEST_F(GameTests, ActivateSceneAlreadyActiveGuarded)
 {
     g->create_scene(scene_a, build_scene_a);
+    test_prepare_to_play(*g);
     g->load_scene(scene_a);
     g->activate_scene(scene_a);
 
@@ -350,6 +366,7 @@ TEST_F(GameTests, ActivateSceneAlreadyActiveGuarded)
 TEST_F(GameTests, DeactivateSceneNotActiveGuarded)
 {
     g->create_scene(scene_a, build_scene_a);
+    test_prepare_to_play(*g);
     g->load_scene(scene_a);
 
 #ifndef NDEBUG
@@ -365,6 +382,7 @@ TEST_F(GameTests, DeactivateSceneNotActiveGuarded)
 TEST_F(GameTests, UnloadSceneAlreadyUnloadedGuarded)
 {
     g->create_scene(scene_a, build_scene_a);
+    test_prepare_to_play(*g);
 
 #ifndef NDEBUG
     EXPECT_DEATH(g->unload_scene(scene_a), "scene is already unloaded");

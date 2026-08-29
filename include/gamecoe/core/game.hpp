@@ -32,6 +32,12 @@ namespace gamecoe
 
     enum class scene_status : std::uint8_t { unloaded, loaded, active, inactive };
 
+    class game;
+
+#if GAMECOE_USE_TESTCOE
+    void test_prepare_to_play(game& g);
+#endif
+
     class game
     {
         struct scene_metadata
@@ -45,17 +51,30 @@ namespace gamecoe
             scene_metadata(scene_builder builder, std::int8_t layer) : builder(builder), layer(layer) {}
         };
 
+        struct pending_scene_op
+        {
+            scene_id      id;
+            scene_status  target_status;
+        };
+
         gamecoe::entities m_entities;
         std::optional<window> m_window;
         std::flat_map<scene_id, scene_metadata> m_scenes;
         std::vector<scene_id> m_active_scenes;   // sorted by layer
+        std::vector<pending_scene_op> m_pending_scene_ops;
         Color m_background_color;
+        bool m_playing = false;
 
         game(window &&main_window, const Color &background_color);
         // Returns a snapshot of the scene's entities
         std::vector<entity> collect_scene_entities(scene_id id);
         // Same, but fills (clearing first) an existing buffer instead of allocating a new one
         void collect_scene_entities(scene_id id, std::vector<entity>& out);
+        void prepare_to_play();
+
+#if GAMECOE_USE_TESTCOE
+        friend void test_prepare_to_play(game&);
+#endif
 
     public:
         game(const game&) = delete;
