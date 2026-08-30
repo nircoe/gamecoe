@@ -6,6 +6,7 @@
 #include <inputcoe.hpp>
 #include <timecoe.hpp>
 #include <algorithm>
+#include <limits>
 #include <utility>
 #include <string>
 
@@ -27,9 +28,22 @@ namespace gamecoe
             if (glfw_up)     glfwTerminate();
             if (logcoe_up)   logcoe::shutdown();
         }
+
+        std::int8_t clamp_layer(int layer, const std::string &caller)
+        {
+            constexpr int min_layer = std::numeric_limits<std::int8_t>::min();
+            constexpr int max_layer = std::numeric_limits<std::int8_t>::max();
+            if (layer < min_layer || layer > max_layer)
+            {
+                logcoe::warning(caller + ": layer " + std::to_string(layer) + " out of range [" +
+                                 std::to_string(min_layer) + ", " + std::to_string(max_layer) + "], clamped");
+                layer = std::clamp(layer, min_layer, max_layer);
+            }
+            return static_cast<std::int8_t>(layer);
+        }
     }
 
-    game::game(window &&main_window, const Color &background_color)
+    game::game(gamecoe::window &&main_window, const Color &background_color)
         : m_window(std::move(main_window)), m_background_color(background_color)
     {
 #if GAMECOE_USE_OPENGL
@@ -98,7 +112,7 @@ namespace gamecoe
                                                       "game::create(): Failed to initialize glfw"));
         gc.glfw_up = true;
 
-        auto main_window = window::create(title, width, height);
+        auto main_window = gamecoe::window::create(title, width, height);
         if (!main_window) return std::unexpected(main_window.error());
 
 #if GAMECOE_USE_OPENGL
@@ -143,6 +157,11 @@ namespace gamecoe
         return m_entities;
     }
 
+    const gamecoe::window* game::window() const
+    {
+        return m_window.has_value() ? &(*m_window) : nullptr;
+    }
+
     const Color& game::background_color() const
     {
         return m_background_color;
@@ -150,6 +169,9 @@ namespace gamecoe
 
     void game::set_background_color(const Color &background_color)
     {
+        GAMECOE_ASSERT_LOG(m_window.has_value(), "game::set_background_color(): called on a moved-from game");
+        if (!m_window.has_value()) return;
+
         m_background_color = background_color;
 #if GAMECOE_USE_OPENGL
         auto bg = m_background_color.normalized();
@@ -174,12 +196,55 @@ namespace gamecoe
         return it != m_scenes.end() ? &it->second : nullptr;
     }
 
+    void game::insert_active_scene_sorted(scene_id id, std::int8_t layer)
+    {
+        auto pos = std::upper_bound(m_active_scenes.begin(), m_active_scenes.end(), id,
+            [this, layer](scene_id, scene_id b) { return layer < m_scenes.at(b).layer; });
+        m_active_scenes.insert(pos, id);
+    }
+
+    bool game::has_scene(scene_id id) const
+    {
+        return m_scenes.contains(id);
+    }
+
     scene_status game::status(scene_id id) const
     {
         const scene_metadata* meta = find_scene(id);
         GAMECOE_ASSERT_LOG(meta != nullptr, "game::status(): scene is not registered");
         if (meta == nullptr) return scene_status::unloaded;
         return meta->status;
+    }
+
+    std::int8_t game::scene_layer(scene_id id) const
+    {
+        const scene_metadata* meta = find_scene(id);
+        GAMECOE_ASSERT_LOG(meta != nullptr, "game::scene_layer(): scene is not registered");
+        if (meta == nullptr) return 0;
+        return meta->layer;
+    }
+
+    void game::set_scene_layer(scene_id id, int layer)
+    {
+        scene_metadata* meta = find_scene(id);
+        GAMECOE_ASSERT_LOG(meta != nullptr, "game::set_scene_layer(): scene is not registered");
+        if (meta == nullptr) return;
+
+        const std::int8_t new_layer = clamp_layer(layer, "game::set_scene_layer()");
+        if (new_layer == meta->layer) return;
+
+        const std::int8_t old_layer = meta->layer;
+
+        if (meta->status == scene_status::active)
+        {
+            std::erase(m_active_scenes, id);
+            insert_active_scene_sorted(id, new_layer);
+        }
+
+        meta->layer = new_layer;
+
+        logcoe::debug("game::set_scene_layer(): scene \"" + to_string(id) + "\" layer changed from " +
+                      std::to_string(old_layer) + " to " + std::to_string(new_layer));
     }
 
     const std::vector<scene_id>& game::active_scenes() const
@@ -198,7 +263,7 @@ namespace gamecoe
         return matches;
     }
 
-    void game::create_scene(scene_id id, scene_builder builder, std::int8_t layer)
+    void game::create_scene(scene_id id, scene_builder builder, int layer)
     {
         GAMECOE_ASSERT_LOG(!m_playing, "game::create_scene(): scene cannot be created during game::play()");
         if (m_playing) return;
@@ -208,7 +273,7 @@ namespace gamecoe
         GAMECOE_ASSERT_LOG(builder != nullptr, "game::create_scene(): scene builder is null");
         if (!builder) return;
 
-        m_scenes.emplace(id, scene_metadata(builder, layer));
+        m_scenes.emplace(id, scene_metadata(builder, clamp_layer(layer, "game::create_scene()")));
         logcoe::debug("game::create_scene(): registered scene \"" + to_string(id) + "\"");
     }
 
@@ -277,11 +342,7 @@ namespace gamecoe
             meta->paused_active.clear();
         }
 
-        // Inserted sorted by layer so play()'s iteration order is already correct, no later re-shuffle.
-        const std::int8_t new_layer = meta->layer;
-        auto pos = std::upper_bound(m_active_scenes.begin(), m_active_scenes.end(), id,
-            [this, new_layer](scene_id, scene_id b) { return new_layer < m_scenes.at(b).layer; });
-        m_active_scenes.insert(pos, id);
+        insert_active_scene_sorted(id, meta->layer);
 
         logcoe::info("game::activate_scene(): activated scene \"" + to_string(id) + "\" (" +
                      std::to_string(activated_count) + " entities)");
@@ -385,6 +446,9 @@ namespace gamecoe
 
     void game::play()
     {
+        GAMECOE_ASSERT_LOG(m_window.has_value(), "game::play(): called on a moved-from game");
+        if (!m_window.has_value()) return;
+
         prepare_to_play();
 
         while (m_window->active())

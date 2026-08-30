@@ -58,16 +58,17 @@ namespace gamecoe
         };
 
         gamecoe::entities m_entities;
-        std::optional<window> m_window;
+        std::optional<gamecoe::window> m_window;
         std::flat_map<scene_id, scene_metadata> m_scenes;
         std::vector<scene_id> m_active_scenes;   // sorted by layer
         std::vector<pending_scene_op> m_pending_scene_ops;
         Color m_background_color;
         bool m_playing = false;
 
-        game(window &&main_window, const Color &background_color);
+        game(gamecoe::window &&main_window, const Color &background_color);
         scene_metadata* find_scene(scene_id id);
         const scene_metadata* find_scene(scene_id id) const;
+        void insert_active_scene_sorted(scene_id id, std::int8_t layer);
         void prepare_to_play();
 
 #if GAMECOE_USE_TESTCOE
@@ -92,19 +93,23 @@ namespace gamecoe
 
         gamecoe::entities& entities();
         const gamecoe::entities& entities() const;
+        const gamecoe::window* window() const;
 
         const Color& background_color() const;
         void set_background_color(const Color &background_color);
 
         void set_log_level(logcoe::LogLevel level);
 
-        void create_scene(scene_id id, scene_builder builder, std::int8_t layer = 0);
+        void create_scene(scene_id id, scene_builder builder, int layer = 0);
         void load_scene(scene_id id);
         void activate_scene(scene_id id);
         void deactivate_scene(scene_id id);
         void unload_scene(scene_id id);
 
+        bool has_scene(scene_id id) const;
         scene_status status(scene_id id) const;
+        void set_scene_layer(scene_id id, int layer);
+        std::int8_t scene_layer(scene_id id) const;
         const std::vector<scene_id>& active_scenes() const;
         // Returns a snapshot of the scene's entities (active + inactive)
         std::vector<entity> scene_entities(scene_id id) const;
