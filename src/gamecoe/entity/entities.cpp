@@ -12,6 +12,7 @@
 namespace gamecoe
 {
     std::uint32_t entities::s_component_id{0};
+    std::uint32_t entities::s_current_entity_id{0};
 
     entity entities::create(components::transform initial_transform)
     {
@@ -20,11 +21,11 @@ namespace gamecoe
 
         if (m_recycle_ids.empty())
         {
-            id = m_current_entity_id;
+            id = s_current_entity_id;
             GAMECOE_ASSERT_LOG(id <= entity::MAX_ENTITIES, "entities::create(): entity limit reached");
             if (id > entity::MAX_ENTITIES) return entity::invalid();
 
-            m_current_entity_id++;
+            s_current_entity_id++;
             generation = 0;
             m_generations.push_back(generation);
             m_self_active.push_back(true);
@@ -97,7 +98,6 @@ namespace gamecoe
         m_recycle_ids.clear();
         m_generations.clear();
         m_self_active.clear();
-        m_current_entity_id = 0;
         logcoe::info("entities::clear(): cleared all entities");
     }
 
@@ -189,8 +189,8 @@ namespace gamecoe
 
     std::size_t entities::size() const
     {
-        GAMECOE_ASSERT_LOG(static_cast<std::size_t>(m_current_entity_id) >= m_recycle_ids.size(), "entities::size(): recycle count exceeds allocated id count");
-        return static_cast<std::size_t>(m_current_entity_id) - m_recycle_ids.size();
+        const component_pool<components::transform>* pool = find_pool<components::transform>();
+        return pool ? pool->size() : 0;
     }
 
     void entities::set_parent(entity child, entity parent)

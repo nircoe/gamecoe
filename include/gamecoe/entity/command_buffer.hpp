@@ -47,8 +47,6 @@ namespace gamecoe
         std::vector<command> m_commands;
 
     public:
-        command_buffer() = default;
-        ~command_buffer() = default;
         // Queues an entity with the given transform (default if omitted). No real entity until flush().
         placeholder spawn(components::transform t = components::transform{});
 
