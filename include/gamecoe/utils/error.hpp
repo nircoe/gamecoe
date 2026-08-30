@@ -7,6 +7,7 @@ namespace gamecoe
     enum class error_code
     {
         file_read_failure,
+        game_already_alive,
         glad_load_failure,
         glfw_init_failure,
         image_load_failure,

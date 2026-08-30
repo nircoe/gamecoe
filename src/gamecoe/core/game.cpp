@@ -1,4 +1,5 @@
 #include <gamecoe/core/game.hpp>
+#include <gamecoe/graphics/vertex_array.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 #include <gamecoe/utils/paths.hpp>
 #include <gamecoe_config.hpp>
@@ -16,6 +17,18 @@
 
 namespace gamecoe
 {
+    namespace
+    {
+        bool g_game_alive = false;
+
+        void shutdown_subsystems(bool logcoe_up, bool glfw_up, bool soundcoe_up)
+        {
+            if (soundcoe_up) soundcoe::shutdown();
+            if (glfw_up)     glfwTerminate();
+            if (logcoe_up)   logcoe::shutdown();
+        }
+    }
+
     game::game(window &&main_window, const Color &background_color)
         : m_window(std::move(main_window)), m_background_color(background_color)
     {
@@ -38,10 +51,10 @@ namespace gamecoe
         if (!m_window.has_value()) return; // already moved from, nothing to clean up
 
         m_entities.clear();
+        graphics::vertex_array::destroy_shape_vertex_arrays();
         m_window.reset();
-        glfwTerminate();
-        soundcoe::shutdown();
-        logcoe::shutdown();
+        shutdown_subsystems(true, true, true);
+        g_game_alive = false;
     }
 
     std::expected<game, error> game::create(const std::string &title, std::uint32_t width,
@@ -52,9 +65,14 @@ namespace gamecoe
 #endif
                                             )
     {
+        GAMECOE_ASSERT_LOG(!g_game_alive, "game::create(): a game instance is already alive");
+        if (g_game_alive)
+            return std::unexpected(detail::make_error(error_code::game_already_alive,
+                                                      "game::create(): a game instance is already alive"));
+
         struct garbage_collector
         {
-            bool logcoe_up = false, glfw_up = false, soundcoe_up = false;
+            bool logcoe_up = false, glfw_up = false, soundcoe_up = false, game_claimed = false;
 
             garbage_collector() = default;
             garbage_collector(const garbage_collector&) = delete;
@@ -62,11 +80,13 @@ namespace gamecoe
 
             ~garbage_collector()
             {
-                if (soundcoe_up) soundcoe::shutdown();
-                if (glfw_up)     glfwTerminate();
-                if (logcoe_up)   logcoe::shutdown();
+                shutdown_subsystems(logcoe_up, glfw_up, soundcoe_up);
+                if (game_claimed) g_game_alive = false;
             }
         } gc;
+
+        g_game_alive = true;
+        gc.game_claimed = true;
 
         // Always init at DEBUG so window::create()'s own info log below isn't silently dropped;
         // narrows to the caller's requested log_level right after.
@@ -105,7 +125,7 @@ namespace gamecoe
         gc.soundcoe_up = true;
 #endif
 
-        gc.logcoe_up = gc.glfw_up = gc.soundcoe_up = false;
+        gc.logcoe_up = gc.glfw_up = gc.soundcoe_up = gc.game_claimed = false;
 
         logcoe::setLogLevel(log_level);
         logcoe::info("game::create(): created \"" + title + "\"");
