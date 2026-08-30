@@ -66,10 +66,8 @@ namespace gamecoe
         bool m_playing = false;
 
         game(window &&main_window, const Color &background_color);
-        // Returns a snapshot of the scene's entities
-        std::vector<entity> collect_scene_entities(scene_id id);
-        // Same, but fills (clearing first) an existing buffer instead of allocating a new one
-        void collect_scene_entities(scene_id id, std::vector<entity>& out);
+        scene_metadata* find_scene(scene_id id);
+        const scene_metadata* find_scene(scene_id id) const;
         void prepare_to_play();
 
 #if GAMECOE_USE_TESTCOE
@@ -108,6 +106,8 @@ namespace gamecoe
 
         scene_status status(scene_id id) const;
         const std::vector<scene_id>& active_scenes() const;
+        // Returns a snapshot of the scene's entities (active + inactive)
+        std::vector<entity> scene_entities(scene_id id) const;
 
         template <typename... Comps>
         entity create_entity(scene_id id, components::transform initial_transform = components::transform{}, Comps&&... comps);
@@ -125,12 +125,12 @@ namespace gamecoe
         static_assert((!hierarchy_component<std::decay_t<Comps>> && ...),
             "game::create_entity(): hierarchy components are managed - use entities::set_parent() instead");
 
-        auto it = m_scenes.find(id);
-        GAMECOE_ASSERT_LOG(it != m_scenes.end(), "game::create_entity(): scene is not registered");
+        const scene_metadata* meta = find_scene(id);
+        GAMECOE_ASSERT_LOG(meta != nullptr, "game::create_entity(): scene is not registered");
         // entities can only be created into an active scene.
-        GAMECOE_ASSERT_LOG(it == m_scenes.end() || it->second.status == scene_status::active,
+        GAMECOE_ASSERT_LOG(meta == nullptr || meta->status == scene_status::active,
                            "game::create_entity(): scene is not active");
-        if (it == m_scenes.end() || it->second.status != scene_status::active) return entity::invalid();
+        if (meta == nullptr || meta->status != scene_status::active) return entity::invalid();
 
         entity e = m_entities.create(std::move(initial_transform));
         m_entities.add_component<components::scene_tag>(e, components::scene_tag{ id });

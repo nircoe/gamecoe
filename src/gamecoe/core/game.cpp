@@ -162,17 +162,40 @@ namespace gamecoe
         logcoe::setLogLevel(level);
     }
 
-    scene_status game::status(scene_id id) const
+    game::scene_metadata* game::find_scene(scene_id id)
     {
         auto it = m_scenes.find(id);
-        GAMECOE_ASSERT_LOG(it != m_scenes.end(), "game::status(): scene is not registered");
-        if (it == m_scenes.end()) return scene_status::unloaded;
-        return it->second.status;
+        return it != m_scenes.end() ? &it->second : nullptr;
+    }
+
+    const game::scene_metadata* game::find_scene(scene_id id) const
+    {
+        auto it = m_scenes.find(id);
+        return it != m_scenes.end() ? &it->second : nullptr;
+    }
+
+    scene_status game::status(scene_id id) const
+    {
+        const scene_metadata* meta = find_scene(id);
+        GAMECOE_ASSERT_LOG(meta != nullptr, "game::status(): scene is not registered");
+        if (meta == nullptr) return scene_status::unloaded;
+        return meta->status;
     }
 
     const std::vector<scene_id>& game::active_scenes() const
     {
         return m_active_scenes;
+    }
+
+    std::vector<entity> game::scene_entities(scene_id id) const
+    {
+        std::vector<entity> matches;
+        m_entities.for_each_all<components::scene_tag>(
+            [id, &matches](entity e, const components::scene_tag &tag)
+            {
+                if (tag.id == id) matches.push_back(e);
+            });
+        return matches;
     }
 
     void game::create_scene(scene_id id, scene_builder builder, std::int8_t layer)
@@ -191,13 +214,12 @@ namespace gamecoe
 
     void game::load_scene(scene_id id)
     {
-        auto it = m_scenes.find(id);
-        GAMECOE_ASSERT_LOG(it != m_scenes.end(), "game::load_scene(): scene is not registered");
-        if (it == m_scenes.end()) return;
+        scene_metadata* meta = find_scene(id);
+        GAMECOE_ASSERT_LOG(meta != nullptr, "game::load_scene(): scene is not registered");
+        if (!meta) return;
 
-        scene_metadata &meta = it->second;
-        GAMECOE_ASSERT_LOG(meta.status == scene_status::unloaded, "game::load_scene(): scene is not unloaded");
-        if (meta.status != scene_status::unloaded) return;
+        GAMECOE_ASSERT_LOG(meta->status == scene_status::unloaded, "game::load_scene(): scene is not unloaded");
+        if (meta->status != scene_status::unloaded) return;
 
         if (!m_playing)
         {
@@ -211,40 +233,22 @@ namespace gamecoe
         if (!soundcoe::preloadScene(scene_name))
             logcoe::warning("game::load_scene(): no audio preloaded for scene \"" + scene_name + "\"");
 
-        meta.builder(meta.pending);
+        meta->builder(meta->pending);
 
-        meta.status = scene_status::loaded;
+        meta->status = scene_status::loaded;
         logcoe::info("game::load_scene(): loaded scene \"" + scene_name + "\" (" +
-                     std::to_string(meta.pending.spawn_count()) + " pending entities)");
-    }
-
-    std::vector<entity> game::collect_scene_entities(scene_id id)
-    {
-        std::vector<entity> matches;
-        collect_scene_entities(id, matches);
-        return matches;
-    }
-
-    void game::collect_scene_entities(scene_id id, std::vector<entity>& out)
-    {
-        out.clear();
-        m_entities.for_each_all<components::scene_tag>(
-            [id, &out](entity e, const components::scene_tag &tag)
-            {
-                if (tag.id == id) out.push_back(e);
-            });
+                     std::to_string(meta->pending.spawn_count()) + " pending entities)");
     }
 
     void game::activate_scene(scene_id id)
     {
-        auto it = m_scenes.find(id);
-        GAMECOE_ASSERT_LOG(it != m_scenes.end(), "game::activate_scene(): scene is not registered");
-        if (it == m_scenes.end()) return;
+        scene_metadata* meta = find_scene(id);
+        GAMECOE_ASSERT_LOG(meta != nullptr, "game::activate_scene(): scene is not registered");
+        if (!meta) return;
 
-        scene_metadata &meta = it->second;
-        GAMECOE_ASSERT_LOG(meta.status == scene_status::loaded || meta.status == scene_status::inactive,
+        GAMECOE_ASSERT_LOG(meta->status == scene_status::loaded || meta->status == scene_status::inactive,
                            "game::activate_scene(): scene is not loaded or inactive");
-        if (meta.status != scene_status::loaded && meta.status != scene_status::inactive) return;
+        if (meta->status != scene_status::loaded && meta->status != scene_status::inactive) return;
 
         if (!m_playing)
         {
@@ -253,28 +257,28 @@ namespace gamecoe
             return;
         }
 
-        // meta.status is set to active before the pending command_buffer flushes,
+        // meta->status is set to active before the pending command_buffer flushes,
         // so if a potential command will call activate_scene on this id - it will see the status as active
-        const scene_status prev_status = meta.status;
-        meta.status = scene_status::active;
+        const scene_status prev_status = meta->status;
+        meta->status = scene_status::active;
 
         std::size_t activated_count = 0;
         if (prev_status == scene_status::loaded)
         {
-            activated_count = meta.pending.spawn_count();
-            meta.pending.flush(m_entities, id);
+            activated_count = meta->pending.spawn_count();
+            meta->pending.flush(m_entities, id);
         }
         else
         {
             // Only reactivate entities that were active before the deactivation of the scene.
-            activated_count = meta.paused_active.size();
-            for (entity e : meta.paused_active)
+            activated_count = meta->paused_active.size();
+            for (entity e : meta->paused_active)
                 if (m_entities.valid(e)) m_entities.activate(e);
-            meta.paused_active.clear();
+            meta->paused_active.clear();
         }
 
         // Inserted sorted by layer so play()'s iteration order is already correct, no later re-shuffle.
-        const std::int8_t new_layer = meta.layer;
+        const std::int8_t new_layer = meta->layer;
         auto pos = std::upper_bound(m_active_scenes.begin(), m_active_scenes.end(), id,
             [this, new_layer](scene_id, scene_id b) { return new_layer < m_scenes.at(b).layer; });
         m_active_scenes.insert(pos, id);
@@ -285,13 +289,12 @@ namespace gamecoe
 
     void game::deactivate_scene(scene_id id)
     {
-        auto it = m_scenes.find(id);
-        GAMECOE_ASSERT_LOG(it != m_scenes.end(), "game::deactivate_scene(): scene is not registered");
-        if (it == m_scenes.end()) return;
+        scene_metadata* meta = find_scene(id);
+        GAMECOE_ASSERT_LOG(meta != nullptr, "game::deactivate_scene(): scene is not registered");
+        if (!meta) return;
 
-        scene_metadata &meta = it->second;
-        GAMECOE_ASSERT_LOG(meta.status == scene_status::active, "game::deactivate_scene(): scene is not active");
-        if (meta.status != scene_status::active) return;
+        GAMECOE_ASSERT_LOG(meta->status == scene_status::active, "game::deactivate_scene(): scene is not active");
+        if (meta->status != scene_status::active) return;
 
         if (!m_playing)
         {
@@ -302,32 +305,29 @@ namespace gamecoe
 
         std::erase(m_active_scenes, id);
 
-        collect_scene_entities(id, meta.paused_active);
-
-        std::size_t actives = 0;
-        for (entity e : meta.paused_active)
-        {
-            if (!m_entities.is_active(e)) continue;
+        meta->paused_active.clear();
+        m_entities.for_each<components::scene_tag>(
+            [id, meta](entity e, const components::scene_tag &tag)
+            {
+                if (tag.id == id) meta->paused_active.push_back(e);
+            });
+        for (entity e : meta->paused_active)
             m_entities.deactivate(e);
-            meta.paused_active[actives++] = e;
-        }
-        meta.paused_active.erase(meta.paused_active.begin() + actives, meta.paused_active.end());
 
-        meta.status = scene_status::inactive;
+        meta->status = scene_status::inactive;
 
-        logcoe::info("game::deactivate_scene(): deactivated scene \"" + to_string(id) + "\" (" +
-                     std::to_string(meta.paused_active.size()) + " entities)");
+        logcoe::info("game::deactivate_scene(): deactivated " + std::to_string(meta->paused_active.size()) +
+                     " entities in scene \"" + to_string(id) + "\"");
     }
 
     void game::unload_scene(scene_id id)
     {
-        auto it = m_scenes.find(id);
-        GAMECOE_ASSERT_LOG(it != m_scenes.end(), "game::unload_scene(): scene is not registered");
-        if (it == m_scenes.end()) return;
+        scene_metadata* meta = find_scene(id);
+        GAMECOE_ASSERT_LOG(meta != nullptr, "game::unload_scene(): scene is not registered");
+        if (!meta) return;
 
-        scene_metadata &meta = it->second;
-        GAMECOE_ASSERT_LOG(meta.status != scene_status::unloaded, "game::unload_scene(): scene is already unloaded");
-        if (meta.status == scene_status::unloaded) return;
+        GAMECOE_ASSERT_LOG(meta->status != scene_status::unloaded, "game::unload_scene(): scene is already unloaded");
+        if (meta->status == scene_status::unloaded) return;
 
         if (!m_playing)
         {
@@ -341,20 +341,25 @@ namespace gamecoe
         const std::string scene_name = to_string(id);
 
         std::size_t destroyed_count = 0;
-        if (meta.status != scene_status::loaded)
+        if (meta->status != scene_status::loaded)
         {
-            std::vector<entity> scene_entities = collect_scene_entities(id);
-            destroyed_count = scene_entities.size();
-            for (entity e : scene_entities)
-                m_entities.destroy(e);
+            std::vector<entity> entities_to_destroy = scene_entities(id);
+            for (entity e : entities_to_destroy)
+            {
+                if (m_entities.valid(e))
+                {
+                    m_entities.destroy(e);
+                    ++destroyed_count;
+                }
+            }
         }
 
         if (!soundcoe::unloadScene(scene_name))
             logcoe::debug("game::unload_scene(): soundcoe had nothing loaded for scene \"" + scene_name + "\"");
 
-        meta.pending.clear();
-        meta.paused_active.clear();
-        meta.status = scene_status::unloaded;
+        meta->pending.clear();
+        meta->paused_active.clear();
+        meta->status = scene_status::unloaded;
 
         logcoe::info("game::unload_scene(): unloaded scene \"" + scene_name + "\" (" +
                      std::to_string(destroyed_count) + " destroyed entities)");
