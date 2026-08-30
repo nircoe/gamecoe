@@ -320,14 +320,14 @@ TEST_F(EntitiesTests, MandatoryTransform)
     {
         mgr.clear();
         entity e = mgr.create();
-        components::transform &t = mgr.transform(e);
-        t.position = glm::vec3(5.0f, 0.0f, 0.0f);
+        components::transform *t = mgr.transform(e);
+        t->position = glm::vec3(5.0f, 0.0f, 0.0f);
 
-        expect_vec3_near(mgr.get_component<components::transform>(e)->position, mgr.transform(e).position);
+        expect_vec3_near(mgr.get_component<components::transform>(e)->position, mgr.transform(e)->position);
 
         const entities &const_mgr = mgr;
-        const components::transform &const_t = const_mgr.transform(e);
-        expect_vec3_near(const_t.position, glm::vec3(5.0f, 0.0f, 0.0f));
+        const components::transform *const_t = const_mgr.transform(e);
+        expect_vec3_near(const_t->position, glm::vec3(5.0f, 0.0f, 0.0f));
     }
 }
 
@@ -1062,7 +1062,7 @@ TEST_F(EntitiesTests, AddComponentToInactiveEntity)
 {
     // Test 1: add_component() on an already-deactivated entity inserts the new component
     // straight into the inactive partition - it's hidden from extract<>() until activate(),
-    // even though it was never itself explicitly deactivated. The reference returned by
+    // even though it was never itself explicitly deactivated. The pointer returned by
     // add_component() must stay valid immediately after the call (regression guard against the
     // internal deactivate-on-insert swap relocating it before the caller reads from it).
     {
@@ -1071,12 +1071,13 @@ TEST_F(EntitiesTests, AddComponentToInactiveEntity)
         mgr.add_component<Position>(e, Position{1.0f, 2.0f, 3.0f});
         mgr.deactivate(e);
 
-        Velocity &vel_ref = mgr.add_component<Velocity>(e, Velocity{4.0f, 5.0f, 6.0f});
+        Velocity *vel_ref = mgr.add_component<Velocity>(e, Velocity{4.0f, 5.0f, 6.0f});
 
-        // Reference is valid right away, not just via a fresh get_component() afterward
-        EXPECT_EQ(vel_ref.dx, 4.0f);
-        EXPECT_EQ(vel_ref.dy, 5.0f);
-        EXPECT_EQ(vel_ref.dz, 6.0f);
+        // Pointer is valid right away, not just via a fresh get_component() afterward
+        ASSERT_NE(vel_ref, nullptr);
+        EXPECT_EQ(vel_ref->dx, 4.0f);
+        EXPECT_EQ(vel_ref->dy, 5.0f);
+        EXPECT_EQ(vel_ref->dz, 6.0f);
 
         bool found_single = false;
         for (auto [ent, vel] : mgr.extract<Velocity>())

@@ -203,14 +203,14 @@ TEST_F(GameTests, CreateEntityTagsScene)
     components::transform t;
     t.position = glm::vec3(1.0f, 2.0f, 3.0f);
 
-    entity e = g->create_entity(scene_a, marker{7}, t);
+    entity e = g->create_entity(scene_a, t, marker{7});
 
     ASSERT_TRUE(g->entities().valid(e));
     ASSERT_NE(g->entities().get_component<components::scene_tag>(e), nullptr);
     EXPECT_EQ(g->entities().get_component<components::scene_tag>(e)->id, scene_a);
     ASSERT_NE(g->entities().get_component<marker>(e), nullptr);
     EXPECT_EQ(g->entities().get_component<marker>(e)->value, 7);
-    EXPECT_EQ(g->entities().transform(e).position, t.position);
+    EXPECT_EQ(g->entities().transform(e)->position, t.position);
     EXPECT_TRUE(g->entities().is_active(e));
 
     g->deactivate_scene(scene_a);

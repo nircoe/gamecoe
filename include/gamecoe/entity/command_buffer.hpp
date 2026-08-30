@@ -14,20 +14,6 @@
 
 namespace gamecoe
 {
-    namespace detail
-    {
-        template <typename T>
-        void apply_component(entities &ents, entity e, T value)
-        {
-            static_assert(!hierarchy_component<T>,
-                "apply_component(): hierarchy components are managed - use entities::set_parent() instead");
-
-            if constexpr (std::is_same_v<T, components::transform>) ents.transform(e) = std::move(value);
-            else if (T *c = ents.get_component<T>(e))               *c = std::move(value);
-            else                                                     ents.add_component<T>(e, std::move(value));
-        }
-    } // namespace detail
-
     // Defers entity creation until flush() for building a scene async on a different thread.
     // Placeholders from spawn() are invalidated by their buffer's own flush() - don't reuse them after.
     class command_buffer
@@ -75,7 +61,7 @@ namespace gamecoe
             m_commands.emplace_back([p, value = std::move(value)](entities& ents, const resolver& r) mutable
             {
                 entity e = r.resolve(p);
-                detail::apply_component<T>(ents, e, std::move(value));
+                ents.set_component<T>(e, std::move(value));
             });
         }
 
@@ -90,7 +76,7 @@ namespace gamecoe
             m_commands.emplace_back([p, fn = std::forward<Callable>(fn)](entities& ents, const resolver& r) mutable
             {
                 entity e = r.resolve(p);
-                detail::apply_component<T>(ents, e, fn(r));
+                ents.set_component<T>(e, fn(r));
             });
         }
 

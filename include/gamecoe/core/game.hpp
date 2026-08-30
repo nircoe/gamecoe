@@ -110,16 +110,20 @@ namespace gamecoe
         const std::vector<scene_id>& active_scenes() const;
 
         template <typename... Comps>
-        entity create_entity(scene_id id, Comps&&... comps);
+        entity create_entity(scene_id id, components::transform initial_transform = components::transform{}, Comps&&... comps);
 
         void play();
     };
 
     template <typename... Comps>
-    entity game::create_entity(scene_id id, Comps&&... comps)
+    entity game::create_entity(scene_id id, components::transform initial_transform, Comps&&... comps)
     {
         static_assert((!std::is_same_v<std::decay_t<Comps>, components::scene_tag> && ...),
             "game::create_entity(): scene_tag is stamped from the scene_id argument, don't pass one");
+        static_assert((!std::is_same_v<std::decay_t<Comps>, components::transform> && ...),
+            "game::create_entity(): transform is a built-in component, use the initial_transform parameter");
+        static_assert((!hierarchy_component<std::decay_t<Comps>> && ...),
+            "game::create_entity(): hierarchy components are managed - use entities::set_parent() instead");
 
         auto it = m_scenes.find(id);
         GAMECOE_ASSERT_LOG(it != m_scenes.end(), "game::create_entity(): scene is not registered");
@@ -128,9 +132,9 @@ namespace gamecoe
                            "game::create_entity(): scene is not active");
         if (it == m_scenes.end() || it->second.status != scene_status::active) return entity::invalid();
 
-        entity e = m_entities.create();
+        entity e = m_entities.create(std::move(initial_transform));
         m_entities.add_component<components::scene_tag>(e, components::scene_tag{ id });
-        (detail::apply_component<std::decay_t<Comps>>(m_entities, e, std::forward<Comps>(comps)), ...);
+        (m_entities.add_component<std::decay_t<Comps>>(e, std::forward<Comps>(comps)), ...);
         return e;
     }
 } // namespace gamecoe

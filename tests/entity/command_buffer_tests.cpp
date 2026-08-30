@@ -60,9 +60,9 @@ TEST_F(CommandBufferTests, SpawnAndFlush)
         entity e = entity::invalid();
         ASSERT_NO_FATAL_FAILURE(sole_entity(mgr, e));
 
-        expect_vec3_near(mgr.transform(e).position, t.position);
-        expect_quat_near(mgr.transform(e).rotation, t.rotation);
-        expect_vec3_near(mgr.transform(e).scale, t.scale);
+        expect_vec3_near(mgr.transform(e)->position, t.position);
+        expect_quat_near(mgr.transform(e)->rotation, t.rotation);
+        expect_vec3_near(mgr.transform(e)->scale, t.scale);
     }
 
     // Test 3: spawn with no args flushes to a default-constructed transform
@@ -74,9 +74,9 @@ TEST_F(CommandBufferTests, SpawnAndFlush)
         entity e = entity::invalid();
         ASSERT_NO_FATAL_FAILURE(sole_entity(mgr, e));
 
-        expect_vec3_near(mgr.transform(e).position, glm::vec3(0.0f));
-        expect_quat_near(mgr.transform(e).rotation, glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
-        expect_vec3_near(mgr.transform(e).scale, glm::vec3(1.0f));
+        expect_vec3_near(mgr.transform(e)->position, glm::vec3(0.0f));
+        expect_quat_near(mgr.transform(e)->rotation, glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
+        expect_vec3_near(mgr.transform(e)->scale, glm::vec3(1.0f));
     }
 
     // Test 4: plain add<T> roundtrips a local test component onto the flushed entity

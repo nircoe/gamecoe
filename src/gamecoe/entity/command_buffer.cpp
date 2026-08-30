@@ -37,8 +37,7 @@ namespace gamecoe
 
         for (const components::transform& t : m_spawn_transforms)
         {
-            entity e = ents.create();
-            ents.transform(e) = t;
+            entity e = ents.create(t);
             if (scene) ents.add_component<components::scene_tag>(e, components::scene_tag{ *scene });
             created.push_back(e);
         }
