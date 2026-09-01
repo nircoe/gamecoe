@@ -23,7 +23,7 @@ protected:
     // so a shared global context would be torn down while sibling suites still run.
     static void SetUpTestSuite()
     {
-        glfwInit();
+        test_utils::init_headless_gl();
         auto result = gamecoe::window::create("GLContextTest", 320, 240);
         if (result.has_value())
         {

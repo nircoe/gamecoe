@@ -15,7 +15,7 @@ using namespace gamecoe;
 class WindowTests : public ::testing::Test
 {
 protected:
-    static void SetUpTestSuite() { glfwInit(); }
+    static void SetUpTestSuite() { test_utils::init_headless_gl(); }
     static void TearDownTestSuite() { glfwTerminate(); }
 };
 

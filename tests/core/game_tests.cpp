@@ -61,6 +61,7 @@ protected:
 
     void SetUp() override
     {
+        test_utils::init_headless_gl();
         auto result = game::create(::testing::UnitTest::GetInstance()->current_test_info()->name());
         SKIP_IF_NO_GAME(result);
         g.emplace(std::move(*result));
@@ -530,6 +531,7 @@ TEST_F(GameTests, SecondCreateFailsWhileFirstAlive)
 
 TEST(GameMoveTests, MoveConstructorNoDoubleDestroy)
 {
+    test_utils::init_headless_gl();
     auto result = game::create("GameMoveTests.MoveConstructorNoDoubleDestroy", 320, 240, colorcoe::red());
     SKIP_IF_NO_GAME(result);
 
@@ -543,6 +545,7 @@ TEST(GameMoveTests, MoveConstructorNoDoubleDestroy)
 
 TEST(GameMoveTests, MovedFromGameGuardsAgainstUse)
 {
+    test_utils::init_headless_gl();
     auto result = game::create("GameMoveTests.MovedFromGameGuardsAgainstUse");
     SKIP_IF_NO_GAME(result);
 

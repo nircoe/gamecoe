@@ -52,8 +52,10 @@ jobs:
         echo "Running gamecoe tests"
         set -o pipefail
         ./tests/gamecoe_tests | tee test_output.log
-        if grep -qE '\[  SKIPPED \] (WindowTests|GameTests|GameMoveTests|GraphicsBufferTests|VertexArrayTests|ShaderTests|TextureTests)' test_output.log; then
-          echo "::error::A GL-dependent test suite was skipped - GL context creation failed unexpectedly in CI"
+        # testcoe currently reports a skipped test as failed. Narrow this back to skips only
+        # once testcoe distinguishes the two in its output.
+        if grep -qE 'Test Suite: (WindowTests|GameTests|GameMoveTests|GraphicsBufferTests|VertexArrayTests|ShaderTests|TextureTests)' test_output.log; then
+          echo "::error::A GL-dependent test suite failed or was skipped - GL context creation may have failed unexpectedly in CI"
           exit 1
         fi
       shell: bash
