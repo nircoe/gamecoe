@@ -80,7 +80,7 @@ jobs:
     - name: Configure CMake (toolkit libraries)
       run: |
         GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
-        TOOLKIT_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON"
+        TOOLKIT_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON -DGAMECOE_USE_TESTCOE=OFF"
         if [ "${{ matrix.compiler }}" == "clang" ]; then
           # OpenAL-Soft's vendored fmt 11.1.1 uses malloc/free without including <cstdlib> itself,
           # which libc++ (unlike libstdc++) doesn't pull in transitively here - force-include it.

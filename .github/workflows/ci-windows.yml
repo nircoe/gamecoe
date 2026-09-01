@@ -88,7 +88,7 @@ jobs:
     - name: Configure CMake (toolkit libraries)
       run: |
         GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
-        TOOLKIT_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON"
+        TOOLKIT_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON -DGAMECOE_USE_TESTCOE=OFF"
         if [ -n "${{ matrix.cmake-generator }}" ]; then
           cmake -B build-toolkit -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }} $TOOLKIT_FLAGS $GL_VERSION_FLAGS
         else
