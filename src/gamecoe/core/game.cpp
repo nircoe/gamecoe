@@ -52,7 +52,8 @@ namespace gamecoe
     game::game(game&& other) noexcept
         : m_entities(std::move(other.m_entities)), m_window(std::move(other.m_window)),
           m_scenes(std::move(other.m_scenes)), m_active_scenes(std::move(other.m_active_scenes)),
-          m_background_color(other.m_background_color)
+          m_pending_scene_ops(std::move(other.m_pending_scene_ops)), m_background_color(other.m_background_color),
+          m_playing(other.m_playing)
     {
         other.m_window.reset();
     }

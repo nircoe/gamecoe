@@ -51,6 +51,8 @@ namespace gamecoe
         std::size_t m_last_spawn_count = 0;
         std::size_t m_last_command_count = 0;
 
+        void cache_and_clear(std::size_t command_count);
+
     public:
         // Queues an entity with the given transform (default if omitted). No real entity until flush().
         placeholder spawn(components::transform t = components::transform{});
