@@ -5,9 +5,11 @@
 #include <gamecoe/component/transform.hpp>
 #include <gamecoe/component/parent_child.hpp>
 #include <gamecoe/core/scene_id.hpp>
+#include <concepts>
 #include <functional>
 #include <optional>
 #include <vector>
+#include <cstddef>
 #include <cstdint>
 #include <type_traits>
 #include <cassert>
@@ -36,15 +38,18 @@ namespace gamecoe
             friend class command_buffer;
 
         public:
+            resolver(const resolver&) = delete;
             entity resolve(placeholder p) const;
         };
-    
+
     private:
         // std::function requires copyable captured values (all current components qualify) -
         // revisit std::move_only_function once CI toolchains confirm C++23 library support
         using command = std::function<void(entities&, const resolver&)>;
         std::vector<components::transform> m_spawn_transforms;
         std::vector<command> m_commands;
+        std::size_t m_last_spawn_count = 0;
+        std::size_t m_last_command_count = 0;
 
     public:
         // Queues an entity with the given transform (default if omitted). No real entity until flush().
@@ -87,5 +92,6 @@ namespace gamecoe
         std::size_t spawn_count() const noexcept { return m_spawn_transforms.size(); }
         bool empty() const noexcept { return m_spawn_transforms.empty() && m_commands.empty(); }
         void clear();
+        void reserve_from_last_build();
     };
 } // namespace gamecoe

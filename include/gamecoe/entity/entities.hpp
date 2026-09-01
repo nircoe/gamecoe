@@ -242,13 +242,13 @@ namespace gamecoe
         template <typename... Components>
         extraction<Components...> extract()
         {
-            return extraction<Components...>(get_pool<std::remove_const_t<Components>>()...);
+            return extraction<Components...>(find_pool<std::remove_const_t<Components>>()...);
         }
 
         template <typename... Components>
         extraction<std::add_const_t<Components>...> extract() const
         {
-            return extraction<std::add_const_t<Components>...>(const_cast<entities*>(this)->get_pool<Components>()...);
+            return extraction<std::add_const_t<Components>...>(const_cast<entities*>(this)->find_pool<Components>()...);
         }
     };
 } // namespace gamecoe

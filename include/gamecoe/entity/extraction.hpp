@@ -87,7 +87,7 @@ namespace gamecoe
 
         explicit extraction(component_pool<std::remove_const_t<Components>>*... pools) : m_pools(pools...)
         {
-            std::size_t sizes[] = { pools->active_size()... };
+            std::size_t sizes[] = { (pools ? pools->active_size() : std::size_t{0})... };
 
             m_smallest_pool_index = 0;
             m_smallest_pool_size = sizes[0];

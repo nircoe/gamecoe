@@ -125,14 +125,14 @@ jobs:
             echo "Running gamecoe tests"
             cd tests
             ./gamecoe_tests.exe | tee test_output.log
-            if grep -qE '\[  SKIPPED \] (WindowTests|GameTests|GraphicsBufferTests|VertexArrayTests|ShaderTests|TextureTests)' test_output.log; then
+            if grep -qE '\[  SKIPPED \] (WindowTests|GameTests|GameMoveTests|GraphicsBufferTests|VertexArrayTests|ShaderTests|TextureTests)' test_output.log; then
               echo "::error::A GL-dependent test suite was skipped - GL context creation failed unexpectedly in CI"
               exit 1
             fi
         else # MSVC
             echo "Running gamecoe tests"
             ./tests/Release/gamecoe_tests.exe | tee test_output.log
-            if grep -qE '\[  SKIPPED \] (WindowTests|GameTests|GraphicsBufferTests|VertexArrayTests|ShaderTests|TextureTests)' test_output.log; then
+            if grep -qE '\[  SKIPPED \] (WindowTests|GameTests|GameMoveTests|GraphicsBufferTests|VertexArrayTests|ShaderTests|TextureTests)' test_output.log; then
               echo "::error::A GL-dependent test suite was skipped - GL context creation failed unexpectedly in CI"
               exit 1
             fi

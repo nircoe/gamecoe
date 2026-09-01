@@ -173,7 +173,7 @@ TEST_F(CommandBufferTests, CallableResolution)
         ASSERT_TRUE(mgr.has_component<follow_target>(entity_a));
         EXPECT_EQ(mgr.get_component<follow_target>(entity_a)->target, entity_b);
         EXPECT_NE(mgr.get_component<follow_target>(entity_a)->target, entity::invalid());
-        
+
         // buf.add<components::parent>(p_a, components::parent{}); // compile error: hierarchy components are managed
     }
 }

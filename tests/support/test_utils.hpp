@@ -9,10 +9,10 @@
 #include <vector>
 #include <algorithm>
 #define SKIP_IF_NOT(condition, message) \
-    if (!(condition)) \
+    do { if (!(condition)) \
     { \
         GTEST_SKIP() << message; \
-    }
+    } } while (0)
 
 namespace test_utils
 {

@@ -57,9 +57,17 @@ namespace gamecoe
 
     void command_buffer::clear()
     {
+        m_last_spawn_count = m_spawn_transforms.size();
         m_spawn_transforms.clear();
         m_spawn_transforms.shrink_to_fit();
+        m_last_command_count = m_commands.size();
         m_commands.clear();
         m_commands.shrink_to_fit();
+    }
+
+    void command_buffer::reserve_from_last_build()
+    {
+        m_spawn_transforms.reserve(m_last_spawn_count);
+        m_commands.reserve(m_last_command_count);
     }
 } // namespace gamecoe

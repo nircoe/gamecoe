@@ -77,18 +77,10 @@
 
 #if !GAMECOE_USE_SOUNDCOE
     #include <string>
-    #include <limits>
     namespace soundcoe
     {
         enum class LogLevel { DEBUG, INFO, WARNING, ERROR, NONE };
-        constexpr size_t UNLIMITED_CACHE = std::numeric_limits<size_t>::max();
 
-        inline bool initialize([[maybe_unused]] const std::string &audioRootDirectory,
-                                [[maybe_unused]] size_t maxSources = 64,
-                                [[maybe_unused]] size_t maxCacheSizeMB = UNLIMITED_CACHE,
-                                [[maybe_unused]] const std::string &soundSubdir = "sfx",
-                                [[maybe_unused]] const std::string &musicSubdir = "music",
-                                [[maybe_unused]] LogLevel level = LogLevel::DEBUG) { return true; }
         inline void shutdown() { }
         inline bool preloadScene([[maybe_unused]] const std::string &sceneName) { return true; }
         inline bool unloadScene([[maybe_unused]] const std::string &sceneName) { return true; }

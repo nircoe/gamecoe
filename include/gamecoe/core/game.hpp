@@ -16,6 +16,7 @@
 #include <optional>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #if GAMECOE_USE_LOGCOE
@@ -110,7 +111,6 @@ namespace gamecoe
         scene_status status(scene_id id) const;
         void set_scene_layer(scene_id id, int layer);
         std::int8_t scene_layer(scene_id id) const;
-        const std::vector<scene_id>& active_scenes() const;
         // Returns a snapshot of the scene's entities (active + inactive)
         std::vector<entity> scene_entities(scene_id id) const;
 

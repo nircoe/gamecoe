@@ -44,12 +44,9 @@ namespace gamecoe
     }
 
     game::game(gamecoe::window &&main_window, const Color &background_color)
-        : m_window(std::move(main_window)), m_background_color(background_color)
+        : m_window(std::move(main_window))
     {
-#if GAMECOE_USE_OPENGL
-        auto bg = m_background_color.normalized();
-        glClearColor(bg.r, bg.g, bg.b, bg.a);
-#endif
+        set_background_color(background_color);
     }
 
     game::game(game&& other) noexcept
@@ -199,7 +196,7 @@ namespace gamecoe
     void game::insert_active_scene_sorted(scene_id id, std::int8_t layer)
     {
         auto pos = std::upper_bound(m_active_scenes.begin(), m_active_scenes.end(), id,
-            [this, layer](scene_id, scene_id b) { return layer < m_scenes.at(b).layer; });
+            [this, layer](scene_id, scene_id b) { return layer < m_scenes.find(b)->second.layer; });
         m_active_scenes.insert(pos, id);
     }
 
@@ -245,11 +242,6 @@ namespace gamecoe
 
         logcoe::debug("game::set_scene_layer(): scene \"" + to_string(id) + "\" layer changed from " +
                       std::to_string(old_layer) + " to " + std::to_string(new_layer));
-    }
-
-    const std::vector<scene_id>& game::active_scenes() const
-    {
-        return m_active_scenes;
     }
 
     std::vector<entity> game::scene_entities(scene_id id) const
@@ -298,6 +290,7 @@ namespace gamecoe
         if (!soundcoe::preloadScene(scene_name))
             logcoe::warning("game::load_scene(): no audio preloaded for scene \"" + scene_name + "\"");
 
+        meta->pending.reserve_from_last_build();
         meta->builder(meta->pending);
 
         meta->status = scene_status::loaded;

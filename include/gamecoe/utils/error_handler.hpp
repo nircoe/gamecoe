@@ -11,7 +11,12 @@
 #endif
 
 #define GAMECOE_ASSERT_LOG(condition, message) \
-    do { if (!(condition)) logcoe::error(message); assert((condition) && message); } while (0)
+    do \
+    { \
+        const bool cond = static_cast<bool>(condition); \
+        if (!cond) logcoe::error(message); \
+        assert(cond && message); \
+    } while (0)
 
 namespace gamecoe
 {
