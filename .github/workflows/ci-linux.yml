@@ -81,7 +81,13 @@ jobs:
       run: |
         GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
         TOOLKIT_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON"
-        cmake -B build-toolkit -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }} $TOOLKIT_FLAGS $GL_VERSION_FLAGS
+        if [ "${{ matrix.compiler }}" == "clang" ]; then
+          # OpenAL-Soft's vendored fmt 11.1.1 uses malloc/free without including <cstdlib> itself,
+          # which libc++ (unlike libstdc++) doesn't pull in transitively here - force-include it.
+          cmake -B build-toolkit -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }} $TOOLKIT_FLAGS $GL_VERSION_FLAGS -DCMAKE_CXX_FLAGS="-stdlib=libc++ -include cstdlib"
+        else
+          cmake -B build-toolkit -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }} $TOOLKIT_FLAGS $GL_VERSION_FLAGS
+        fi
 
     - name: Build (toolkit libraries)
       run: |
