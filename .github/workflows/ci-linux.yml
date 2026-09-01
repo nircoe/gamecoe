@@ -46,6 +46,11 @@ jobs:
         sudo apt-get install -y ninja-build xvfb xorg-dev libgl1-mesa-dev libglu1-mesa-dev libgl1-mesa-dri
       shell: bash
 
+    - name: Install audio dev libraries
+      run: |
+        sudo apt-get install -y libasound2-dev libpulse-dev libpipewire-0.3-dev
+      shell: bash
+
     - name: Install GCC 16
       if: matrix.compiler == 'gcc'
       run: |
@@ -71,6 +76,16 @@ jobs:
     - name: Build
       run: |
         cmake --build build --config Release
+
+    - name: Configure CMake (toolkit libraries)
+      run: |
+        GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
+        TOOLKIT_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON"
+        cmake -B build-toolkit -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }} $TOOLKIT_FLAGS $GL_VERSION_FLAGS
+
+    - name: Build (toolkit libraries)
+      run: |
+        cmake --build build-toolkit --config Release
 
     - name: Run tests
       working-directory: build
