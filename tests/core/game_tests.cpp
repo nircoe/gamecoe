@@ -328,7 +328,7 @@ TEST_F(GameTests, MultipleActiveScenesShareOneRegistry)
     g->activate_scene(scene_b);
 
     std::size_t transform_count = 0;
-    for (auto [e, t] : g->entities().extract<components::transform>())
+    for ([[maybe_unused]] auto [e, t] : g->entities().extract<components::transform>())
         ++transform_count;
     EXPECT_EQ(transform_count, 4u);
 

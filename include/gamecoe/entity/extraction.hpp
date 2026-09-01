@@ -36,7 +36,7 @@ namespace gamecoe
 
                 entity e = entity::invalid();
 
-                ((Is == m_extracted->m_smallest_pool_index ?
+                (void)((Is == m_extracted->m_smallest_pool_index ?
                     (e = std::get<Is>(m_extracted->m_pools)->get_entity_at_index(m_index), true) : false)
                 || ...);
 

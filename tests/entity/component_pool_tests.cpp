@@ -189,7 +189,9 @@ TEST_F(ComponentPoolTests, ActivePartition)
     {
         for (std::size_t i = 0; i < entities.size(); ++i)
             if (pool.contains(entities[i]))
+            {
                 EXPECT_EQ(pool.get(entities[i]), values[i]);
+            }
     };
 
     // Test 1: fresh inserts are all active

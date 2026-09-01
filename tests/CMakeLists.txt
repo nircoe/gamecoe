@@ -31,3 +31,9 @@ target_link_libraries(gamecoe_tests
 
 target_include_directories(gamecoe_tests PRIVATE ${GAMECOE_GLAD_OUTPUT_DIR}/include)
 target_include_directories(gamecoe_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+if(MSVC)
+    target_compile_options(gamecoe_tests PRIVATE /W4 /WX)
+else()
+    target_compile_options(gamecoe_tests PRIVATE -Werror -Wall -Wextra -Wpedantic)
+endif()
