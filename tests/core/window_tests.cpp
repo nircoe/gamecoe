@@ -1,14 +1,12 @@
 #include <gtest/gtest.h>
 #include <gamecoe/core/window.hpp>
 #include <GLFW/glfw3.h>
+#include <support/test_utils.hpp>
 
 using namespace gamecoe;
 
 #define SKIP_IF_NO_WINDOW(result) \
-    if (!(result).has_value()) \
-    { \
-        GTEST_SKIP() << "window::create() failed - no display/GL context available"; \
-    }
+    SKIP_IF_NOT((result).has_value(), "window::create() failed - no display/GL context available")
 
 //==============================================================================
 //                    WindowTests - window class tests
@@ -17,7 +15,7 @@ using namespace gamecoe;
 class WindowTests : public ::testing::Test
 {
 protected:
-    static void SetUpTestSuite() { glfwInit(); }
+    static void SetUpTestSuite() { test_utils::init_headless_gl(); }
     static void TearDownTestSuite() { glfwTerminate(); }
 };
 

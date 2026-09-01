@@ -4,7 +4,7 @@
 #include <gamecoe/component/transform.hpp>
 #include <gamecoe/component/scene_tag.hpp>
 #include <gamecoe/component/parent_child.hpp>
-#include "../test_utils.hpp"
+#include <support/test_utils.hpp>
 
 using namespace gamecoe;
 using namespace test_utils;
@@ -60,9 +60,9 @@ TEST_F(CommandBufferTests, SpawnAndFlush)
         entity e = entity::invalid();
         ASSERT_NO_FATAL_FAILURE(sole_entity(mgr, e));
 
-        expect_vec3_near(mgr.transform(e).position, t.position);
-        expect_quat_near(mgr.transform(e).rotation, t.rotation);
-        expect_vec3_near(mgr.transform(e).scale, t.scale);
+        expect_vec3_near(mgr.transform(e)->position, t.position);
+        expect_quat_near(mgr.transform(e)->rotation, t.rotation);
+        expect_vec3_near(mgr.transform(e)->scale, t.scale);
     }
 
     // Test 3: spawn with no args flushes to a default-constructed transform
@@ -74,9 +74,9 @@ TEST_F(CommandBufferTests, SpawnAndFlush)
         entity e = entity::invalid();
         ASSERT_NO_FATAL_FAILURE(sole_entity(mgr, e));
 
-        expect_vec3_near(mgr.transform(e).position, glm::vec3(0.0f));
-        expect_quat_near(mgr.transform(e).rotation, glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
-        expect_vec3_near(mgr.transform(e).scale, glm::vec3(1.0f));
+        expect_vec3_near(mgr.transform(e)->position, glm::vec3(0.0f));
+        expect_quat_near(mgr.transform(e)->rotation, glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
+        expect_vec3_near(mgr.transform(e)->scale, glm::vec3(1.0f));
     }
 
     // Test 4: plain add<T> roundtrips a local test component onto the flushed entity
@@ -105,6 +105,29 @@ TEST_F(CommandBufferTests, SpawnAndFlush)
         buf.flush(mgr);
         EXPECT_EQ(mgr.size(), 1);
     }
+}
+
+//==============================================================================
+//                        Flush Reentrancy
+//==============================================================================
+
+TEST_F(CommandBufferTests, FlushReentrantCommandAppendIsSafe)
+{
+    // Regression (D-3): a queued command that appends another command to the same buffer
+    // mid-flush must not invalidate flush()'s own iteration over m_commands.
+    command_buffer::placeholder p = buf.spawn();
+    buf.add(p, [this, p](const command_buffer::resolver&)
+    {
+        buf.add(p, Tag{2});
+        return Tag{1};
+    });
+
+    buf.flush(mgr);
+
+    entity e = entity::invalid();
+    ASSERT_NO_FATAL_FAILURE(sole_entity(mgr, e));
+    ASSERT_TRUE(mgr.has_component<Tag>(e));
+    EXPECT_EQ(mgr.get_component<Tag>(e)->value, 2);
 }
 
 //==============================================================================
@@ -173,7 +196,7 @@ TEST_F(CommandBufferTests, CallableResolution)
         ASSERT_TRUE(mgr.has_component<follow_target>(entity_a));
         EXPECT_EQ(mgr.get_component<follow_target>(entity_a)->target, entity_b);
         EXPECT_NE(mgr.get_component<follow_target>(entity_a)->target, entity::invalid());
-        
+
         // buf.add<components::parent>(p_a, components::parent{}); // compile error: hierarchy components are managed
     }
 }

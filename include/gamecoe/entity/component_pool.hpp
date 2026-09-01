@@ -80,8 +80,6 @@ namespace gamecoe
         component_pool() noexcept = default;
         component_pool(const component_pool&) = delete;
         component_pool& operator=(const component_pool&) = delete;
-        component_pool(component_pool&&) noexcept = default;
-        component_pool& operator=(component_pool&&) noexcept = default;
 
         ~component_pool() override = default;
 
@@ -113,10 +111,7 @@ namespace gamecoe
             if (contains(e))
             {
                 GAMECOE_ASSERT_LOG(false, "component_pool::add(): entity already has this component");
-                // Release has no assert, so we overwrite instead of silently discarding the caller's new value.
-                T &existing = m_components[m_entities.index(e).value()];
-                existing = T(std::forward<Args>(args)...);
-                return existing;   // active is ignored when the entity already exists. An existing entry keeps its current state.
+                return m_components[m_entities.index(e).value()];   // no-op - active is ignored, existing value is untouched
             }
 
             const std::uint32_t back_index   = static_cast<std::uint32_t>(m_components.size());

@@ -5,16 +5,18 @@
 #include <gamecoe/component/transform.hpp>
 #include <gamecoe/component/parent_child.hpp>
 #include <gamecoe/core/scene_id.hpp>
+#include <concepts>
 #include <functional>
 #include <optional>
 #include <vector>
+#include <cstddef>
 #include <cstdint>
 #include <type_traits>
 #include <cassert>
 
 namespace gamecoe
 {
-    // Defers entity creation until flush() for building a scene async on a different thread. 
+    // Defers entity creation until flush() for building a scene async on a different thread.
     // Placeholders from spawn() are invalidated by their buffer's own flush() - don't reuse them after.
     class command_buffer
     {
@@ -36,33 +38,21 @@ namespace gamecoe
             friend class command_buffer;
 
         public:
+            resolver(const resolver&) = delete;
             entity resolve(placeholder p) const;
         };
-    
+
     private:
         // std::function requires copyable captured values (all current components qualify) -
         // revisit std::move_only_function once CI toolchains confirm C++23 library support
         using command = std::function<void(entities&, const resolver&)>;
         std::vector<components::transform> m_spawn_transforms;
         std::vector<command> m_commands;
+        std::size_t m_last_spawn_count = 0;
+        std::size_t m_last_command_count = 0;
 
-        template <typename T>
-        static void apply(entities& ents, entity e, T value)
-        {
-            static_assert(!hierarchy_component<T>,
-                "command_buffer::add(): hierarchy components are managed - use command_buffer::set_parent() instead");
+        void cache_and_clear(std::size_t command_count);
 
-            if constexpr (std::is_same_v<T, components::transform>)
-                // transform is assigned directly since add_component<transform>() is static_assert-blocked
-                // (transform is mandatory, always present, never added through this generic path).
-                ents.transform(e) = std::move(value);
-            else
-            {
-                if (T* c = ents.get_component<T>(e)) *c = std::move(value);
-                else ents.add_component<T>(e, std::move(value));
-            }
-        }
-    
     public:
         // Queues an entity with the given transform (default if omitted). No real entity until flush().
         placeholder spawn(components::transform t = components::transform{});
@@ -76,7 +66,7 @@ namespace gamecoe
             m_commands.emplace_back([p, value = std::move(value)](entities& ents, const resolver& r) mutable
             {
                 entity e = r.resolve(p);
-                apply<T>(ents, e, std::move(value));
+                ents.set_component<T>(e, std::move(value));
             });
         }
 
@@ -91,7 +81,7 @@ namespace gamecoe
             m_commands.emplace_back([p, fn = std::forward<Callable>(fn)](entities& ents, const resolver& r) mutable
             {
                 entity e = r.resolve(p);
-                apply<T>(ents, e, fn(r));
+                ents.set_component<T>(e, fn(r));
             });
         }
 
@@ -104,5 +94,9 @@ namespace gamecoe
         std::size_t spawn_count() const noexcept { return m_spawn_transforms.size(); }
         bool empty() const noexcept { return m_spawn_transforms.empty() && m_commands.empty(); }
         void clear();
+        void reserve_from_last_build();
     };
+
+    static_assert(std::is_nothrow_move_constructible_v<command_buffer>,
+        "command_buffer must stay nothrow-movable - flat_map reallocation falls back to copying otherwise");
 } // namespace gamecoe

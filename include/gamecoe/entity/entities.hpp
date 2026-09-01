@@ -4,6 +4,7 @@
 #include <gamecoe/entity/entity.hpp>
 #include <gamecoe/entity/component_pool.hpp>
 #include <gamecoe/entity/extraction.hpp>
+#include <gamecoe/component/transform.hpp>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -16,9 +17,9 @@ namespace gamecoe
 {
     namespace components
     {
-        struct transform;
         struct parent;
         struct children;
+        struct scene_tag;
     } // namespace components
 
     // True for the hierarchy-managed relationship components - see entities::set_parent()/remove_parent()
@@ -94,14 +95,20 @@ namespace gamecoe
     public:
         entities() = default;
         entities(const entities&) = delete;
-        entities(entities&&) = delete;
+        entities(entities&& other) noexcept
+            : m_pools(std::move(other.m_pools))
+            , m_recycle_ids(std::move(other.m_recycle_ids))
+            , m_generations(std::move(other.m_generations))
+            , m_self_active(std::move(other.m_self_active))
+            , m_current_entity_id(std::exchange(other.m_current_entity_id, 0))
+        {}
         entities &operator=(const entities&) = delete;
         entities &operator=(entities&&) = delete;
 
         ~entities() = default;
 
-        // May return a recycled id.
-        entity create();
+        // May return a recycled id. Returns entity::invalid() in Release if the entity limit is reached.
+        entity create(components::transform initial_transform = components::transform{});
 
         // No-op if e is already invalid.
         void destroy(entity e);
@@ -121,9 +128,9 @@ namespace gamecoe
 
         std::size_t size() const;
 
-        // Entity must already be valid, asserted.
+        // Entity must already be valid, asserted. Returns nullptr in Release if e is invalid.
         template <typename T, typename... Args>
-        T& add_component(entity e, Args&&... args)
+        T* add_component(entity e, Args&&... args)
         {
             static_assert(!std::is_same_v<T, components::transform>,
                 "entities::add_component(): transform is mandatory, added automatically by create()");
@@ -131,9 +138,10 @@ namespace gamecoe
                 "entities::add_component(): hierarchy components are managed - use entities::set_parent() instead");
 
             GAMECOE_ASSERT_LOG(valid(e), "entities::add_component(): entity is not valid");
+            if (!valid(e)) return nullptr;
 
             auto pool = get_pool<T>();
-            return pool->add(e, is_active(e), std::forward<Args>(args)...);
+            return &pool->add(e, is_active(e), std::forward<Args>(args)...);
         }
 
         // Safe on an invalid entity, returns false rather than asserting.
@@ -180,11 +188,26 @@ namespace gamecoe
             return &(pool->get(e));
         }
 
-        // Transform always exists.
-        components::transform& transform(entity e);
+        // Add-or-assign: sets T's value if e already has it, otherwise adds it fresh.
+        template <typename T, typename V>
+        void set_component(entity e, V&& value)
+        {
+            static_assert(!hierarchy_component<T>,
+                "entities::set_component(): hierarchy components are managed - use entities::set_parent() instead");
+            static_assert(!std::is_same_v<std::decay_t<T>, components::scene_tag>,
+                "entities::set_component(): scene_tag is stamped at creation/flush time, not settable afterward");
+            static_assert(!std::is_same_v<std::decay_t<T>, components::transform>,
+                "entities::set_component(): transform is a built-in component, use entities::transform(e) directly");
 
-        // Transform always exists.
-        const components::transform& transform(entity e) const;
+            if (T* c = get_component<T>(e)) *c = std::forward<V>(value);
+            else                             add_component<T>(e, std::forward<V>(value));
+        }
+
+        // Transform always exists for a valid entity. Returns nullptr in Release if e is invalid.
+        components::transform* transform(entity e);
+
+        // Transform always exists for a valid entity. Returns nullptr in Release if e is invalid.
+        const components::transform* transform(entity e) const;
 
         // Updates both sides.
         void set_parent(entity child, entity parent);
@@ -226,13 +249,13 @@ namespace gamecoe
         template <typename... Components>
         extraction<Components...> extract()
         {
-            return extraction<Components...>(get_pool<std::remove_const_t<Components>>()...);
+            return extraction<Components...>(find_pool<std::remove_const_t<Components>>()...);
         }
 
         template <typename... Components>
         extraction<std::add_const_t<Components>...> extract() const
         {
-            return extraction<std::add_const_t<Components>...>(const_cast<entities*>(this)->get_pool<Components>()...);
+            return extraction<std::add_const_t<Components>...>(const_cast<entities*>(this)->find_pool<Components>()...);
         }
     };
 } // namespace gamecoe

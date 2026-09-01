@@ -6,10 +6,25 @@
 #include <gtest/gtest.h>
 #include <gamecoe/entity/entities.hpp>
 #include <gamecoe/component/transform.hpp>
+#include <GLFW/glfw3.h>
 #include <vector>
 #include <algorithm>
+#define SKIP_IF_NOT(condition, message) \
+    do { if (!(condition)) \
+    { \
+        GTEST_SKIP() << message; \
+    } } while (0)
+
 namespace test_utils
 {
+    // A visible window can fail to create on headless CI (e.g. macOS runners); an invisible
+    // GL context still works fine there.
+    inline void init_headless_gl()
+    {
+        glfwInit();
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    }
+
     // Fatally asserts mgr has exactly one entity, then writes its handle to out (for tests that flush one spawn and need its real handle).
     // Callers MUST wrap the call in ASSERT_NO_FATAL_FAILURE(...) - a fatal assert inside this helper only unwinds this function, not the caller's TEST_F.
     inline void sole_entity(gamecoe::entities &mgr, gamecoe::entity &out)

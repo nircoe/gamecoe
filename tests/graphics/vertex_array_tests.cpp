@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "../gl_context.hpp"
+#include <support/gl_context.hpp>
 #include <gamecoe/graphics/vertex_array.hpp>
 
 using namespace gamecoe;

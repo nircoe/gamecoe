@@ -15,6 +15,8 @@ int printHelp()
     std::cout << "  ColorcoeTests            - Color hex decoding tests" << std::endl;
     std::cout << "  PathsTests               - Executable path resolution tests" << std::endl;
     std::cout << "  WindowTests              - Window class tests" << std::endl;
+    std::cout << "  GameTests                - Game class tests" << std::endl;
+    std::cout << "  GameMoveTests            - Game move constructor test" << std::endl;
     std::cout << "  GraphicsBufferTests      - Graphics buffer class tests" << std::endl;
     std::cout << "  VertexArrayTests         - Vertex array class tests" << std::endl;
     std::cout << "  ShaderTests              - Shader class tests" << std::endl;
@@ -44,13 +46,18 @@ int main(int argc, char **argv)
     std::cout << "====================================================" << std::endl;
     std::cout << std::endl;
     std::cout << "Comprehensive testing for gamecoe." << std::endl;
-    std::cout << "Testing Core Module: window" << std::endl;
+    std::cout << "Testing Core Module: window, game" << std::endl;
     std::cout << "Testing Graphics Module: buffer, vertex_array, shader, texture" << std::endl;
     std::cout << "Testing Entity Module: entity, sparse_set, component_pool, entities, command_buffer" << std::endl;
     std::cout << "Testing Component Module: transform, parent, children, scene_tag, shape_renderer, shape_collider" << std::endl;
     std::cout << std::endl;
 
     testcoe::init(&argc, argv);
+
+    // Default fork-based death tests inherit any thread state a test already spun up (e.g.
+    // GLFW/logcoe via game::create()) - a held lock at fork time can deadlock the child.
+    // threadsafe re-execs fresh instead, so it's set globally rather than per-test.
+    GTEST_FLAG_SET(death_test_style, "threadsafe");
 
     bool askForAll = false;
     std::string suiteName;

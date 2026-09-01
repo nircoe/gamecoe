@@ -37,24 +37,44 @@ namespace gamecoe
 
         for (const components::transform& t : m_spawn_transforms)
         {
-            entity e = ents.create();
-            ents.transform(e) = t;
+            entity e = ents.create(t);
             if (scene) ents.add_component<components::scene_tag>(e, components::scene_tag{ *scene });
             created.push_back(e);
         }
 
         resolver r(created);
-        for (auto& cmd : m_commands)
-            cmd(ents, r);
+        std::size_t total_commands = 0;
+        while (!m_commands.empty())
+        {
+            auto batch = std::move(m_commands);
+            total_commands += batch.size();
+            for (auto& cmd : batch)
+                cmd(ents, r);
+        }
 
         logcoe::info("command_buffer::flush(): flushed " + std::to_string(created.size()) + " entities");
 
-        clear();
+        cache_and_clear(total_commands);
+    }
+
+    void command_buffer::cache_and_clear(std::size_t command_count)
+    {
+        m_last_spawn_count = m_spawn_transforms.size();
+        m_last_command_count = command_count;
+        m_spawn_transforms.clear();
+        m_spawn_transforms.shrink_to_fit();
+        m_commands.clear();
+        m_commands.shrink_to_fit();
     }
 
     void command_buffer::clear()
     {
-        m_spawn_transforms.clear();
-        m_commands.clear();
+        cache_and_clear(m_commands.size());
+    }
+
+    void command_buffer::reserve_from_last_build()
+    {
+        m_spawn_transforms.reserve(m_last_spawn_count);
+        m_commands.reserve(m_last_command_count);
     }
 } // namespace gamecoe

@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "../gl_context.hpp"
+#include <support/gl_context.hpp>
 #include <gamecoe/graphics/texture.hpp>
 #include <filesystem>
 #include <fstream>

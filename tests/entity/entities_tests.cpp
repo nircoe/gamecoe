@@ -5,7 +5,7 @@
 #include <gamecoe/component/scene_tag.hpp>
 #include <chrono>
 #include <vector>
-#include "../test_utils.hpp"
+#include <support/test_utils.hpp>
 
 using namespace gamecoe;
 using namespace test_utils;
@@ -120,6 +120,31 @@ TEST_F(EntitiesTests, EntityLifecycle)
 }
 
 //==============================================================================
+//                        Move Semantics
+//==============================================================================
+
+TEST_F(EntitiesTests, MoveConstructorResetsMovedFromCounter)
+{
+    entities source;
+    entity e0 = source.create();
+    entity e1 = source.create();
+    entity e2 = source.create();
+    ASSERT_EQ(source.size(), 3u);
+
+    entities dest(std::move(source));
+
+    EXPECT_EQ(dest.size(), 3u);
+    EXPECT_TRUE(dest.valid(e0));
+    EXPECT_TRUE(dest.valid(e1));
+    EXPECT_TRUE(dest.valid(e2));
+
+    EXPECT_EQ(source.size(), 0u);
+    entity fresh = source.create();
+    EXPECT_TRUE(source.valid(fresh));
+    EXPECT_EQ(source.size(), 1u);
+}
+
+//==============================================================================
 //                        Component Operations
 //==============================================================================
 
@@ -176,6 +201,17 @@ TEST_F(EntitiesTests, ComponentOperations)
 
         // Invalid entity handle
         EXPECT_EQ(mgr.get_component<Position>(invalid), nullptr);
+    }
+
+    // Test 4: add_component on an invalid entity is guarded
+    {
+        entity invalid = entity::invalid();
+
+#ifndef NDEBUG
+        EXPECT_DEATH(mgr.add_component<Position>(invalid, Position{1.0f, 2.0f, 3.0f}), "entity is not valid");
+#else
+        EXPECT_EQ(mgr.add_component<Position>(invalid, Position{1.0f, 2.0f, 3.0f}), nullptr);
+#endif
     }
 }
 
@@ -316,18 +352,23 @@ TEST_F(EntitiesTests, MandatoryTransform)
     // mgr.add_component<components::transform>(e);
     // mgr.remove_component<components::transform>(e);
 
+    // Test 3b: set_component rejects transform and scene_tag too (compile-time guard)
+    // Uncommenting either line below must fail to compile:
+    // mgr.set_component<components::transform>(e, components::transform{});
+    // mgr.set_component<components::scene_tag>(e, components::scene_tag{});
+
     // Test 4: transform() accessor returns the same component as get_component<transform>(), no null-check needed
     {
         mgr.clear();
         entity e = mgr.create();
-        components::transform &t = mgr.transform(e);
-        t.position = glm::vec3(5.0f, 0.0f, 0.0f);
+        components::transform *t = mgr.transform(e);
+        t->position = glm::vec3(5.0f, 0.0f, 0.0f);
 
-        expect_vec3_near(mgr.get_component<components::transform>(e)->position, mgr.transform(e).position);
+        expect_vec3_near(mgr.get_component<components::transform>(e)->position, mgr.transform(e)->position);
 
         const entities &const_mgr = mgr;
-        const components::transform &const_t = const_mgr.transform(e);
-        expect_vec3_near(const_t.position, glm::vec3(5.0f, 0.0f, 0.0f));
+        const components::transform *const_t = const_mgr.transform(e);
+        expect_vec3_near(const_t->position, glm::vec3(5.0f, 0.0f, 0.0f));
     }
 }
 
@@ -530,10 +571,7 @@ TEST_F(EntitiesTests, RemoveChildrenWithGrandchildren)
 
 TEST_F(EntitiesTests, SetParentCycleDetection)
 {
-#ifdef NDEBUG
-    GTEST_SKIP() << "cycle detection assert is compiled out under NDEBUG (Release build)";
-#endif
-
+#ifndef NDEBUG
     // Test 1: direct 2-node cycle - A is already parent of B, then set_parent(A, B) would make B a
     // parent of its own ancestor A
     EXPECT_DEATH(
@@ -556,6 +594,7 @@ TEST_F(EntitiesTests, SetParentCycleDetection)
             mgr.set_parent(a, c); // would create a -> c -> b -> a cycle
         },
         "would create a parent/child cycle");
+#endif
 }
 
 //==============================================================================
@@ -1064,7 +1103,7 @@ TEST_F(EntitiesTests, AddComponentToInactiveEntity)
 {
     // Test 1: add_component() on an already-deactivated entity inserts the new component
     // straight into the inactive partition - it's hidden from extract<>() until activate(),
-    // even though it was never itself explicitly deactivated. The reference returned by
+    // even though it was never itself explicitly deactivated. The pointer returned by
     // add_component() must stay valid immediately after the call (regression guard against the
     // internal deactivate-on-insert swap relocating it before the caller reads from it).
     {
@@ -1073,12 +1112,13 @@ TEST_F(EntitiesTests, AddComponentToInactiveEntity)
         mgr.add_component<Position>(e, Position{1.0f, 2.0f, 3.0f});
         mgr.deactivate(e);
 
-        Velocity &vel_ref = mgr.add_component<Velocity>(e, Velocity{4.0f, 5.0f, 6.0f});
+        Velocity *vel_ref = mgr.add_component<Velocity>(e, Velocity{4.0f, 5.0f, 6.0f});
 
-        // Reference is valid right away, not just via a fresh get_component() afterward
-        EXPECT_EQ(vel_ref.dx, 4.0f);
-        EXPECT_EQ(vel_ref.dy, 5.0f);
-        EXPECT_EQ(vel_ref.dz, 6.0f);
+        // Pointer is valid right away, not just via a fresh get_component() afterward
+        ASSERT_NE(vel_ref, nullptr);
+        EXPECT_EQ(vel_ref->dx, 4.0f);
+        EXPECT_EQ(vel_ref->dy, 5.0f);
+        EXPECT_EQ(vel_ref->dz, 6.0f);
 
         bool found_single = false;
         for (auto [ent, vel] : mgr.extract<Velocity>())

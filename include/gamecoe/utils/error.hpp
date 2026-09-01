@@ -7,6 +7,9 @@ namespace gamecoe
     enum class error_code
     {
         file_read_failure,
+        game_already_alive,
+        glad_load_failure,
+        glfw_init_failure,
         image_load_failure,
         invalid_argument,
         opengl_error,
@@ -14,6 +17,7 @@ namespace gamecoe
         resource_creation_failure,
         shader_compilation_failure,
         shader_link_failure,
+        soundcoe_init_failure,
         unsupported_feature,
         unsupported_platform,
         window_creation_failure

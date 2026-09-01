@@ -13,7 +13,7 @@ namespace gamecoe
 {
     std::uint32_t entities::s_component_id{0};
 
-    entity entities::create()
+    entity entities::create(components::transform initial_transform)
     {
         std::uint32_t id;
         std::uint16_t generation;
@@ -22,6 +22,8 @@ namespace gamecoe
         {
             id = m_current_entity_id;
             GAMECOE_ASSERT_LOG(id <= entity::MAX_ENTITIES, "entities::create(): entity limit reached");
+            if (id > entity::MAX_ENTITIES) return entity::invalid();
+
             m_current_entity_id++;
             generation = 0;
             m_generations.push_back(generation);
@@ -36,25 +38,29 @@ namespace gamecoe
         }
 
         entity e = entity::create(id, generation);
-        get_pool<components::transform>()->add(e, true);
+        get_pool<components::transform>()->add(e, true, std::move(initial_transform));
 
         return e;
     }
 
-    components::transform& entities::transform(entity e)
+    components::transform* entities::transform(entity e)
     {
         GAMECOE_ASSERT_LOG(valid(e), "entities::transform(): entity is not valid");
+        if (!valid(e)) return nullptr;
+
         components::transform* t = get_component<components::transform>(e);
         GAMECOE_ASSERT_LOG(t != nullptr, "entities::transform(): transform missing (should be impossible - mandatory component)");
-        return *t;
+        return t;
     }
 
-    const components::transform& entities::transform(entity e) const
+    const components::transform* entities::transform(entity e) const
     {
         GAMECOE_ASSERT_LOG(valid(e), "entities::transform(): entity is not valid");
+        if (!valid(e)) return nullptr;
+
         const components::transform* t = get_component<components::transform>(e);
         GAMECOE_ASSERT_LOG(t != nullptr, "entities::transform(): transform missing (should be impossible - mandatory component)");
-        return *t;
+        return t;
     }
 
     void entities::destroy(entity e)
@@ -183,8 +189,8 @@ namespace gamecoe
 
     std::size_t entities::size() const
     {
-        GAMECOE_ASSERT_LOG(static_cast<std::size_t>(m_current_entity_id) >= m_recycle_ids.size(), "entities::size(): recycle count exceeds allocated id count");
-        return static_cast<std::size_t>(m_current_entity_id) - m_recycle_ids.size();
+        const component_pool<components::transform>* pool = find_pool<components::transform>();
+        return pool ? pool->size() : 0;
     }
 
     void entities::set_parent(entity child, entity parent)

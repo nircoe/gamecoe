@@ -3,6 +3,7 @@
 #include <gamecoe_config.hpp>
 #include <inputcoe.hpp>
 #include <utility>
+#include <cstdio>
 
 #if GAMECOE_USE_LOGCOE
     #include <logcoe.hpp>
@@ -14,6 +15,14 @@
 
 #include <GLFW/glfw3.h>
 #include <gamecoe/utils/consts.hpp>
+
+namespace
+{
+    void glfw_error_callback(int error_code, const char *description)
+    {
+        std::fprintf(stderr, "GLFW error %d: %s\n", error_code, description);
+    }
+}
 
 namespace gamecoe
 {
@@ -95,6 +104,8 @@ namespace gamecoe
 
     std::expected<window, error> window::create(const std::string &title, std::uint32_t width, std::uint32_t height)
     {
+        glfwSetErrorCallback(glfw_error_callback);
+
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GAMECOE_GRAPHICS_VERSION_MAJOR);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GAMECOE_GRAPHICS_VERSION_MINOR);
 

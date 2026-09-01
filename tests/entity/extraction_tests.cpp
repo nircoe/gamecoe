@@ -2,7 +2,7 @@
 #include <gamecoe/entity/entities.hpp>
 #include <vector>
 #include <algorithm>
-#include "../test_utils.hpp"
+#include <support/test_utils.hpp>
 
 using namespace gamecoe;
 
