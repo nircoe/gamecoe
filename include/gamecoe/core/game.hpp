@@ -52,11 +52,16 @@ namespace gamecoe
             scene_metadata(scene_builder builder, std::int8_t layer) : builder(builder), layer(layer) {}
         };
 
+        static_assert(std::is_nothrow_move_constructible_v<scene_metadata>,
+            "scene_metadata must stay nothrow-movable - flat_map reallocation falls back to copying otherwise");
+
         struct pending_scene_op
         {
             scene_id      id;
             scene_status  target_status;
         };
+
+        static_assert(std::is_nothrow_move_constructible_v<pending_scene_op>);
 
         gamecoe::entities m_entities;
         std::optional<gamecoe::window> m_window;

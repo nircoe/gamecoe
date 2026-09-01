@@ -275,15 +275,15 @@ namespace gamecoe
         GAMECOE_ASSERT_LOG(meta != nullptr, "game::load_scene(): scene is not registered");
         if (!meta) return;
 
-        GAMECOE_ASSERT_LOG(meta->status == scene_status::unloaded, "game::load_scene(): scene is not unloaded");
-        if (meta->status != scene_status::unloaded) return;
-
         if (!m_playing)
         {
             // Not playing yet, queue this for prepare_to_play()'s startup drain instead of running now.
             m_pending_scene_ops.push_back({ id, scene_status::loaded });
             return;
         }
+
+        GAMECOE_ASSERT_LOG(meta->status == scene_status::unloaded, "game::load_scene(): scene is not unloaded");
+        if (meta->status != scene_status::unloaded) return;
 
         const std::string scene_name = to_string(id);
 
@@ -304,16 +304,16 @@ namespace gamecoe
         GAMECOE_ASSERT_LOG(meta != nullptr, "game::activate_scene(): scene is not registered");
         if (!meta) return;
 
-        GAMECOE_ASSERT_LOG(meta->status == scene_status::loaded || meta->status == scene_status::inactive,
-                           "game::activate_scene(): scene is not loaded or inactive");
-        if (meta->status != scene_status::loaded && meta->status != scene_status::inactive) return;
-
         if (!m_playing)
         {
             // Not playing yet, queue this for prepare_to_play()'s startup drain instead of running now.
             m_pending_scene_ops.push_back({ id, scene_status::active });
             return;
         }
+
+        GAMECOE_ASSERT_LOG(meta->status == scene_status::loaded || meta->status == scene_status::inactive,
+                           "game::activate_scene(): scene is not loaded or inactive");
+        if (meta->status != scene_status::loaded && meta->status != scene_status::inactive) return;
 
         // meta->status is set to active before the pending command_buffer flushes,
         // so if a potential command will call activate_scene on this id - it will see the status as active
@@ -347,15 +347,15 @@ namespace gamecoe
         GAMECOE_ASSERT_LOG(meta != nullptr, "game::deactivate_scene(): scene is not registered");
         if (!meta) return;
 
-        GAMECOE_ASSERT_LOG(meta->status == scene_status::active, "game::deactivate_scene(): scene is not active");
-        if (meta->status != scene_status::active) return;
-
         if (!m_playing)
         {
             // Not playing yet, queue this for prepare_to_play()'s startup drain instead of running now.
             m_pending_scene_ops.push_back({ id, scene_status::inactive });
             return;
         }
+
+        GAMECOE_ASSERT_LOG(meta->status == scene_status::active, "game::deactivate_scene(): scene is not active");
+        if (meta->status != scene_status::active) return;
 
         std::erase(m_active_scenes, id);
 
@@ -380,15 +380,15 @@ namespace gamecoe
         GAMECOE_ASSERT_LOG(meta != nullptr, "game::unload_scene(): scene is not registered");
         if (!meta) return;
 
-        GAMECOE_ASSERT_LOG(meta->status != scene_status::unloaded, "game::unload_scene(): scene is already unloaded");
-        if (meta->status == scene_status::unloaded) return;
-
         if (!m_playing)
         {
             // Not playing yet, queue this for prepare_to_play()'s startup drain instead of running now.
             m_pending_scene_ops.push_back({ id, scene_status::unloaded });
             return;
         }
+
+        GAMECOE_ASSERT_LOG(meta->status != scene_status::unloaded, "game::unload_scene(): scene is already unloaded");
+        if (meta->status == scene_status::unloaded) return;
 
         std::erase(m_active_scenes, id);
 

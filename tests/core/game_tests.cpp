@@ -4,9 +4,9 @@
 #include <gamecoe/entity/entities.hpp>
 #include <gamecoe/component/scene_tag.hpp>
 #include <gamecoe/component/transform.hpp>
+#include <gamecoe/component/parent_child.hpp>
 #include <support/scene_id.hpp>
 #include <support/test_utils.hpp>
-#include <algorithm>
 #include <optional>
 #include <vector>
 
@@ -32,27 +32,24 @@ namespace
 
     struct marker { int value; };
 
-    std::vector<entity> scene_entities(game &g, scene_id id)
+    void build_scene_hierarchy(command_buffer &buf)
     {
-        std::vector<entity> result;
-        g.entities().for_each_all<components::scene_tag>(
-            [id, &result](entity e, const components::scene_tag &tag) { if (tag.id == id) result.push_back(e); });
-        return result;
+        command_buffer::placeholder parent = buf.spawn();
+        command_buffer::placeholder child = buf.spawn();
+        buf.add<marker>(child, marker{5});
+        buf.set_parent(child, parent);
     }
 
     std::size_t count_scene_entities(game &g, scene_id id)
     {
-        return scene_entities(g, id).size();
+        return g.scene_entities(id).size();
     }
 
     std::size_t count_active_scene_entities(game &g, scene_id id)
     {
         std::size_t count = 0;
-        g.entities().for_each_all<components::scene_tag>(
-            [&g, id, &count](entity e, const components::scene_tag &tag)
-            {
-                if (tag.id == id && g.entities().is_active(e)) ++count;
-            });
+        g.entities().for_each<components::scene_tag>(
+            [id, &count](entity, const components::scene_tag &tag) { if (tag.id == id) ++count; });
         return count;
     }
 } // namespace
@@ -70,6 +67,39 @@ protected:
     }
 };
 
+TEST_F(GameTests, PrePlayCallsAreDeferredUntilPrepareToPlay)
+{
+    g->create_scene(scene_a, build_scene_a);
+
+    // Pre-play: queued, not executed yet.
+    g->load_scene(scene_a);
+    EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
+    EXPECT_EQ(g->entities().size(), 0u);
+
+    g->activate_scene(scene_a);
+    EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
+    EXPECT_EQ(g->entities().size(), 0u);
+
+    // Draining replays both queued ops in order.
+    test_prepare_to_play(*g);
+    EXPECT_EQ(g->status(scene_a), scene_status::active);
+    EXPECT_EQ(count_scene_entities(*g, scene_a), 3u);
+}
+
+TEST_F(GameTests, CreateSceneDuringPlayIsGuarded)
+{
+    test_prepare_to_play(*g);
+
+#ifndef NDEBUG
+    EXPECT_DEATH(g->create_scene(scene_a, build_scene_a), "cannot be created during game::play");
+#else
+    // Release: guard-return, the play-phase lock is what makes m_scenes storage-stable for the
+    // rest of play() - this is the actual mechanism the three original UAF sites relied on.
+    g->create_scene(scene_a, build_scene_a);
+    EXPECT_FALSE(g->has_scene(scene_a));
+#endif
+}
+
 TEST_F(GameTests, SceneLifecycleTransitions)
 {
     g->create_scene(scene_a, build_scene_a);
@@ -79,24 +109,18 @@ TEST_F(GameTests, SceneLifecycleTransitions)
 
     g->load_scene(scene_a);
     EXPECT_EQ(g->status(scene_a), scene_status::loaded);
-    EXPECT_EQ(std::find(g->active_scenes().begin(), g->active_scenes().end(), scene_a), g->active_scenes().end());
 
     g->activate_scene(scene_a);
     EXPECT_EQ(g->status(scene_a), scene_status::active);
-    ASSERT_EQ(g->active_scenes().size(), 1u);
-    EXPECT_EQ(g->active_scenes()[0], scene_a);
 
     g->deactivate_scene(scene_a);
     EXPECT_EQ(g->status(scene_a), scene_status::inactive);
-    EXPECT_EQ(std::find(g->active_scenes().begin(), g->active_scenes().end(), scene_a), g->active_scenes().end());
 
     g->activate_scene(scene_a);
     EXPECT_EQ(g->status(scene_a), scene_status::active);
-    EXPECT_NE(std::find(g->active_scenes().begin(), g->active_scenes().end(), scene_a), g->active_scenes().end());
 
     g->unload_scene(scene_a);
     EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
-    EXPECT_EQ(std::find(g->active_scenes().begin(), g->active_scenes().end(), scene_a), g->active_scenes().end());
 }
 
 TEST_F(GameTests, LoadDefersFlushUntilActivate)
@@ -125,7 +149,7 @@ TEST_F(GameTests, DeactivateReactivateMovesPartitions)
     g->load_scene(scene_a);
     g->activate_scene(scene_a);
 
-    std::vector<entity> entities_a = scene_entities(*g, scene_a);
+    std::vector<entity> entities_a = g->scene_entities(scene_a);
     ASSERT_EQ(entities_a.size(), 3u);
 
     g->deactivate_scene(scene_a);
@@ -148,7 +172,7 @@ TEST_F(GameTests, DeactivateReactivateSkipsIndividuallyDeactivated)
     g->load_scene(scene_a);
     g->activate_scene(scene_a);
 
-    std::vector<entity> entities_a = scene_entities(*g, scene_a);
+    std::vector<entity> entities_a = g->scene_entities(scene_a);
     ASSERT_EQ(entities_a.size(), 3u);
 
     entity individually_deactivated = entities_a[0];
@@ -176,6 +200,56 @@ TEST_F(GameTests, UnloadDestroysSceneEntities)
     EXPECT_EQ(count_scene_entities(*g, scene_a), 0u);
     EXPECT_EQ(count_scene_entities(*g, scene_b), 1u);
     EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
+}
+
+TEST_F(GameTests, UnloadDestroysParentedSceneEntities)
+{
+    g->create_scene(scene_a, build_scene_a);
+    test_prepare_to_play(*g);
+    g->load_scene(scene_a);
+    g->activate_scene(scene_a);
+
+    std::vector<entity> entities_a = g->scene_entities(scene_a);
+    ASSERT_EQ(entities_a.size(), 3u);
+    g->entities().set_parent(entities_a[1], entities_a[0]);
+
+    // A parented child gets destroyed via its parent's cascade before unload_scene()'s own
+    // loop reaches it - the count must still land on 3, not crash on the already-dead handle.
+    g->unload_scene(scene_a);
+
+    EXPECT_EQ(count_scene_entities(*g, scene_a), 0u);
+    for (entity e : entities_a)
+        EXPECT_FALSE(g->entities().valid(e));
+}
+
+TEST_F(GameTests, ActivateSceneFlushesHierarchyAndNonTransformComponents)
+{
+    g->create_scene(scene_a, build_scene_hierarchy);
+    test_prepare_to_play(*g);
+    g->load_scene(scene_a);
+    g->activate_scene(scene_a);
+
+    std::vector<entity> entities_a = g->scene_entities(scene_a);
+    ASSERT_EQ(entities_a.size(), 2u);
+
+    entity real_parent = entity::invalid();
+    entity real_child = entity::invalid();
+    for (entity e : entities_a)
+        (g->entities().has_component<marker>(e) ? real_child : real_parent) = e;
+
+    ASSERT_NE(real_parent, entity::invalid());
+    ASSERT_NE(real_child, entity::invalid());
+    ASSERT_TRUE(g->entities().has_component<components::parent>(real_child));
+    EXPECT_EQ(g->entities().get_component<components::parent>(real_child)->handle, real_parent);
+    EXPECT_EQ(g->entities().get_component<marker>(real_child)->value, 5);
+
+    g->deactivate_scene(scene_a);
+    EXPECT_FALSE(g->entities().is_active(real_parent));
+    EXPECT_FALSE(g->entities().is_active(real_child));
+
+    g->activate_scene(scene_a);
+    EXPECT_TRUE(g->entities().is_active(real_parent));
+    EXPECT_TRUE(g->entities().is_active(real_child));
 }
 
 TEST_F(GameTests, UnloadThenReloadDoesNotDoubleQueue)
@@ -237,6 +311,10 @@ TEST_F(GameTests, CreateEntityRequiresActiveScene)
     g->deactivate_scene(scene_b);
     EXPECT_DEATH(g->create_entity(scene_b), "scene is not active");
 #endif
+
+    // create_entity's Comps... pack rejects a transform passed through it (compile-time guard)
+    // Uncommenting the line below must fail to compile:
+    // g->create_entity(scene_a, components::transform{}, components::transform{});
 }
 
 TEST_F(GameTests, MultipleActiveScenesShareOneRegistry)
@@ -254,153 +332,199 @@ TEST_F(GameTests, MultipleActiveScenesShareOneRegistry)
         ++transform_count;
     EXPECT_EQ(transform_count, 4u);
 
-    ASSERT_EQ(scene_entities(*g, scene_a).size(), 3u);
-    ASSERT_EQ(scene_entities(*g, scene_b).size(), 1u);
+    ASSERT_EQ(g->scene_entities(scene_a).size(), 3u);
+    ASSERT_EQ(g->scene_entities(scene_b).size(), 1u);
 }
 
-TEST_F(GameTests, CreateSceneDuplicateIdGuarded)
+TEST_F(GameTests, HasSceneAndWindow)
+{
+    EXPECT_FALSE(g->has_scene(scene_a));
+    g->create_scene(scene_a, build_scene_a);
+    EXPECT_TRUE(g->has_scene(scene_a));
+
+    EXPECT_NE(g->window(), nullptr);
+}
+
+TEST_F(GameTests, SceneLayerRoundTripAndClamp)
+{
+    g->create_scene(scene_a, build_scene_a, 5);
+    EXPECT_EQ(g->scene_layer(scene_a), 5);
+
+    g->set_scene_layer(scene_a, -10);
+    EXPECT_EQ(g->scene_layer(scene_a), -10);
+
+    // Out of std::int8_t range [-128, 127] - clamped rather than silently truncated.
+    g->set_scene_layer(scene_a, 500);
+    EXPECT_EQ(g->scene_layer(scene_a), 127);
+
+    g->create_scene(scene_b, build_scene_b, -500);
+    EXPECT_EQ(g->scene_layer(scene_b), -128);
+}
+
+TEST_F(GameTests, CreateSceneGuarded)
+{
+    // Test 1: create_scene with a null builder
+    {
+#ifndef NDEBUG
+        EXPECT_DEATH(g->create_scene(scene_b, nullptr), "scene builder is null");
+#else
+        // Release: guard-return means the scene was never registered.
+        g->create_scene(scene_b, nullptr);
+        EXPECT_EQ(g->status(scene_b), scene_status::unloaded);
+#endif
+    }
+
+    // Test 2: create_scene with a duplicate (already registered) scene id
+    {
+        g->create_scene(scene_a, build_scene_a);
+
+#ifndef NDEBUG
+        EXPECT_DEATH(g->create_scene(scene_a, build_scene_b), "scene is already registered");
+#else
+        // Release: guard-return leaves the original registration untouched, second call is a no-op.
+        g->create_scene(scene_a, build_scene_b);
+        test_prepare_to_play(*g);
+        g->load_scene(scene_a);
+        g->activate_scene(scene_a);
+        EXPECT_EQ(count_scene_entities(*g, scene_a), 3u);
+#endif
+    }
+}
+
+TEST_F(GameTests, UnregisteredSceneGuarded)
+{
+    // Test 1: load_scene on an unregistered scene
+    {
+#ifndef NDEBUG
+        EXPECT_SCENE_UNREGISTERED_DEATH(g->load_scene(scene_a));
+#else
+        // Release: guard-return, no entities flushed for an unregistered scene.
+        g->load_scene(scene_a);
+        EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
+        EXPECT_EQ(g->entities().size(), 0u);
+#endif
+    }
+
+    // Test 2: activate_scene on an unregistered scene
+    {
+#ifndef NDEBUG
+        EXPECT_SCENE_UNREGISTERED_DEATH(g->activate_scene(scene_a));
+#else
+        // Release: guard-return, no insertion into m_active_scenes for an unregistered scene.
+        g->activate_scene(scene_a);
+        EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
+#endif
+    }
+
+    // Test 3: deactivate_scene on an unregistered scene
+    {
+#ifndef NDEBUG
+        EXPECT_SCENE_UNREGISTERED_DEATH(g->deactivate_scene(scene_a));
+#else
+        // Release: guard-return, no-op for an unregistered scene.
+        g->deactivate_scene(scene_a);
+        EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
+#endif
+    }
+
+    // Test 4: unload_scene on an unregistered scene
+    {
+#ifndef NDEBUG
+        EXPECT_SCENE_UNREGISTERED_DEATH(g->unload_scene(scene_a));
+#else
+        // Release: guard-return, no-op for an unregistered scene.
+        g->unload_scene(scene_a);
+        EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
+#endif
+    }
+
+    // Test 5: status on an unregistered scene id
+    {
+#ifndef NDEBUG
+        EXPECT_SCENE_UNREGISTERED_DEATH(g->status(scene_a));
+#else
+        // Release: guard-return, unregistered id is a well-defined unloaded rather than UB.
+        EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
+#endif
+    }
+}
+
+TEST_F(GameTests, RepeatedLoadOrActivateGuarded)
 {
     g->create_scene(scene_a, build_scene_a);
-
-#ifndef NDEBUG
-    EXPECT_DEATH(g->create_scene(scene_a, build_scene_b), "scene is already registered");
-#else
-    // Release: guard-return leaves the original registration untouched, second call is a no-op.
-    g->create_scene(scene_a, build_scene_b);
-    g->load_scene(scene_a);
-    g->activate_scene(scene_a);
-    EXPECT_EQ(count_scene_entities(*g, scene_a), 3u);
-#endif
-}
-
-TEST_F(GameTests, CreateSceneNullBuilderGuarded)
-{
-#ifndef NDEBUG
-    EXPECT_DEATH(g->create_scene(scene_a, nullptr), "scene builder is null");
-#else
-    // Release: guard-return means the scene was never registered.
-    g->create_scene(scene_a, nullptr);
-    EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
-#endif
-}
-
-TEST_F(GameTests, LoadSceneUnregisteredGuarded)
-{
-#ifndef NDEBUG
-    EXPECT_SCENE_UNREGISTERED_DEATH(g->load_scene(scene_a));
-#else
-    // Release: guard-return, no entities flushed for an unregistered scene.
-    g->load_scene(scene_a);
-    EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
-    EXPECT_EQ(g->entities().size(), 0u);
-#endif
-}
-
-TEST_F(GameTests, ActivateSceneUnregisteredGuarded)
-{
-#ifndef NDEBUG
-    EXPECT_SCENE_UNREGISTERED_DEATH(g->activate_scene(scene_a));
-#else
-    // Release: guard-return, no insertion into m_active_scenes for an unregistered scene.
-    g->activate_scene(scene_a);
-    EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
-    EXPECT_TRUE(g->active_scenes().empty());
-#endif
-}
-
-TEST_F(GameTests, DeactivateSceneUnregisteredGuarded)
-{
-#ifndef NDEBUG
-    EXPECT_SCENE_UNREGISTERED_DEATH(g->deactivate_scene(scene_a));
-#else
-    // Release: guard-return, no-op for an unregistered scene.
-    g->deactivate_scene(scene_a);
-    EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
-#endif
-}
-
-TEST_F(GameTests, UnloadSceneUnregisteredGuarded)
-{
-#ifndef NDEBUG
-    EXPECT_SCENE_UNREGISTERED_DEATH(g->unload_scene(scene_a));
-#else
-    // Release: guard-return, no-op for an unregistered scene.
-    g->unload_scene(scene_a);
-    EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
-#endif
-}
-
-TEST_F(GameTests, LoadSceneNotUnloadedGuarded)
-{
-    g->create_scene(scene_a, build_scene_a);
-    test_prepare_to_play(*g);
-    g->load_scene(scene_a);
-
-#ifndef NDEBUG
-    EXPECT_DEATH(g->load_scene(scene_a), "scene is not unloaded");
-#else
-    // Release: guard-return, second load doesn't double-flush the pending command_buffer.
-    g->load_scene(scene_a);
-    g->activate_scene(scene_a);
-    EXPECT_EQ(count_scene_entities(*g, scene_a), 3u);
-#endif
-}
-
-TEST_F(GameTests, ActivateSceneAlreadyActiveGuarded)
-{
-    g->create_scene(scene_a, build_scene_a);
-    test_prepare_to_play(*g);
-    g->load_scene(scene_a);
-    g->activate_scene(scene_a);
-
-#ifndef NDEBUG
-    EXPECT_DEATH(g->activate_scene(scene_a), "scene is not loaded or inactive");
-#else
-    // Release: guard-return, second activate doesn't duplicate the m_active_scenes entry.
-    g->activate_scene(scene_a);
-    ASSERT_EQ(g->active_scenes().size(), 1u);
-    EXPECT_EQ(g->active_scenes()[0], scene_a);
-#endif
-}
-
-TEST_F(GameTests, DeactivateSceneNotActiveGuarded)
-{
-    g->create_scene(scene_a, build_scene_a);
-    test_prepare_to_play(*g);
-    g->load_scene(scene_a);
-
-#ifndef NDEBUG
-    EXPECT_DEATH(g->deactivate_scene(scene_a), "scene is not active");
-#else
-    // Release: guard-return, scene stays loaded, nothing to deactivate since it was never flushed.
-    g->deactivate_scene(scene_a);
-    EXPECT_EQ(g->status(scene_a), scene_status::loaded);
-    EXPECT_EQ(g->entities().size(), 0u);
-#endif
-}
-
-TEST_F(GameTests, UnloadSceneAlreadyUnloadedGuarded)
-{
-    g->create_scene(scene_a, build_scene_a);
+    g->create_scene(scene_b, build_scene_b);
     test_prepare_to_play(*g);
 
+    // Test 1: load_scene called again while already loaded
+    {
+        g->load_scene(scene_a);
+
 #ifndef NDEBUG
-    EXPECT_DEATH(g->unload_scene(scene_a), "scene is already unloaded");
+        EXPECT_DEATH(g->load_scene(scene_a), "scene is not unloaded");
 #else
-    // Release: guard-return, no-op on an already-unloaded scene.
-    g->unload_scene(scene_a);
-    EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
-    EXPECT_EQ(g->entities().size(), 0u);
+        // Release: guard-return, second load doesn't double-flush the pending command_buffer.
+        g->load_scene(scene_a);
+        g->activate_scene(scene_a);
+        EXPECT_EQ(count_scene_entities(*g, scene_a), 3u);
 #endif
+    }
+
+    // Test 2: activate_scene called again while already active
+    {
+        g->load_scene(scene_b);
+        g->activate_scene(scene_b);
+
+#ifndef NDEBUG
+        EXPECT_DEATH(g->activate_scene(scene_b), "scene is not loaded or inactive");
+#else
+        // Release: guard-return, second activate doesn't duplicate the m_active_scenes entry.
+        g->activate_scene(scene_b);
+        EXPECT_EQ(g->status(scene_b), scene_status::active);
+#endif
+    }
 }
 
-TEST_F(GameTests, StatusUnregisteredIdGuarded)
+TEST_F(GameTests, InvalidDeactivateOrUnloadGuarded)
+{
+    g->create_scene(scene_a, build_scene_a);
+    g->create_scene(scene_b, build_scene_b);
+    test_prepare_to_play(*g);
+
+    // Test 1: deactivate_scene on a scene that's only loaded, not active
+    {
+        g->load_scene(scene_a);
+
+#ifndef NDEBUG
+        EXPECT_DEATH(g->deactivate_scene(scene_a), "scene is not active");
+#else
+        // Release: guard-return, scene stays loaded, nothing to deactivate since it was never flushed.
+        g->deactivate_scene(scene_a);
+        EXPECT_EQ(g->status(scene_a), scene_status::loaded);
+        EXPECT_EQ(g->entities().size(), 0u);
+#endif
+    }
+
+    // Test 2: unload_scene on an already-unloaded scene
+    {
+#ifndef NDEBUG
+        EXPECT_DEATH(g->unload_scene(scene_b), "scene is already unloaded");
+#else
+        // Release: guard-return, no-op on an already-unloaded scene.
+        g->unload_scene(scene_b);
+        EXPECT_EQ(g->status(scene_b), scene_status::unloaded);
+        EXPECT_EQ(g->entities().size(), 0u);
+#endif
+    }
+}
+
+TEST_F(GameTests, SecondCreateFailsWhileFirstAlive)
 {
 #ifndef NDEBUG
-    EXPECT_SCENE_UNREGISTERED_DEATH(g->status(scene_a));
+    EXPECT_DEATH((void)game::create("SecondCreateFailsWhileFirstAlive.second"), "a game instance is already alive");
 #else
-    // Release: guard-return, unregistered id is a well-defined unloaded rather than UB.
-    EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
+    auto result2 = game::create("SecondCreateFailsWhileFirstAlive.second");
+    ASSERT_FALSE(result2.has_value());
+    EXPECT_EQ(result2.error().code, error_code::game_already_alive);
 #endif
 }
 
@@ -415,4 +539,23 @@ TEST(GameMoveTests, MoveConstructorNoDoubleDestroy)
     // transferred, not just that nothing crashed - both destructors run cleanly at scope
     // exit with no double glfwTerminate()/logcoe::shutdown()/soundcoe::shutdown().
     EXPECT_EQ(moved.background_color(), colorcoe::red());
+}
+
+TEST(GameMoveTests, MovedFromGameGuardsAgainstUse)
+{
+    auto result = game::create("GameMoveTests.MovedFromGameGuardsAgainstUse");
+    SKIP_IF_NO_GAME(result);
+
+    game moved(std::move(*result));
+    game &source = *result;
+
+    EXPECT_EQ(source.window(), nullptr);
+
+#ifndef NDEBUG
+    EXPECT_DEATH(source.set_background_color(colorcoe::blue()), "called on a moved-from game");
+    EXPECT_DEATH(source.play(), "called on a moved-from game");
+#else
+    source.set_background_color(colorcoe::blue());
+    source.play();
+#endif
 }

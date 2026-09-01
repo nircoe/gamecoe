@@ -130,6 +130,25 @@ TEST_F(ComponentPoolTests, AddAndGetOperations)
 }
 
 //==============================================================================
+//                        Duplicate Add
+//==============================================================================
+
+TEST_F(ComponentPoolTests, DuplicateAddIsNoOp)
+{
+    auto e = entity::create(1, 0);
+    pool.add(e, true, Position{1.0f, 2.0f, 3.0f});
+
+#ifndef NDEBUG
+    EXPECT_DEATH(pool.add(e, true, Position{9.0f, 9.0f, 9.0f}), "entity already has this component");
+#else
+    // Release: guard-return, the original value is untouched by the duplicate add.
+    pool.add(e, true, Position{9.0f, 9.0f, 9.0f});
+    EXPECT_EQ(pool.get(e), (Position{1.0f, 2.0f, 3.0f}));
+    EXPECT_EQ(pool.size(), 1u);
+#endif
+}
+
+//==============================================================================
 //                        Remove Components
 //==============================================================================
 

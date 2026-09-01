@@ -120,6 +120,31 @@ TEST_F(EntitiesTests, EntityLifecycle)
 }
 
 //==============================================================================
+//                        Move Semantics
+//==============================================================================
+
+TEST_F(EntitiesTests, MoveConstructorResetsMovedFromCounter)
+{
+    entities source;
+    entity e0 = source.create();
+    entity e1 = source.create();
+    entity e2 = source.create();
+    ASSERT_EQ(source.size(), 3u);
+
+    entities dest(std::move(source));
+
+    EXPECT_EQ(dest.size(), 3u);
+    EXPECT_TRUE(dest.valid(e0));
+    EXPECT_TRUE(dest.valid(e1));
+    EXPECT_TRUE(dest.valid(e2));
+
+    EXPECT_EQ(source.size(), 0u);
+    entity fresh = source.create();
+    EXPECT_TRUE(source.valid(fresh));
+    EXPECT_EQ(source.size(), 1u);
+}
+
+//==============================================================================
 //                        Component Operations
 //==============================================================================
 
@@ -176,6 +201,17 @@ TEST_F(EntitiesTests, ComponentOperations)
 
         // Invalid entity handle
         EXPECT_EQ(mgr.get_component<Position>(invalid), nullptr);
+    }
+
+    // Test 4: add_component on an invalid entity is guarded
+    {
+        entity invalid = entity::invalid();
+
+#ifndef NDEBUG
+        EXPECT_DEATH(mgr.add_component<Position>(invalid, Position{1.0f, 2.0f, 3.0f}), "entity is not valid");
+#else
+        EXPECT_EQ(mgr.add_component<Position>(invalid, Position{1.0f, 2.0f, 3.0f}), nullptr);
+#endif
     }
 }
 
@@ -315,6 +351,11 @@ TEST_F(EntitiesTests, MandatoryTransform)
     // Uncommenting either line below must fail to compile:
     // mgr.add_component<components::transform>(e);
     // mgr.remove_component<components::transform>(e);
+
+    // Test 3b: set_component rejects transform and scene_tag too (compile-time guard)
+    // Uncommenting either line below must fail to compile:
+    // mgr.set_component<components::transform>(e, components::transform{});
+    // mgr.set_component<components::scene_tag>(e, components::scene_tag{});
 
     // Test 4: transform() accessor returns the same component as get_component<transform>(), no null-check needed
     {

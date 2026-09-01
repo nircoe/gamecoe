@@ -31,13 +31,14 @@ namespace gamecoe
         // Plain counters, not atomics. Atomics would imply a thread-safety guarantee
         // this ECS doesn't have yet, revisit once the threading model is decided.
         static std::uint32_t s_component_id;
-        static std::uint32_t s_current_entity_id;
 
         std::vector<std::unique_ptr<basic_component_pool>> m_pools;
         std::vector<std::uint32_t> m_recycle_ids;
         std::vector<std::uint16_t> m_generations;
         // Per-entity activate()/deactivate() request, independent of any inherited parent state.
         std::vector<bool> m_self_active;
+
+        std::uint32_t m_current_entity_id{0};
 
         // Returns static and unique id for component T
         template <typename T>
@@ -94,7 +95,13 @@ namespace gamecoe
     public:
         entities() = default;
         entities(const entities&) = delete;
-        entities(entities&&) = default;
+        entities(entities&& other) noexcept
+            : m_pools(std::move(other.m_pools))
+            , m_recycle_ids(std::move(other.m_recycle_ids))
+            , m_generations(std::move(other.m_generations))
+            , m_self_active(std::move(other.m_self_active))
+            , m_current_entity_id(std::exchange(other.m_current_entity_id, 0))
+        {}
         entities &operator=(const entities&) = delete;
         entities &operator=(entities&&) = delete;
 

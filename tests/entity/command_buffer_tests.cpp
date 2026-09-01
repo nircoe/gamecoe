@@ -108,6 +108,29 @@ TEST_F(CommandBufferTests, SpawnAndFlush)
 }
 
 //==============================================================================
+//                        Flush Reentrancy
+//==============================================================================
+
+TEST_F(CommandBufferTests, FlushReentrantCommandAppendIsSafe)
+{
+    // Regression (D-3): a queued command that appends another command to the same buffer
+    // mid-flush must not invalidate flush()'s own iteration over m_commands.
+    command_buffer::placeholder p = buf.spawn();
+    buf.add(p, [this, p](const command_buffer::resolver&)
+    {
+        buf.add(p, Tag{2});
+        return Tag{1};
+    });
+
+    buf.flush(mgr);
+
+    entity e = entity::invalid();
+    ASSERT_NO_FATAL_FAILURE(sole_entity(mgr, e));
+    ASSERT_TRUE(mgr.has_component<Tag>(e));
+    EXPECT_EQ(mgr.get_component<Tag>(e)->value, 2);
+}
+
+//==============================================================================
 //                        Scene Tagging
 //==============================================================================
 

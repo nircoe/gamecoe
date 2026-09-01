@@ -94,4 +94,7 @@ namespace gamecoe
         void clear();
         void reserve_from_last_build();
     };
+
+    static_assert(std::is_nothrow_move_constructible_v<command_buffer>,
+        "command_buffer must stay nothrow-movable - flat_map reallocation falls back to copying otherwise");
 } // namespace gamecoe

@@ -1,5 +1,6 @@
 add_executable(gamecoe_tests
     main.cpp
+    support/scene_id.cpp
     colorcoe_tests.cpp
     utils/paths_tests.cpp
     core/window_tests.cpp
