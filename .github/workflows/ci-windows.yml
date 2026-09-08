@@ -83,7 +83,7 @@ jobs:
 
     - name: Build
       run: |
-        cmake --build build --config Release
+        cmake --build build --config Release --parallel
 
     - name: Configure CMake (toolkit libraries)
       run: |
@@ -98,7 +98,7 @@ jobs:
 
     - name: Build (toolkit libraries)
       run: |
-        cmake --build build-toolkit --config Release
+        cmake --build build-toolkit --config Release --parallel
 
     - name: Finish Mesa download
       if: steps.mesa-cache.outputs.cache-hit != 'true'
