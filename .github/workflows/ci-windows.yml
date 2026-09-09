@@ -67,14 +67,23 @@ jobs:
           -PassThru -RedirectStandardOutput mesa_download.log -RedirectStandardError mesa_download.err.log
         $proc.Id | Out-File -FilePath mesa_download.pid
 
+    - name: Setup ccache
+      if: matrix.compiler == 'gcc'
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ccache-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('cmake/glfw.cmake', 'cmake/glad.cmake', 'cmake/glm.cmake', 'cmake/testcoe.cmake', 'cmake/logcoe.cmake', 'cmake/soundcoe.cmake') }}
+        restore-keys: ccache-${{ runner.os }}-${{ matrix.compiler }}-
+
     - name: Configure CMake
       run: |
         GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
+        BUILD_TYPE_FLAG="-DCMAKE_BUILD_TYPE=Release"
         CMAKE_FEATURE_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON -DGAMECOE_USE_TESTCOE=ON"
         if [ -n "${{ matrix.cmake-generator }}" ]; then
-          cmake -B build -G "${{ matrix.cmake-generator }}" -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake-options }} $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
+          CCACHE_FLAGS="-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+          cmake -B build -G "${{ matrix.cmake-generator }}" $BUILD_TYPE_FLAG ${{ matrix.cmake-options }} $CCACHE_FLAGS $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
         else
-          cmake -B build ${{ matrix.cmake-options }} -DCMAKE_BUILD_TYPE=Release $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
+          cmake -B build ${{ matrix.cmake-options }} $BUILD_TYPE_FLAG $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
         fi
       shell: bash
 

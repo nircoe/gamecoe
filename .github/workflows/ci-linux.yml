@@ -68,17 +68,24 @@ jobs:
         sudo apt-get install -y libc++-22-dev libc++abi-22-dev
       shell: bash
 
+    - name: Setup ccache
+      uses: hendrikmuhs/ccache-action@v1.2
+      with:
+        key: ccache-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('cmake/glfw.cmake', 'cmake/glad.cmake', 'cmake/glm.cmake', 'cmake/testcoe.cmake', 'cmake/logcoe.cmake', 'cmake/soundcoe.cmake') }}
+        restore-keys: ccache-${{ runner.os }}-${{ matrix.compiler }}-
+
     - name: Configure CMake
       run: |
         GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
+        COMMON_FLAGS="-DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
         CMAKE_FEATURE_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON -DGAMECOE_USE_TESTCOE=ON -DGAMECOE_GLFW_WAYLAND=OFF"
         if [ "${{ matrix.compiler }}" == "clang" ]; then
           # OpenAL-Soft's vendored fmt 11.1.1 uses malloc/free without including <cstdlib> itself,
           # which libc++ (unlike libstdc++) doesn't pull in transitively here - force-include it.
           CLANG_CXX_FLAGS="-DCMAKE_CXX_FLAGS=-stdlib=libc++ -include cstdlib"
-          cmake -B build -G "${{ matrix.cmake-generator }}" -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake-options }} $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS "$CLANG_CXX_FLAGS"
+          cmake -B build -G "${{ matrix.cmake-generator }}" $COMMON_FLAGS ${{ matrix.cmake-options }} $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS "$CLANG_CXX_FLAGS"
         else
-          cmake -B build -G "${{ matrix.cmake-generator }}" -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake-options }} $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
+          cmake -B build -G "${{ matrix.cmake-generator }}" $COMMON_FLAGS ${{ matrix.cmake-options }} $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
         fi
 
     - name: Build
