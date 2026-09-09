@@ -48,15 +48,13 @@ jobs:
     - name: Configure CMake
       run: |
         GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
-        BUILD_TYPE_FLAG="-DCMAKE_BUILD_TYPE=Release"
-        CACHE_FLAGS="${{ env.CACHE_CMAKE_OPTIONS }}"
         CMAKE_FEATURE_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON -DGAMECOE_USE_TESTCOE=ON"
-        cmake -B build -G "${{ matrix.cmake-generator }}" $BUILD_TYPE_FLAG $CACHE_FLAGS \
+        cmake -B build -G "${{ matrix.cmake-generator }}" -DCMAKE_BUILD_TYPE=Release ${{ env.CACHE_CMAKE_OPTIONS }} \
           $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
 
     - name: Build
       run: |
-        cmake --build build --config Release
+        cmake --build build
 
     - name: Run tests
       working-directory: build

@@ -81,23 +81,21 @@ jobs:
     - name: Configure CMake
       run: |
         GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
-        BUILD_TYPE_FLAG="-DCMAKE_BUILD_TYPE=Release"
-        CACHE_FLAGS="${{ env.CACHE_CMAKE_OPTIONS }}"
         CMAKE_FEATURE_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON -DGAMECOE_USE_TESTCOE=ON -DGAMECOE_GLFW_WAYLAND=OFF"
         if [ "${{ matrix.compiler }}" == "clang" ]; then
           # OpenAL-Soft's vendored fmt 11.1.1 uses malloc/free without including <cstdlib> itself,
           # which libc++ (unlike libstdc++) doesn't pull in transitively here - force-include it.
           CLANG_CXX_FLAGS="-DCMAKE_CXX_FLAGS=-stdlib=libc++ -include cstdlib"
-          cmake -B build -G "${{ matrix.cmake-generator }}" $BUILD_TYPE_FLAG ${{ matrix.cmake-options }} \
-            $CACHE_FLAGS $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS "$CLANG_CXX_FLAGS"
+          cmake -B build -G "${{ matrix.cmake-generator }}" -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake-options }} \
+            ${{ env.CACHE_CMAKE_OPTIONS }} $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS "$CLANG_CXX_FLAGS"
         else
-          cmake -B build -G "${{ matrix.cmake-generator }}" $BUILD_TYPE_FLAG ${{ matrix.cmake-options }} \
-            $CACHE_FLAGS $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
+          cmake -B build -G "${{ matrix.cmake-generator }}" -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake-options }} \
+            ${{ env.CACHE_CMAKE_OPTIONS }} $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
         fi
 
     - name: Build
       run: |
-        cmake --build build --config Release
+        cmake --build build
 
     - name: Run tests
       working-directory: build
