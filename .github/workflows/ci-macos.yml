@@ -24,6 +24,7 @@ jobs:
           - name: "macOS Clang"
             compiler: clang
             cmake-generator: 'Ninja'
+            cache-cmake-options: '-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
 
     steps:
     - name: Checkout repository
@@ -39,14 +40,19 @@ jobs:
     - name: Setup ccache
       uses: hendrikmuhs/ccache-action@v1.2
       with:
-        key: ccache-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('cmake/glfw.cmake', 'cmake/glad.cmake', 'cmake/glm.cmake', 'cmake/testcoe.cmake', 'cmake/logcoe.cmake', 'cmake/soundcoe.cmake') }}
+        key: ccache-${{ runner.os }}-${{ matrix.compiler }}-${{
+          hashFiles('cmake/glfw.cmake', 'cmake/glad.cmake', 'cmake/glm.cmake',
+          'cmake/testcoe.cmake', 'cmake/logcoe.cmake', 'cmake/soundcoe.cmake') }}
         restore-keys: ccache-${{ runner.os }}-${{ matrix.compiler }}-
 
     - name: Configure CMake
       run: |
         GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
+        BUILD_TYPE_FLAG="-DCMAKE_BUILD_TYPE=Release"
+        CACHE_FLAGS="${{ matrix.cache-cmake-options }}"
         CMAKE_FEATURE_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON -DGAMECOE_USE_TESTCOE=ON"
-        cmake -B build -G "${{ matrix.cmake-generator }}" -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
+        cmake -B build -G "${{ matrix.cmake-generator }}" $BUILD_TYPE_FLAG $CACHE_FLAGS \
+          $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
 
     - name: Build
       run: |

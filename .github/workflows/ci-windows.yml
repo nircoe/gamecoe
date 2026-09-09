@@ -26,14 +26,20 @@ jobs:
           # Windows with MSVC
           - name: "Windows MSVC"
             compiler: msvc
-            cmake-generator: ''
-            cmake-options: ''
+            cmake-generator: 'Ninja'
+            cmake-options: '-DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl'
+            cache-cmake-options: >-
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+              -DCMAKE_POLICY_DEFAULT_CMP0141=NEW
+              -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded
 
           # Windows with MinGW (GCC)
           - name: "Windows MinGW"
             compiler: gcc
             cmake-generator: 'MinGW Makefiles'
             cmake-options: '-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++'
+            cache-cmake-options: '-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
 
     steps:
     - name: Checkout repository
@@ -71,20 +77,32 @@ jobs:
       if: matrix.compiler == 'gcc'
       uses: hendrikmuhs/ccache-action@v1.2
       with:
-        key: ccache-${{ runner.os }}-${{ matrix.compiler }}-${{ hashFiles('cmake/glfw.cmake', 'cmake/glad.cmake', 'cmake/glm.cmake', 'cmake/testcoe.cmake', 'cmake/logcoe.cmake', 'cmake/soundcoe.cmake') }}
+        key: ccache-${{ runner.os }}-${{ matrix.compiler }}-${{
+          hashFiles('cmake/glfw.cmake', 'cmake/glad.cmake', 'cmake/glm.cmake',
+          'cmake/testcoe.cmake', 'cmake/logcoe.cmake', 'cmake/soundcoe.cmake') }}
         restore-keys: ccache-${{ runner.os }}-${{ matrix.compiler }}-
+
+    - name: Setup MSVC dev environment
+      if: matrix.compiler == 'msvc'
+      uses: ilammy/msvc-dev-cmd@v1.13.0
+
+    - name: Setup sccache
+      if: matrix.compiler == 'msvc'
+      uses: mozilla-actions/sccache-action@v0.0.11
+
+    - name: Set sccache env vars
+      if: matrix.compiler == 'msvc'
+      run: echo "SCCACHE_GHA_ENABLED=true" >> $GITHUB_ENV
+      shell: bash
 
     - name: Configure CMake
       run: |
         GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
         BUILD_TYPE_FLAG="-DCMAKE_BUILD_TYPE=Release"
+        CACHE_FLAGS="${{ matrix.cache-cmake-options }}"
         CMAKE_FEATURE_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON -DGAMECOE_USE_TESTCOE=ON"
-        if [ -n "${{ matrix.cmake-generator }}" ]; then
-          CCACHE_FLAGS="-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
-          cmake -B build -G "${{ matrix.cmake-generator }}" $BUILD_TYPE_FLAG ${{ matrix.cmake-options }} $CCACHE_FLAGS $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
-        else
-          cmake -B build ${{ matrix.cmake-options }} $BUILD_TYPE_FLAG $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
-        fi
+        cmake -B build -G "${{ matrix.cmake-generator }}" $BUILD_TYPE_FLAG ${{ matrix.cmake-options }} \
+          $CACHE_FLAGS $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
       shell: bash
 
     - name: Build
@@ -110,10 +128,8 @@ jobs:
     - name: Install Mesa software OpenGL
       shell: pwsh
       run: |
-        New-Item -ItemType Directory -Force -Path build\tests, build\tests\Release | Out-Null
-        foreach ($dir in 'build\tests', 'build\tests\Release') {
-          Copy-Item mesa3d-cache\x64\*.dll -Destination $dir
-        }
+        New-Item -ItemType Directory -Force -Path build\tests | Out-Null
+        Copy-Item mesa3d-cache\x64\*.dll -Destination build\tests
         echo "GALLIUM_DRIVER=llvmpipe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
     - name: Run tests
@@ -139,7 +155,7 @@ jobs:
             fi
         else # MSVC
             echo "Running gamecoe tests"
-            ./tests/Release/gamecoe_tests.exe | tee test_output.log
+            ./tests/gamecoe_tests.exe | tee test_output.log
             # testcoe currently reports a skipped test as failed. Narrow this back to skips only
             # once testcoe distinguishes the two in its output.
             if grep -qE 'Test Suite: (WindowTests|GameTests|GameMoveTests|GraphicsBufferTests|VertexArrayTests|ShaderTests|TextureTests)' test_output.log; then
