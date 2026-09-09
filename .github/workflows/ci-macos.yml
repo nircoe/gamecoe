@@ -40,7 +40,7 @@ jobs:
     - name: Configure CMake
       run: |
         GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
-        cmake -B build -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }} $GL_VERSION_FLAGS
+        cmake -B build -G "${{ matrix.cmake-generator }}" -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake-options }} $GL_VERSION_FLAGS
 
     - name: Build
       run: |

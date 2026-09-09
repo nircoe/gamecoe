@@ -44,11 +44,7 @@ jobs:
     - name: Install Windows build tools
       if: matrix.compiler != 'msvc'
       run: |
-        if [ "${{ matrix.compiler }}" == "clang" ]; then
-          choco install ninja
-        elif [ "${{ matrix.compiler }}" == "gcc" ]; then
-          choco install mingw
-        fi
+        choco install mingw
       shell: bash
 
     - name: Cache Mesa software OpenGL
@@ -75,9 +71,9 @@ jobs:
       run: |
         GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
         if [ -n "${{ matrix.cmake-generator }}" ]; then
-          cmake -B build -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }} $GL_VERSION_FLAGS
+          cmake -B build -G "${{ matrix.cmake-generator }}" -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake-options }} $GL_VERSION_FLAGS
         else
-          cmake -B build ${{ matrix.cmake-options }} $GL_VERSION_FLAGS
+          cmake -B build ${{ matrix.cmake-options }} -DCMAKE_BUILD_TYPE=Release $GL_VERSION_FLAGS
         fi
       shell: bash
 
