@@ -47,6 +47,13 @@ jobs:
       with:
         submodules: 'recursive'
 
+    - name: Diagnose pre-existing MinGW
+      if: matrix.compiler == 'gcc'
+      run: |
+        which gcc || echo "gcc not found before choco install"
+        gcc --version || true
+      shell: bash
+
     - name: Install Windows build tools
       if: matrix.compiler != 'msvc'
       run: |
