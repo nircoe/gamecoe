@@ -13,7 +13,8 @@ function(fetch_logcoe)
         FetchContent_Declare(
             logcoe
             GIT_REPOSITORY https://github.com/nircoe/logcoe.git
-            GIT_TAG main
+            GIT_TAG v0.1.1
+            GIT_SHALLOW TRUE
         )
         FetchContent_MakeAvailable(logcoe)
     else()
