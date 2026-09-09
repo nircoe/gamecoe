@@ -29,6 +29,14 @@ target_link_libraries(gamecoe_tests
         glfw
 )
 
+if(WIN32)
+    add_custom_command(TARGET gamecoe_tests POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                -t $<TARGET_FILE_DIR:gamecoe_tests>
+                $<TARGET_RUNTIME_DLLS:gamecoe_tests>
+        COMMAND_EXPAND_LISTS)
+endif()
+
 target_include_directories(gamecoe_tests PRIVATE ${GAMECOE_GLAD_OUTPUT_DIR}/include)
 target_include_directories(gamecoe_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
