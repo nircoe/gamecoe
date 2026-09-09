@@ -27,13 +27,13 @@ jobs:
           - name: "Windows MSVC"
             compiler: msvc
             cmake-generator: ''
-            cmake-options: '-DGAMECOE_USE_TESTCOE=ON'
+            cmake-options: ''
 
           # Windows with MinGW (GCC)
           - name: "Windows MinGW"
             compiler: gcc
             cmake-generator: 'MinGW Makefiles'
-            cmake-options: '-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ -DGAMECOE_USE_TESTCOE=ON'
+            cmake-options: '-DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++'
 
     steps:
     - name: Checkout repository
@@ -70,31 +70,17 @@ jobs:
     - name: Configure CMake
       run: |
         GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
+        CMAKE_FEATURE_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON -DGAMECOE_USE_TESTCOE=ON"
         if [ -n "${{ matrix.cmake-generator }}" ]; then
-          cmake -B build -G "${{ matrix.cmake-generator }}" -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake-options }} $GL_VERSION_FLAGS
+          cmake -B build -G "${{ matrix.cmake-generator }}" -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake-options }} $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
         else
-          cmake -B build ${{ matrix.cmake-options }} -DCMAKE_BUILD_TYPE=Release $GL_VERSION_FLAGS
+          cmake -B build ${{ matrix.cmake-options }} -DCMAKE_BUILD_TYPE=Release $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
         fi
       shell: bash
 
     - name: Build
       run: |
         cmake --build build --config Release --parallel
-
-    - name: Configure CMake (toolkit libraries)
-      run: |
-        GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
-        TOOLKIT_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON -DGAMECOE_USE_TESTCOE=OFF"
-        if [ -n "${{ matrix.cmake-generator }}" ]; then
-          cmake -B build-toolkit -G "${{ matrix.cmake-generator }}" ${{ matrix.cmake-options }} $TOOLKIT_FLAGS $GL_VERSION_FLAGS
-        else
-          cmake -B build-toolkit ${{ matrix.cmake-options }} $TOOLKIT_FLAGS $GL_VERSION_FLAGS
-        fi
-      shell: bash
-
-    - name: Build (toolkit libraries)
-      run: |
-        cmake --build build-toolkit --config Release --parallel
 
     - name: Finish Mesa download
       if: steps.mesa-cache.outputs.cache-hit != 'true'
