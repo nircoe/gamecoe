@@ -16,6 +16,7 @@ jobs:
       # Apple's OpenGL implementation caps at 4.1 core, below gamecoe's real 4.6 default
       GAMECOE_HEADLESS_GL_MAJOR: 4
       GAMECOE_HEADLESS_GL_MINOR: 1
+      CACHE_CMAKE_OPTIONS: '-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
     strategy:
       fail-fast: false
       matrix:
@@ -24,7 +25,6 @@ jobs:
           - name: "macOS Clang"
             compiler: clang
             cmake-generator: 'Ninja'
-            cache-cmake-options: '-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
 
     steps:
     - name: Checkout repository
@@ -49,7 +49,7 @@ jobs:
       run: |
         GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
         BUILD_TYPE_FLAG="-DCMAKE_BUILD_TYPE=Release"
-        CACHE_FLAGS="${{ matrix.cache-cmake-options }}"
+        CACHE_FLAGS="${{ env.CACHE_CMAKE_OPTIONS }}"
         CMAKE_FEATURE_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON -DGAMECOE_USE_TESTCOE=ON"
         cmake -B build -G "${{ matrix.cmake-generator }}" $BUILD_TYPE_FLAG $CACHE_FLAGS \
           $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
