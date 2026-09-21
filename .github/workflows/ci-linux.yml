@@ -19,6 +19,8 @@ jobs:
       GAMECOE_HEADLESS_GL_MAJOR: 4
       GAMECOE_HEADLESS_GL_MINOR: 5
       CACHE_CMAKE_OPTIONS: '-DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache'
+      # No audio device on runners, so soundcoe is built null-only, and OpenAL-Soft uses that backend only when told to.
+      ALSOFT_DRIVERS: 'null'
     strategy:
       fail-fast: false
       matrix:
@@ -81,7 +83,7 @@ jobs:
     - name: Configure CMake
       run: |
         GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
-        CMAKE_FEATURE_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON -DGAMECOE_USE_TESTCOE=ON -DGAMECOE_GLFW_WAYLAND=OFF"
+        CMAKE_FEATURE_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON -DGAMECOE_USE_TESTCOE=ON -DGAMECOE_GLFW_WAYLAND=OFF -DSOUNDCOE_ONLY_NULL_BACKEND=ON"
         if [ "${{ matrix.compiler }}" == "clang" ]; then
           # OpenAL-Soft's vendored fmt 11.1.1 uses malloc/free without including <cstdlib> itself,
           # which libc++ (unlike libstdc++) doesn't pull in transitively here - force-include it.

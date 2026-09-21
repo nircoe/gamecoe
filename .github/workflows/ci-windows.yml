@@ -19,6 +19,8 @@ jobs:
       GAMECOE_HEADLESS_GL_MAJOR: 4
       GAMECOE_HEADLESS_GL_MINOR: 5
       MESA_VERSION: 26.2.0
+      # No audio device on runners, so soundcoe is built null-only,and OpenAL-Soft uses that backend only when told to.
+      ALSOFT_DRIVERS: 'null'
     strategy:
       fail-fast: false
       matrix:
@@ -92,7 +94,7 @@ jobs:
     - name: Configure CMake
       run: |
         GL_VERSION_FLAGS="-DGAMECOE_GRAPHICS_VERSION_MAJOR=$GAMECOE_HEADLESS_GL_MAJOR -DGAMECOE_GRAPHICS_VERSION_MINOR=$GAMECOE_HEADLESS_GL_MINOR"
-        CMAKE_FEATURE_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON -DGAMECOE_USE_TESTCOE=ON"
+        CMAKE_FEATURE_FLAGS="-DGAMECOE_USE_SOUNDCOE=ON -DGAMECOE_USE_LOGCOE=ON -DGAMECOE_USE_TESTCOE=ON -DSOUNDCOE_ONLY_NULL_BACKEND=ON"
         cmake -B build -G "${{ matrix.cmake-generator }}" -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake-options }} \
           ${{ matrix.cache-cmake-options }} $CMAKE_FEATURE_FLAGS $GL_VERSION_FLAGS
       shell: bash

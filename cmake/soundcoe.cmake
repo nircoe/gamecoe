@@ -18,7 +18,7 @@ function(fetch_soundcoe)
         FetchContent_Declare(
             soundcoe
             GIT_REPOSITORY https://github.com/nircoe/soundcoe.git
-            GIT_TAG main
+            GIT_TAG v0.1.0
             GIT_SHALLOW TRUE
         )
         FetchContent_MakeAvailable(soundcoe)
