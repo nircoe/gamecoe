@@ -60,6 +60,7 @@ jobs:
       working-directory: build
       run: |
         echo "Running gamecoe tests"
-        # No accelerated GPU on GitHub's macOS runner, so GL-dependent suites skip here by design.
+        # GLFW hardcodes NSOpenGLPFAAccelerated and GitHub's macOS runner has no accelerated GL renderer,
+        # so GL-dependent suites skip here (see glfw/glfw#2878).
         ./tests/gamecoe_tests
       shell: bash

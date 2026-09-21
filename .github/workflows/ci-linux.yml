@@ -50,11 +50,6 @@ jobs:
         sudo apt-get install -y ninja-build xvfb xorg-dev libgl1-mesa-dev libglu1-mesa-dev libgl1-mesa-dri
       shell: bash
 
-    - name: Install audio dev libraries
-      run: |
-        sudo apt-get install -y libasound2-dev libpulse-dev libpipewire-0.3-dev
-      shell: bash
-
     - name: Install GCC 16
       if: matrix.compiler == 'gcc'
       run: |
