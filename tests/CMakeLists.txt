@@ -37,6 +37,12 @@ if(WIN32)
         COMMAND_EXPAND_LISTS)
 endif()
 
+# game::create() needs soundcoe's default audio root to exist next to the test binary
+if(GAMECOE_USE_SOUNDCOE)
+    add_custom_command(TARGET gamecoe_tests POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:gamecoe_tests>/assets/audio)
+endif()
+
 target_include_directories(gamecoe_tests PRIVATE ${GAMECOE_GLAD_OUTPUT_DIR}/include)
 target_include_directories(gamecoe_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
