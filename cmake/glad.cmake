@@ -72,6 +72,7 @@ function(generate_glad)
         GLAD
         GIT_REPOSITORY https://github.com/Dav1dde/glad.git
         GIT_TAG v2.0.8
+        GIT_SHALLOW TRUE
     )
     FetchContent_MakeAvailable(glad)
 
