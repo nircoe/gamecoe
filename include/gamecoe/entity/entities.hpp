@@ -137,8 +137,7 @@ namespace gamecoe
             static_assert(!hierarchy_component<T>,
                 "entities::add_component(): hierarchy components are managed - use entities::set_parent() instead");
 
-            GAMECOE_ASSERT_LOG(valid(e), "entities::add_component(): entity is not valid");
-            if (!valid(e)) return nullptr;
+            GAMECOE_ASSERT_GUARD(valid(e), "entities::add_component(): entity is not valid", nullptr);
 
             auto pool = get_pool<T>();
             return &pool->add(e, is_active(e), std::forward<Args>(args)...);

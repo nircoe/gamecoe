@@ -21,8 +21,7 @@ namespace gamecoe
         if (m_recycle_ids.empty())
         {
             id = m_current_entity_id;
-            GAMECOE_ASSERT_LOG(id <= entity::MAX_ENTITIES, "entities::create(): entity limit reached");
-            if (id > entity::MAX_ENTITIES) return entity::invalid();
+            GAMECOE_ASSERT_GUARD(id <= entity::MAX_ENTITIES, "entities::create(): entity limit reached", entity::invalid());
 
             m_current_entity_id++;
             generation = 0;
@@ -32,8 +31,11 @@ namespace gamecoe
         else
         {
             id = m_recycle_ids.back();
-            m_recycle_ids.pop_back();
             generation = m_generations[id];
+            GAMECOE_ASSERT_GUARD(generation <= entity::MAX_GENERATIONS,
+                                 "entities::create(): recycled entity generation exceeds maximum",
+                                 entity::invalid());
+            m_recycle_ids.pop_back();
             m_self_active[id] = true;
         }
 
@@ -45,8 +47,7 @@ namespace gamecoe
 
     components::transform* entities::transform(entity e)
     {
-        GAMECOE_ASSERT_LOG(valid(e), "entities::transform(): entity is not valid");
-        if (!valid(e)) return nullptr;
+        GAMECOE_ASSERT_GUARD(valid(e), "entities::transform(): entity is not valid", nullptr);
 
         components::transform* t = get_component<components::transform>(e);
         GAMECOE_ASSERT_LOG(t != nullptr, "entities::transform(): transform missing (should be impossible - mandatory component)");
@@ -55,8 +56,7 @@ namespace gamecoe
 
     const components::transform* entities::transform(entity e) const
     {
-        GAMECOE_ASSERT_LOG(valid(e), "entities::transform(): entity is not valid");
-        if (!valid(e)) return nullptr;
+        GAMECOE_ASSERT_GUARD(valid(e), "entities::transform(): entity is not valid", nullptr);
 
         const components::transform* t = get_component<components::transform>(e);
         GAMECOE_ASSERT_LOG(t != nullptr, "entities::transform(): transform missing (should be impossible - mandatory component)");
@@ -108,8 +108,7 @@ namespace gamecoe
 
     void entities::activate(entity e)
     {
-        GAMECOE_ASSERT_LOG(valid(e), "entities::activate(): entity is not valid");
-        if (!valid(e)) return;
+        GAMECOE_ASSERT_GUARD(valid(e), "entities::activate(): entity is not valid");
 
         if (m_self_active[e.id()])
         {
@@ -122,8 +121,7 @@ namespace gamecoe
 
     void entities::deactivate(entity e)
     {
-        GAMECOE_ASSERT_LOG(valid(e), "entities::deactivate(): entity is not valid");
-        if (!valid(e)) return;
+        GAMECOE_ASSERT_GUARD(valid(e), "entities::deactivate(): entity is not valid");
 
         if (!m_self_active[e.id()])
         {
@@ -166,12 +164,10 @@ namespace gamecoe
     // is_active() can never disagree with the pools.
     bool entities::is_active(entity e) const
     {
-        GAMECOE_ASSERT_LOG(valid(e), "entities::is_active(): entity is not valid");
-        if (!valid(e)) return false;   // release-mode only - debug already caught it via the assert above
+        GAMECOE_ASSERT_GUARD(valid(e), "entities::is_active(): entity is not valid", false);
 
         auto pool = find_pool<components::transform>();
-        GAMECOE_ASSERT_LOG(pool != nullptr && pool->contains(e), "entities::is_active(): transform missing (should be impossible - mandatory component)");
-        if (!pool || !pool->contains(e)) return false;   // release-mode only - debug already caught it via the assert above
+        GAMECOE_ASSERT_GUARD(pool != nullptr && pool->contains(e), "entities::is_active(): transform missing (should be impossible - mandatory component)", false);
 
         return pool->is_active(e);
     }
@@ -195,8 +191,8 @@ namespace gamecoe
 
     void entities::set_parent(entity child, entity parent)
     {
-        GAMECOE_ASSERT_LOG(valid(child) && valid(parent), "entities::set_parent(): child/parent must be valid entities");
-        GAMECOE_ASSERT_LOG(child != parent, "entities::set_parent(): entity cannot be its own parent");
+        GAMECOE_ASSERT_GUARD(valid(child) && valid(parent), "entities::set_parent(): child/parent must be valid entities");
+        GAMECOE_ASSERT_GUARD(child != parent, "entities::set_parent(): entity cannot be its own parent");
 
         auto parent_pool = get_pool<components::parent>();
         auto children_pool = get_pool<components::children>();
@@ -211,9 +207,7 @@ namespace gamecoe
         const std::size_t max_guard = size();
         while (guard < max_guard)
         {
-            GAMECOE_ASSERT_LOG(ancestor != child, "entities::set_parent(): would create a parent/child cycle");
-            // Only relevant in release mode - we should have already caught cycles via the assert above in debug builds
-            if (ancestor == child) return;
+            GAMECOE_ASSERT_GUARD(ancestor != child, "entities::set_parent(): would create a parent/child cycle");
             if (!parent_pool->contains(ancestor)) break;
             ancestor = parent_pool->get(ancestor).handle;
             ++guard;

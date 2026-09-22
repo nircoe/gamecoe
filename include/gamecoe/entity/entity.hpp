@@ -32,8 +32,8 @@ namespace gamecoe
 
         static entity create(std::uint32_t id, std::uint16_t generation)
         {
-            GAMECOE_ASSERT_LOG(id <= MAX_ENTITIES, "entity::create(): entity id exceeds maximum");
-            GAMECOE_ASSERT_LOG(generation <= MAX_GENERATIONS, "entity::create(): entity generation exceeds maximum");
+            GAMECOE_ASSERT_GUARD(id <= MAX_ENTITIES, "entity::create(): entity id exceeds maximum", entity::invalid());
+            GAMECOE_ASSERT_GUARD(generation <= MAX_GENERATIONS, "entity::create(): entity generation exceeds maximum", entity::invalid());
             // Bit layout (id-major ensures default operator<=> orders by id first, generation second)
             // [31..................12][11..............0]
             // [       20-bit id      ][12-bit generation]
