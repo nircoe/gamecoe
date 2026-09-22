@@ -197,7 +197,7 @@ namespace gamecoe
         auto parent_pool = get_pool<components::parent>();
         auto children_pool = get_pool<components::children>();
 
-        if (parent_pool->contains(child) && parent_pool->get(child).handle == parent) return;
+        if (auto* p = parent_pool->try_get(child); p && p->handle == parent) return;
 
         // Walk up from parent toward the root, checking whether child appears as its own ancestor.
         // guard bounds the walk to entities.size() so a corrupted parent chain
@@ -208,15 +208,16 @@ namespace gamecoe
         while (guard < max_guard)
         {
             GAMECOE_ASSERT_GUARD(ancestor != child, "entities::set_parent(): would create a parent/child cycle");
-            if (!parent_pool->contains(ancestor)) break;
-            ancestor = parent_pool->get(ancestor).handle;
+            auto* pa = parent_pool->try_get(ancestor);
+            if (!pa) break;
+            ancestor = pa->handle;
             ++guard;
         }
 
         unlink_parent(child);
         parent_pool->add(child, is_active(child), components::parent{ parent });
 
-        if (children_pool->contains(parent)) children_pool->get(parent).handles.push_back(child);
+        if (auto* kids = children_pool->try_get(parent)) kids->handles.push_back(child);
         else children_pool->add(parent, is_active(parent), components::children{ { child } });
 
         set_active(child, compute_world_active(child));

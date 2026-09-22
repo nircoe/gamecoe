@@ -130,28 +130,6 @@ namespace gamecoe
             return m_components[target_index];
         }
 
-        // Asserts and returns T& (not nullable), callers here already checked contains().
-        // entities::get_component<T>() returns a nullable pointer instead since its callers don't always know.
-        // try_get() below is for callers in neither position: they haven't already checked contains(),
-        // but want the single lookup either way instead of a separate contains() + get() pair.
-        T& get(entity e)
-        {
-            auto index = m_entities.index(e);
-            GAMECOE_ASSERT_LOG(index, "component_pool::get(): entity does not exist in the pool");
-
-            return m_components[index.value()];
-        }
-
-        const T& get(entity e) const
-        {
-            auto index = m_entities.index(e);
-            GAMECOE_ASSERT_LOG(index, "component_pool::get(): entity does not exist in the pool");
-
-            return m_components[index.value()];
-        }
-
-        // Single lookup, nullable - for callers that don't already know the entity is present
-        // (unlike get(), which asserts and is for callers that already checked contains()).
         T* try_get(entity e)
         {
             auto index = m_entities.index(e);

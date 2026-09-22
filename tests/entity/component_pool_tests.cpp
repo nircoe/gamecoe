@@ -103,11 +103,13 @@ TEST_F(ComponentPoolTests, AddAndGetOperations)
         EXPECT_TRUE(pool.contains(e));
         EXPECT_EQ(pool.size(), 1);
         EXPECT_FALSE(pool.empty());
-        EXPECT_EQ(pool.get(e), pos);
+        auto* e_ptr = pool.try_get(e);
+        ASSERT_NE(e_ptr, nullptr);
+        EXPECT_EQ(*e_ptr, pos);
 
         // Modify and verify changes persist
-        pool.get(e).x = 99.0f;
-        EXPECT_EQ(pool.get(e).x, 99.0f);
+        e_ptr->x = 99.0f;
+        EXPECT_EQ(e_ptr->x, 99.0f);
     }
 
     // Test 2: Add multiple components
@@ -125,7 +127,11 @@ TEST_F(ComponentPoolTests, AddAndGetOperations)
         EXPECT_EQ(pool.size(), 50);
 
         for (std::size_t i = 0; i < entities.size(); ++i)
-            EXPECT_EQ(pool.get(entities[i]).x, static_cast<float>(i));
+        {
+            auto* p = pool.try_get(entities[i]);
+            ASSERT_NE(p, nullptr);
+            EXPECT_EQ(p->x, static_cast<float>(i));
+        }
     }
 }
 
@@ -143,7 +149,9 @@ TEST_F(ComponentPoolTests, DuplicateAddIsNoOp)
 #else
     // Release: guard-return, the original value is untouched by the duplicate add.
     pool.add(e, true, Position{9.0f, 9.0f, 9.0f});
-    EXPECT_EQ(pool.get(e), (Position{1.0f, 2.0f, 3.0f}));
+    auto* e_ptr = pool.try_get(e);
+    ASSERT_NE(e_ptr, nullptr);
+    EXPECT_EQ(*e_ptr, (Position{1.0f, 2.0f, 3.0f}));
     EXPECT_EQ(pool.size(), 1u);
 #endif
 }
@@ -170,7 +178,9 @@ TEST_F(ComponentPoolTests, RemoveSwapAndPop)
     EXPECT_TRUE(pool.contains(e3));
 
     // Verify e3's component data is still correct after swap
-    EXPECT_EQ(pool.get(e3).x, 3.0f);
+    auto* e3_ptr = pool.try_get(e3);
+    ASSERT_NE(e3_ptr, nullptr);
+    EXPECT_EQ(e3_ptr->x, 3.0f);
 }
 
 //==============================================================================
@@ -188,9 +198,9 @@ TEST_F(ComponentPoolTests, ActivePartition)
     auto payload_sweep = [&]()
     {
         for (std::size_t i = 0; i < entities.size(); ++i)
-            if (pool.contains(entities[i]))
+            if (auto* p = pool.try_get(entities[i]))
             {
-                EXPECT_EQ(pool.get(entities[i]), values[i]);
+                EXPECT_EQ(*p, values[i]);
             }
     };
 
@@ -338,8 +348,12 @@ TEST_F(ComponentPoolTests, AddIntoPoolWithInactiveEntities)
         Position &ref_c = pool.add(c, true, pos_c);
 
         EXPECT_EQ(ref_c, pos_c);
-        EXPECT_EQ(pool.get(c), pos_c);
-        EXPECT_EQ(pool.get(b), pos_b); // untouched by the insert
+        auto* c_ptr = pool.try_get(c);
+        ASSERT_NE(c_ptr, nullptr);
+        EXPECT_EQ(*c_ptr, pos_c);
+        auto* b_ptr = pool.try_get(b);
+        ASSERT_NE(b_ptr, nullptr);
+        EXPECT_EQ(*b_ptr, pos_b); // untouched by the insert
         EXPECT_EQ(pool.active_size(), 2);
         EXPECT_TRUE(pool.is_active(c));
         EXPECT_FALSE(pool.is_active(b));
@@ -358,7 +372,9 @@ TEST_F(ComponentPoolTests, AddIntoPoolWithInactiveEntities)
         Position &ref_d = pool.add(d, false, pos_d);
 
         EXPECT_EQ(ref_d, pos_d);
-        EXPECT_EQ(pool.get(d), pos_d);
+        auto* d_ptr = pool.try_get(d);
+        ASSERT_NE(d_ptr, nullptr);
+        EXPECT_EQ(*d_ptr, pos_d);
         EXPECT_EQ(pool.active_size(), 1);
         EXPECT_TRUE(pool.is_active(a));
         EXPECT_FALSE(pool.is_active(d));
@@ -384,9 +400,15 @@ TEST_F(ComponentPoolTests, AddIntoPoolWithInactiveEntities)
         Position &ref_e = pool.add(e, false, pos_e);
 
         EXPECT_EQ(ref_e, pos_e);
-        EXPECT_EQ(pool.get(e), pos_e);
-        EXPECT_EQ(pool.get(a), pos_a); // untouched by the insert
-        EXPECT_EQ(pool.get(b), pos_b); // untouched by the insert
+        auto* e_ptr = pool.try_get(e);
+        ASSERT_NE(e_ptr, nullptr);
+        EXPECT_EQ(*e_ptr, pos_e);
+        auto* a_ptr = pool.try_get(a);
+        ASSERT_NE(a_ptr, nullptr);
+        EXPECT_EQ(*a_ptr, pos_a); // untouched by the insert
+        auto* b_ptr = pool.try_get(b);
+        ASSERT_NE(b_ptr, nullptr);
+        EXPECT_EQ(*b_ptr, pos_b); // untouched by the insert
         EXPECT_EQ(pool.active_size(), 1); // unchanged by the new inactive insert
         EXPECT_TRUE(pool.is_active(a));
         EXPECT_FALSE(pool.is_active(b));
@@ -419,9 +441,15 @@ TEST_F(ComponentPoolTests, RemoveAcrossActiveBoundary)
 
         EXPECT_EQ(pool.active_size(), 2);
         EXPECT_FALSE(pool.contains(b));
-        EXPECT_EQ(pool.get(a), pos_a);
-        EXPECT_EQ(pool.get(c), pos_c);
-        EXPECT_EQ(pool.get(d), pos_d);
+        auto* a_ptr = pool.try_get(a);
+        ASSERT_NE(a_ptr, nullptr);
+        EXPECT_EQ(*a_ptr, pos_a);
+        auto* c_ptr = pool.try_get(c);
+        ASSERT_NE(c_ptr, nullptr);
+        EXPECT_EQ(*c_ptr, pos_c);
+        auto* d_ptr = pool.try_get(d);
+        ASSERT_NE(d_ptr, nullptr);
+        EXPECT_EQ(*d_ptr, pos_d);
         EXPECT_TRUE(pool.is_active(a));
         EXPECT_TRUE(pool.is_active(c));
         EXPECT_FALSE(pool.is_active(d));
@@ -446,8 +474,12 @@ TEST_F(ComponentPoolTests, RemoveAcrossActiveBoundary)
         EXPECT_EQ(pool.active_size(), 2);
         EXPECT_EQ(pool.size(), 2);
         EXPECT_FALSE(pool.contains(c));
-        EXPECT_EQ(pool.get(a), pos_a);
-        EXPECT_EQ(pool.get(b), pos_b);
+        auto* a_ptr = pool.try_get(a);
+        ASSERT_NE(a_ptr, nullptr);
+        EXPECT_EQ(*a_ptr, pos_a);
+        auto* b_ptr = pool.try_get(b);
+        ASSERT_NE(b_ptr, nullptr);
+        EXPECT_EQ(*b_ptr, pos_b);
         EXPECT_TRUE(pool.is_active(a));
         EXPECT_TRUE(pool.is_active(b));
     }
@@ -473,9 +505,15 @@ TEST_F(ComponentPoolTests, RemoveAcrossActiveBoundary)
 
         EXPECT_EQ(pool.active_size(), 2);
         EXPECT_FALSE(pool.contains(c));
-        EXPECT_EQ(pool.get(a), pos_a);
-        EXPECT_EQ(pool.get(b), pos_b);
-        EXPECT_EQ(pool.get(d), pos_d);
+        auto* a_ptr = pool.try_get(a);
+        ASSERT_NE(a_ptr, nullptr);
+        EXPECT_EQ(*a_ptr, pos_a);
+        auto* b_ptr = pool.try_get(b);
+        ASSERT_NE(b_ptr, nullptr);
+        EXPECT_EQ(*b_ptr, pos_b);
+        auto* d_ptr = pool.try_get(d);
+        ASSERT_NE(d_ptr, nullptr);
+        EXPECT_EQ(*d_ptr, pos_d);
         EXPECT_TRUE(pool.is_active(a));
         EXPECT_TRUE(pool.is_active(b));
         EXPECT_FALSE(pool.is_active(d));
@@ -502,9 +540,15 @@ TEST_F(ComponentPoolTests, RemoveAcrossActiveBoundary)
 
         EXPECT_EQ(move_pool.active_size(), 2);
         EXPECT_FALSE(move_pool.contains(b));
-        EXPECT_EQ(*move_pool.get(a).data, 1);
-        EXPECT_EQ(*move_pool.get(c).data, 3);
-        EXPECT_EQ(*move_pool.get(d).data, 4);
+        auto* a_ptr = move_pool.try_get(a);
+        ASSERT_NE(a_ptr, nullptr);
+        EXPECT_EQ(*a_ptr->data, 1);
+        auto* c_ptr = move_pool.try_get(c);
+        ASSERT_NE(c_ptr, nullptr);
+        EXPECT_EQ(*c_ptr->data, 3);
+        auto* d_ptr = move_pool.try_get(d);
+        ASSERT_NE(d_ptr, nullptr);
+        EXPECT_EQ(*d_ptr->data, 4);
         EXPECT_TRUE(move_pool.is_active(a));
         EXPECT_TRUE(move_pool.is_active(c));
         EXPECT_FALSE(move_pool.is_active(d));
@@ -527,8 +571,12 @@ TEST_F(ComponentPoolTests, RemoveAcrossActiveBoundary)
         EXPECT_EQ(move_pool.active_size(), 2);
         EXPECT_EQ(move_pool.size(), 2);
         EXPECT_FALSE(move_pool.contains(c));
-        EXPECT_EQ(*move_pool.get(a).data, 1);
-        EXPECT_EQ(*move_pool.get(b).data, 2);
+        auto* a_ptr = move_pool.try_get(a);
+        ASSERT_NE(a_ptr, nullptr);
+        EXPECT_EQ(*a_ptr->data, 1);
+        auto* b_ptr = move_pool.try_get(b);
+        ASSERT_NE(b_ptr, nullptr);
+        EXPECT_EQ(*b_ptr->data, 2);
     }
 
     // Test 6: remove the last active entity - move-only, exercises the self-move guard
@@ -549,9 +597,15 @@ TEST_F(ComponentPoolTests, RemoveAcrossActiveBoundary)
 
         EXPECT_EQ(move_pool.active_size(), 2);
         EXPECT_FALSE(move_pool.contains(c));
-        EXPECT_EQ(*move_pool.get(a).data, 1);
-        EXPECT_EQ(*move_pool.get(b).data, 2);
-        EXPECT_EQ(*move_pool.get(d).data, 4);
+        auto* a_ptr = move_pool.try_get(a);
+        ASSERT_NE(a_ptr, nullptr);
+        EXPECT_EQ(*a_ptr->data, 1);
+        auto* b_ptr = move_pool.try_get(b);
+        ASSERT_NE(b_ptr, nullptr);
+        EXPECT_EQ(*b_ptr->data, 2);
+        auto* d_ptr = move_pool.try_get(d);
+        ASSERT_NE(d_ptr, nullptr);
+        EXPECT_EQ(*d_ptr->data, 4);
         EXPECT_TRUE(move_pool.is_active(a));
         EXPECT_TRUE(move_pool.is_active(b));
         EXPECT_FALSE(move_pool.is_active(d));
@@ -569,10 +623,11 @@ TEST_F(ComponentPoolTests, GetConst)
     pool.add(e, true, Position{1.0f, 2.0f, 3.0f});
 
     const auto &const_pool = pool;
-    const Position &comp = const_pool.get(e);
+    const Position *comp = const_pool.try_get(e);
 
-    EXPECT_EQ(comp.x, 1.0f);
-    static_assert(std::is_same_v<decltype(comp), const Position &>);
+    ASSERT_NE(comp, nullptr);
+    EXPECT_EQ(comp->x, 1.0f);
+    static_assert(std::is_same_v<decltype(comp), const Position *>);
 }
 
 //==============================================================================
@@ -689,7 +744,9 @@ TEST_F(ComponentPoolTests, PerfectForwarding)
     move_pool.add(e, true, std::move(comp));
 
     EXPECT_TRUE(move_pool.contains(e));
-    EXPECT_EQ(*move_pool.get(e).data, 123);
+    auto* e_ptr = move_pool.try_get(e);
+    ASSERT_NE(e_ptr, nullptr);
+    EXPECT_EQ(*e_ptr->data, 123);
 }
 
 //==============================================================================

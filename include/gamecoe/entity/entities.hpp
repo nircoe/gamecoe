@@ -174,7 +174,7 @@ namespace gamecoe
             if (!has_component<T>(e)) return nullptr;
 
             auto pool = static_cast<component_pool<T>*>(m_pools[component_id<T>()].get());
-            return &(pool->get(e));
+            return pool->try_get(e);
         }
 
         // Pointer may be invalidated by any add_component call (pool reallocation).
@@ -184,7 +184,7 @@ namespace gamecoe
             if (!has_component<T>(e)) return nullptr;
 
             auto pool = static_cast<const component_pool<T>*>(m_pools[component_id<T>()].get());
-            return &(pool->get(e));
+            return pool->try_get(e);
         }
 
         // Add-or-assign: sets T's value if e already has it, otherwise adds it fresh.
