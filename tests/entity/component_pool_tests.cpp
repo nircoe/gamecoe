@@ -98,7 +98,7 @@ TEST_F(ComponentPoolTests, AddAndGetOperations)
     {
         auto e = entity::create(42, 0);
 
-        Position &pos = pool.add(e, true, Position{1.0f, 2.0f, 3.0f});
+        Position &pos = *pool.add(e, true, Position{1.0f, 2.0f, 3.0f});
 
         EXPECT_TRUE(pool.contains(e));
         EXPECT_EQ(pool.size(), 1);
@@ -345,7 +345,7 @@ TEST_F(ComponentPoolTests, AddIntoPoolWithInactiveEntities)
         ASSERT_TRUE(pool.is_active(a));
         ASSERT_FALSE(pool.is_active(b));
 
-        Position &ref_c = pool.add(c, true, pos_c);
+        Position &ref_c = *pool.add(c, true, pos_c);
 
         EXPECT_EQ(ref_c, pos_c);
         auto* c_ptr = pool.try_get(c);
@@ -369,7 +369,7 @@ TEST_F(ComponentPoolTests, AddIntoPoolWithInactiveEntities)
         Position pos_d{4.0f, 0.0f, 0.0f};
 
         pool.add(a, true, pos_a);
-        Position &ref_d = pool.add(d, false, pos_d);
+        Position &ref_d = *pool.add(d, false, pos_d);
 
         EXPECT_EQ(ref_d, pos_d);
         auto* d_ptr = pool.try_get(d);
@@ -397,7 +397,7 @@ TEST_F(ComponentPoolTests, AddIntoPoolWithInactiveEntities)
         pool.deactivate(b); // active=[a], inactive=[b]
         ASSERT_EQ(pool.active_size(), 1);
 
-        Position &ref_e = pool.add(e, false, pos_e);
+        Position &ref_e = *pool.add(e, false, pos_e);
 
         EXPECT_EQ(ref_e, pos_e);
         auto* e_ptr = pool.try_get(e);

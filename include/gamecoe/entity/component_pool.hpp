@@ -106,28 +106,30 @@ namespace gamecoe
         }
 
         template <typename... Args>
-        T& add(entity e, bool active, Args&&... args)
+        T* add(entity e, bool active, Args&&... args)
         {
             if (contains(e))
             {
                 GAMECOE_ASSERT_LOG(false, "component_pool::add(): entity already has this component");
-                return m_components[m_entities.index(e).value()];   // no-op - active is ignored, existing value is untouched
+                return &m_components[m_entities.index(e).value()];   // no-op - active is ignored, existing value is untouched
             }
 
             const std::uint32_t back_index   = static_cast<std::uint32_t>(m_components.size());
             const std::uint32_t target_index = static_cast<std::uint32_t>(m_entities.active_size());
 
-            m_components.emplace_back(std::forward<Args>(args)...);   // emplace first: if it throws, m_entities is untouched
-            m_entities.insert(e, active);
+            GAMECOE_ASSERT_GUARD(m_entities.insert(e, active), "component_pool::add(): max entities exceeded", nullptr);
+
+            // Assumes T's constructor can't throw - a throw here would leave m_entities out of sync with m_components.
+            m_components.emplace_back(std::forward<Args>(args)...);
 
             // An inactive entry stays at the back, where both arrays already agree. An active one is
             // swapped down into the boundary slot by insert(), so mirror that swap here to keep
             // m_components[i] paired with the entity at dense index i.
-            if (!active) return m_components[back_index];
+            if (!active) return &m_components[back_index];
 
             if (target_index != back_index) std::swap(m_components[target_index], m_components[back_index]);
 
-            return m_components[target_index];
+            return &m_components[target_index];
         }
 
         T* try_get(entity e)

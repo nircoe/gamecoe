@@ -77,10 +77,10 @@ namespace gamecoe
         // A new entry is appended at the back, which the active_count <= size invariant guarantees
         // is at or past the active/inactive boundary - so an inactive insert is a plain append, and
         // only the active path pays for a swap down into the active partition.
-        void insert(entity e, bool active)
+        bool insert(entity e, bool active)
         {
-            if (contains(e)) return;
-            GAMECOE_ASSERT_LOG(m_dense.size() <= entity::MAX_ENTITIES, "sparse_set::insert(): max entities exceeded");
+            if (contains(e)) return true;
+            GAMECOE_ASSERT_GUARD(m_dense.size() <= entity::MAX_ENTITIES, "sparse_set::insert(): max entities exceeded", false);
 
             auto page_i = page_index(e);
             if (page_i >= m_sparse.size())
@@ -97,6 +97,8 @@ namespace gamecoe
             m_dense.push_back(e);
 
             if (active) activate_at(static_cast<std::uint32_t>(m_dense.size() - 1));
+
+            return true;
         }
 
         // Mirrors erase() but skips entity-to-index lookup, used by component_pool::remove()

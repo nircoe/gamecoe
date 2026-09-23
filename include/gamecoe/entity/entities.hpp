@@ -140,7 +140,7 @@ namespace gamecoe
             GAMECOE_ASSERT_GUARD(valid(e), "entities::add_component(): entity is not valid", nullptr);
 
             auto pool = get_pool<T>();
-            return &pool->add(e, is_active(e), std::forward<Args>(args)...);
+            return pool->add(e, is_active(e), std::forward<Args>(args)...);
         }
 
         // Safe on an invalid entity, returns false rather than asserting.
