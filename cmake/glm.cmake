@@ -3,6 +3,7 @@ function(fetch_glm)
 
     set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "" FORCE)
     set(GLM_QUIET ON CACHE BOOL "" FORCE)
+    set(CMAKE_POLICY_VERSION_MINIMUM 3.10 CACHE STRING "" FORCE)
 
     FetchContent_Declare(
         glm
@@ -13,4 +14,5 @@ function(fetch_glm)
     FetchContent_MakeAvailable(glm)
 
     set(CMAKE_WARN_DEPRECATED ON CACHE BOOL "" FORCE)
+    unset(CMAKE_POLICY_VERSION_MINIMUM CACHE)
 endfunction()
