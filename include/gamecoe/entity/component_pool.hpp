@@ -109,7 +109,7 @@ namespace gamecoe
         T* add(entity e, bool active, Args&&... args)
         {
             GAMECOE_ASSERT_GUARD(!contains(e), "component_pool::add(): entity already has this component",
-                                  &m_components[m_entities.index(e).value()]);   // no-op - active is ignored, existing value is untouched
+                                  try_get(e));   // no-op - active is ignored, existing value is untouched
 
             const std::uint32_t back_index   = static_cast<std::uint32_t>(m_components.size());
             const std::uint32_t target_index = static_cast<std::uint32_t>(m_entities.active_size());

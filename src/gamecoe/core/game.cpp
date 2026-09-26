@@ -77,12 +77,8 @@ namespace gamecoe
 #endif
                                             )
     {
-#define GAME_ALREADY_ALIVE_MSG "game::create(): a game instance is already alive"
-
-        GAMECOE_ASSERT_GUARD(!g_game_alive, GAME_ALREADY_ALIVE_MSG,
-            std::unexpected(detail::make_error(error_code::game_already_alive, GAME_ALREADY_ALIVE_MSG)));
-
-#undef GAME_ALREADY_ALIVE_MSG
+        GAMECOE_ASSERT_GUARD(!g_game_alive, "game::create(): a game instance is already alive",
+            std::unexpected(error{error_code::game_already_alive, "game::create(): a game instance is already alive"}));
 
         struct garbage_collector
         {
