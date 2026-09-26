@@ -31,11 +31,11 @@ namespace gamecoe
         else
         {
             id = m_recycle_ids.back();
+            m_recycle_ids.pop_back();
             generation = m_generations[id];
             GAMECOE_ASSERT_GUARD(generation <= entity::MAX_GENERATIONS,
                                  "entities::create(): recycled entity generation exceeds maximum",
                                  entity::invalid());
-            m_recycle_ids.pop_back();
             m_self_active[id] = true;
         }
 

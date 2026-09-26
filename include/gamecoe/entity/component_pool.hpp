@@ -114,10 +114,14 @@ namespace gamecoe
             const std::uint32_t back_index   = static_cast<std::uint32_t>(m_components.size());
             const std::uint32_t target_index = static_cast<std::uint32_t>(m_entities.active_size());
 
-            GAMECOE_ASSERT_GUARD(m_entities.insert(e, active), "component_pool::add(): max entities exceeded", nullptr);
-
-            // Assumes T's constructor can't throw - a throw here would leave m_entities out of sync with m_components.
             m_components.emplace_back(std::forward<Args>(args)...);
+
+            if (!m_entities.insert(e, active))
+            {
+                m_components.pop_back();
+                GAMECOE_ASSERT_LOG(false, "component_pool::add(): max entities exceeded");
+                return nullptr;
+            }
 
             // An inactive entry stays at the back, where both arrays already agree. An active one is
             // swapped down into the boundary slot by insert(), so mirror that swap here to keep
