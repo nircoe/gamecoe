@@ -106,52 +106,33 @@ namespace gamecoe
         }
 
         template <typename... Args>
-        T& add(entity e, bool active, Args&&... args)
+        T* add(entity e, bool active, Args&&... args)
         {
-            if (contains(e))
-            {
-                GAMECOE_ASSERT_LOG(false, "component_pool::add(): entity already has this component");
-                return m_components[m_entities.index(e).value()];   // no-op - active is ignored, existing value is untouched
-            }
+            GAMECOE_ASSERT_GUARD(!contains(e), "component_pool::add(): entity already has this component",
+                                  try_get(e));   // no-op - active is ignored, existing value is untouched
 
             const std::uint32_t back_index   = static_cast<std::uint32_t>(m_components.size());
             const std::uint32_t target_index = static_cast<std::uint32_t>(m_entities.active_size());
 
-            m_components.emplace_back(std::forward<Args>(args)...);   // emplace first: if it throws, m_entities is untouched
-            m_entities.insert(e, active);
+            m_components.emplace_back(std::forward<Args>(args)...);
+
+            if (!m_entities.insert(e, active))
+            {
+                m_components.pop_back();
+                GAMECOE_ASSERT_LOG(false, "component_pool::add(): max entities exceeded");
+                return nullptr;
+            }
 
             // An inactive entry stays at the back, where both arrays already agree. An active one is
             // swapped down into the boundary slot by insert(), so mirror that swap here to keep
             // m_components[i] paired with the entity at dense index i.
-            if (!active) return m_components[back_index];
+            if (!active) return &m_components[back_index];
 
             if (target_index != back_index) std::swap(m_components[target_index], m_components[back_index]);
 
-            return m_components[target_index];
+            return &m_components[target_index];
         }
 
-        // Asserts and returns T& (not nullable), callers here already checked contains().
-        // entities::get_component<T>() returns a nullable pointer instead since its callers don't always know.
-        // try_get() below is for callers in neither position: they haven't already checked contains(),
-        // but want the single lookup either way instead of a separate contains() + get() pair.
-        T& get(entity e)
-        {
-            auto index = m_entities.index(e);
-            GAMECOE_ASSERT_LOG(index, "component_pool::get(): entity does not exist in the pool");
-
-            return m_components[index.value()];
-        }
-
-        const T& get(entity e) const
-        {
-            auto index = m_entities.index(e);
-            GAMECOE_ASSERT_LOG(index, "component_pool::get(): entity does not exist in the pool");
-
-            return m_components[index.value()];
-        }
-
-        // Single lookup, nullable - for callers that don't already know the entity is present
-        // (unlike get(), which asserts and is for callers that already checked contains()).
         T* try_get(entity e)
         {
             auto index = m_entities.index(e);

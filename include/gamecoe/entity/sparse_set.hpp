@@ -77,10 +77,10 @@ namespace gamecoe
         // A new entry is appended at the back, which the active_count <= size invariant guarantees
         // is at or past the active/inactive boundary - so an inactive insert is a plain append, and
         // only the active path pays for a swap down into the active partition.
-        void insert(entity e, bool active)
+        bool insert(entity e, bool active)
         {
-            if (contains(e)) return;
-            GAMECOE_ASSERT_LOG(m_dense.size() <= entity::MAX_ENTITIES, "sparse_set::insert(): max entities exceeded");
+            if (contains(e)) return true;
+            GAMECOE_ASSERT_GUARD(m_dense.size() <= entity::MAX_ENTITIES, "sparse_set::insert(): max entities exceeded", false);
 
             auto page_i = page_index(e);
             if (page_i >= m_sparse.size())
@@ -97,6 +97,8 @@ namespace gamecoe
             m_dense.push_back(e);
 
             if (active) activate_at(static_cast<std::uint32_t>(m_dense.size() - 1));
+
+            return true;
         }
 
         // Mirrors erase() but skips entity-to-index lookup, used by component_pool::remove()
@@ -136,8 +138,7 @@ namespace gamecoe
         // Returns the dense index the entry was swapped with, or nullopt if it was already in the target state.
         std::optional<std::uint32_t> deactivate_at(std::uint32_t dense_index)
         {
-            GAMECOE_ASSERT_LOG(dense_index < m_dense.size(), "sparse_set::deactivate_at(): index out of bounds");
-            if (dense_index >= m_dense.size()) return std::nullopt;   // release-mode only - debug already caught it via the assert above
+            GAMECOE_ASSERT_GUARD(dense_index < m_dense.size(), "sparse_set::deactivate_at(): index out of bounds", std::nullopt);
             if (dense_index >= m_active_count) return std::nullopt;   // already inactive
             --m_active_count;
             swap_dense(dense_index, m_active_count);     // m_active_count now names the old last-active slot
@@ -146,8 +147,7 @@ namespace gamecoe
 
         std::optional<std::uint32_t> activate_at(std::uint32_t dense_index)
         {
-            GAMECOE_ASSERT_LOG(dense_index < m_dense.size(), "sparse_set::activate_at(): index out of bounds");
-            if (dense_index >= m_dense.size()) return std::nullopt;   // release-mode only - debug already caught it via the assert above
+            GAMECOE_ASSERT_GUARD(dense_index < m_dense.size(), "sparse_set::activate_at(): index out of bounds", std::nullopt);
             if (dense_index < m_active_count) return std::nullopt;    // already active
             std::uint32_t partner = m_active_count;
             swap_dense(dense_index, partner);            // m_active_count names the first inactive slot
@@ -172,7 +172,7 @@ namespace gamecoe
 
         entity get_entity_at_index(std::size_t index) const noexcept
         {
-            GAMECOE_ASSERT_LOG(index < m_dense.size(), "sparse_set::get_entity_at_index(): index out of bounds");
+            GAMECOE_ASSERT_GUARD(index < m_dense.size(), "sparse_set::get_entity_at_index(): index out of bounds", entity::invalid());
             return m_dense[index];
         }
 

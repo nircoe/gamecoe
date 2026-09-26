@@ -77,10 +77,8 @@ namespace gamecoe
 #endif
                                             )
     {
-        GAMECOE_ASSERT_LOG(!g_game_alive, "game::create(): a game instance is already alive");
-        if (g_game_alive)
-            return std::unexpected(detail::make_error(error_code::game_already_alive,
-                                                      "game::create(): a game instance is already alive"));
+        GAMECOE_ASSERT_GUARD(!g_game_alive, "game::create(): a game instance is already alive",
+            std::unexpected(error{error_code::game_already_alive, "game::create(): a game instance is already alive"}));
 
         struct garbage_collector
         {
@@ -167,8 +165,7 @@ namespace gamecoe
 
     void game::set_background_color(const Color &background_color)
     {
-        GAMECOE_ASSERT_LOG(m_window.has_value(), "game::set_background_color(): called on a moved-from game");
-        if (!m_window.has_value()) return;
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::set_background_color(): called on a moved-from game");
 
         m_background_color = background_color;
 #if GAMECOE_USE_OPENGL
@@ -209,24 +206,21 @@ namespace gamecoe
     scene_status game::status(scene_id id) const
     {
         const scene_metadata* meta = find_scene(id);
-        GAMECOE_ASSERT_LOG(meta != nullptr, "game::status(): scene is not registered");
-        if (meta == nullptr) return scene_status::unloaded;
+        GAMECOE_ASSERT_GUARD(meta != nullptr, "game::status(): scene is not registered", scene_status::unloaded);
         return meta->status;
     }
 
     std::int8_t game::scene_layer(scene_id id) const
     {
         const scene_metadata* meta = find_scene(id);
-        GAMECOE_ASSERT_LOG(meta != nullptr, "game::scene_layer(): scene is not registered");
-        if (meta == nullptr) return 0;
+        GAMECOE_ASSERT_GUARD(meta != nullptr, "game::scene_layer(): scene is not registered", 0);
         return meta->layer;
     }
 
     void game::set_scene_layer(scene_id id, int layer)
     {
         scene_metadata* meta = find_scene(id);
-        GAMECOE_ASSERT_LOG(meta != nullptr, "game::set_scene_layer(): scene is not registered");
-        if (meta == nullptr) return;
+        GAMECOE_ASSERT_GUARD(meta != nullptr, "game::set_scene_layer(): scene is not registered");
 
         const std::int8_t new_layer = clamp_layer(layer, "game::set_scene_layer()");
         if (new_layer == meta->layer) return;
@@ -258,13 +252,9 @@ namespace gamecoe
 
     void game::create_scene(scene_id id, scene_builder builder, int layer)
     {
-        GAMECOE_ASSERT_LOG(!m_playing, "game::create_scene(): scene cannot be created during game::play()");
-        if (m_playing) return;
-        const bool exists = m_scenes.contains(id);
-        GAMECOE_ASSERT_LOG(!exists, "game::create_scene(): scene is already registered");
-        if (exists) return;
-        GAMECOE_ASSERT_LOG(builder != nullptr, "game::create_scene(): scene builder is null");
-        if (!builder) return;
+        GAMECOE_ASSERT_GUARD(!m_playing, "game::create_scene(): scene cannot be created during game::play()");
+        GAMECOE_ASSERT_GUARD(!m_scenes.contains(id), "game::create_scene(): scene is already registered");
+        GAMECOE_ASSERT_GUARD(builder != nullptr, "game::create_scene(): scene builder is null");
 
         m_scenes.emplace(id, scene_metadata(builder, clamp_layer(layer, "game::create_scene()")));
         logcoe::debug("game::create_scene(): registered scene \"" + to_string(id) + "\"");
@@ -273,8 +263,7 @@ namespace gamecoe
     void game::load_scene(scene_id id)
     {
         scene_metadata* meta = find_scene(id);
-        GAMECOE_ASSERT_LOG(meta != nullptr, "game::load_scene(): scene is not registered");
-        if (!meta) return;
+        GAMECOE_ASSERT_GUARD(meta != nullptr, "game::load_scene(): scene is not registered");
 
         if (!m_playing)
         {
@@ -283,8 +272,7 @@ namespace gamecoe
             return;
         }
 
-        GAMECOE_ASSERT_LOG(meta->status == scene_status::unloaded, "game::load_scene(): scene is not unloaded");
-        if (meta->status != scene_status::unloaded) return;
+        GAMECOE_ASSERT_GUARD(meta->status == scene_status::unloaded, "game::load_scene(): scene is not unloaded");
 
         const std::string scene_name = to_string(id);
 
@@ -302,8 +290,7 @@ namespace gamecoe
     void game::activate_scene(scene_id id)
     {
         scene_metadata* meta = find_scene(id);
-        GAMECOE_ASSERT_LOG(meta != nullptr, "game::activate_scene(): scene is not registered");
-        if (!meta) return;
+        GAMECOE_ASSERT_GUARD(meta != nullptr, "game::activate_scene(): scene is not registered");
 
         if (!m_playing)
         {
@@ -312,9 +299,8 @@ namespace gamecoe
             return;
         }
 
-        GAMECOE_ASSERT_LOG(meta->status == scene_status::loaded || meta->status == scene_status::inactive,
-                           "game::activate_scene(): scene is not loaded or inactive");
-        if (meta->status != scene_status::loaded && meta->status != scene_status::inactive) return;
+        GAMECOE_ASSERT_GUARD(meta->status == scene_status::loaded || meta->status == scene_status::inactive,
+                             "game::activate_scene(): scene is not loaded or inactive");
 
         // meta->status is set to active before the pending command_buffer flushes,
         // so if a potential command will call activate_scene on this id - it will see the status as active
@@ -345,8 +331,7 @@ namespace gamecoe
     void game::deactivate_scene(scene_id id)
     {
         scene_metadata* meta = find_scene(id);
-        GAMECOE_ASSERT_LOG(meta != nullptr, "game::deactivate_scene(): scene is not registered");
-        if (!meta) return;
+        GAMECOE_ASSERT_GUARD(meta != nullptr, "game::deactivate_scene(): scene is not registered");
 
         if (!m_playing)
         {
@@ -355,8 +340,7 @@ namespace gamecoe
             return;
         }
 
-        GAMECOE_ASSERT_LOG(meta->status == scene_status::active, "game::deactivate_scene(): scene is not active");
-        if (meta->status != scene_status::active) return;
+        GAMECOE_ASSERT_GUARD(meta->status == scene_status::active, "game::deactivate_scene(): scene is not active");
 
         std::erase(m_active_scenes, id);
 
@@ -378,8 +362,7 @@ namespace gamecoe
     void game::unload_scene(scene_id id)
     {
         scene_metadata* meta = find_scene(id);
-        GAMECOE_ASSERT_LOG(meta != nullptr, "game::unload_scene(): scene is not registered");
-        if (!meta) return;
+        GAMECOE_ASSERT_GUARD(meta != nullptr, "game::unload_scene(): scene is not registered");
 
         if (!m_playing)
         {
@@ -388,8 +371,7 @@ namespace gamecoe
             return;
         }
 
-        GAMECOE_ASSERT_LOG(meta->status != scene_status::unloaded, "game::unload_scene(): scene is already unloaded");
-        if (meta->status == scene_status::unloaded) return;
+        GAMECOE_ASSERT_GUARD(meta->status != scene_status::unloaded, "game::unload_scene(): scene is already unloaded");
 
         std::erase(m_active_scenes, id);
 
@@ -440,8 +422,7 @@ namespace gamecoe
 
     void game::play()
     {
-        GAMECOE_ASSERT_LOG(m_window.has_value(), "game::play(): called on a moved-from game");
-        if (!m_window.has_value()) return;
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::play(): called on a moved-from game");
 
         prepare_to_play();
 

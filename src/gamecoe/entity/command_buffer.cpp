@@ -18,7 +18,7 @@ namespace gamecoe
 
     entity command_buffer::resolver::resolve(placeholder p) const
     {
-        GAMECOE_ASSERT_LOG(p.m_index < m_created.size(), "command_buffer::resolver::resolve(): placeholder out of range");
+        GAMECOE_ASSERT_GUARD(p.m_index < m_created.size(), "command_buffer::resolver::resolve(): placeholder out of range", entity::invalid());
         return m_created[p.m_index];
     }
 

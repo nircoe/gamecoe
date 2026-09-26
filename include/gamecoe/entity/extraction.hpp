@@ -66,7 +66,7 @@ namespace gamecoe
 
                 return std::tuple<entity, Components&...> {
                     e,
-                    std::get<Is>(m_extracted->m_pools)->get(e)...
+                    *std::get<Is>(m_extracted->m_pools)->try_get(e)...
                 };
             }
 

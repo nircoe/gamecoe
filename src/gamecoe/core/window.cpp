@@ -49,7 +49,7 @@ namespace gamecoe
 
         glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow *glfwWindow, int width, int height) {
             window *windowPtr = static_cast<window*>(glfwGetWindowUserPointer(glfwWindow));
-            GAMECOE_ASSERT_LOG(windowPtr, "window::framebuffer_size_callback(): user pointer is null");
+            GAMECOE_ASSERT_GUARD(windowPtr, "window::framebuffer_size_callback(): user pointer is null");
             windowPtr->framebuffer_size_callback(width, height);
         });
         glfwSetCursorPosCallback(m_window, inputcoe::detail::mousePositionCallback);
@@ -144,8 +144,7 @@ namespace gamecoe
 
     bool window::active()
     {
-        GAMECOE_ASSERT_LOG(m_window, "window::active(): window is null");
-        if(!m_window) return false;
+        GAMECOE_ASSERT_GUARD(m_window, "window::active(): window is null", false);
 
         if(m_first_frame)
             m_first_frame = false;

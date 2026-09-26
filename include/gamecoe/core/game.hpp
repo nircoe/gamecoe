@@ -136,11 +136,9 @@ namespace gamecoe
             "game::create_entity(): hierarchy components are managed - use entities::set_parent() instead");
 
         const scene_metadata* meta = find_scene(id);
-        GAMECOE_ASSERT_LOG(meta != nullptr, "game::create_entity(): scene is not registered");
+        GAMECOE_ASSERT_GUARD(meta != nullptr, "game::create_entity(): scene is not registered", entity::invalid());
         // entities can only be created into an active scene.
-        GAMECOE_ASSERT_LOG(meta == nullptr || meta->status == scene_status::active,
-                           "game::create_entity(): scene is not active");
-        if (meta == nullptr || meta->status != scene_status::active) return entity::invalid();
+        GAMECOE_ASSERT_GUARD(meta->status == scene_status::active, "game::create_entity(): scene is not active", entity::invalid());
 
         entity e = m_entities.create(std::move(initial_transform));
         m_entities.add_component<components::scene_tag>(e, components::scene_tag{ id });
