@@ -130,15 +130,6 @@ jobs:
       working-directory: build/tests
       run: |
         set -o pipefail
-        if [ "${{ matrix.compiler }}" == "gcc" ]; then
-            # For MinGW - copy DLLs directly (no PATH manipulation)
-            GCC_DIR=$(dirname $(which gcc))
-            echo "GCC directory: $GCC_DIR"
-            echo "Copying DLLs from $GCC_DIR"
-            cp "$GCC_DIR"/libgcc*.dll . 2>/dev/null || echo "No libgcc DLLs found"
-            cp "$GCC_DIR"/libstdc*.dll . 2>/dev/null || echo "No libstdc DLLs found"
-            cp "$GCC_DIR"/libwinpthread*.dll . 2>/dev/null || echo "No libwinpthread DLLs found"
-        fi
         echo "Running gamecoe tests"
         ./gamecoe_tests.exe | tee test_output.log
         # testcoe currently reports a skipped test as failed. Narrow this back to skips only
