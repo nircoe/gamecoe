@@ -37,7 +37,7 @@ if(WIN32)
         COMMAND_EXPAND_LISTS)
 endif()
 
-copy_mingw_dlls_to_target(gamecoe_tests)
+gamecoe_copy_mingw_dlls_to_target(gamecoe_tests)
 
 # game::create() needs soundcoe's default audio root to exist next to the test binary
 if(GAMECOE_USE_SOUNDCOE)

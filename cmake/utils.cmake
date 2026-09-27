@@ -17,7 +17,7 @@ endfunction()
 
 # Automatically copies required MinGW DLLs to target directory on Windows
 
-function(copy_mingw_dlls_to_target target_name)
+function(gamecoe_copy_mingw_dlls_to_target target_name)
     if(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         message(STATUS "[gamecoe] Setting up automatic MinGW DLL copying for ${target_name}")
 
@@ -51,8 +51,8 @@ function(copy_mingw_dlls_to_target target_name)
 endfunction()
 
 # Alternative function for multiple targets
-function(copy_mingw_dlls_to_targets)
+function(gamecoe_copy_mingw_dlls_to_targets)
     foreach(target_name ${ARGN})
-        copy_mingw_dlls_to_target(${target_name})
+        gamecoe_copy_mingw_dlls_to_target(${target_name})
     endforeach()
 endfunction()
