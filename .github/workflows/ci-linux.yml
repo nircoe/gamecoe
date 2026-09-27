@@ -47,7 +47,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y ninja-build xvfb xorg-dev libgl1-mesa-dev libglu1-mesa-dev libgl1-mesa-dri
+        sudo apt-get install -y xorg-dev libgl1-mesa-dev libglu1-mesa-dev libgl1-mesa-dri
       shell: bash
 
     - name: Install GCC 16
