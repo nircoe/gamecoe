@@ -33,9 +33,6 @@ namespace gamecoe
             id = m_recycle_ids.back();
             m_recycle_ids.pop_back();
             generation = m_generations[id];
-            GAMECOE_ASSERT_GUARD(generation <= entity::MAX_GENERATIONS,
-                                 "entities::create(): recycled entity generation exceeds maximum",
-                                 entity::invalid());
             m_self_active[id] = true;
         }
 
@@ -85,7 +82,9 @@ namespace gamecoe
                 to_destroy.insert(to_destroy.end(), kids->handles.begin(), kids->handles.end());
 
             m_generations[current.id()]++;
-            m_recycle_ids.push_back(current.id());
+            bool exhausted = m_generations[current.id()] > entity::MAX_GENERATIONS;
+            GAMECOE_ASSERT_LOG(!exhausted, "entities::destroy(): id's generation reached the maximum, permanently retiring this id");
+            if (!exhausted) m_recycle_ids.push_back(current.id());
 
             for (auto &pool : m_pools) if (pool) pool->remove(current);
         }

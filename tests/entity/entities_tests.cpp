@@ -120,6 +120,48 @@ TEST_F(EntitiesTests, EntityLifecycle)
 }
 
 //==============================================================================
+//                Recycle Generation Overflow (destroy()-side guard)
+//==============================================================================
+
+#ifndef NDEBUG
+TEST_F(EntitiesTests, RecycleGenerationOverflowIsGuarded)
+{
+    mgr.clear();
+    entity e = mgr.create();
+
+    // Drive this one id's generation up to MAX_GENERATIONS by repeatedly recycling it: as the
+    // only entity in the recycle stack, each destroy()/create() pair recycles the same id (LIFO
+    // via m_recycle_ids.back()/pop_back()).
+    for (std::uint16_t gen = 0; gen < entity::MAX_GENERATIONS; ++gen)
+    {
+        mgr.destroy(e);
+        e = mgr.create();
+    }
+
+    EXPECT_DEATH(mgr.destroy(e), "id's generation reached the maximum");
+}
+#else
+TEST_F(EntitiesTests, RecycleGenerationOverflowRetiresId)
+{
+    mgr.clear();
+    entity e = mgr.create();
+    std::uint32_t id = e.id();
+
+    for (std::uint16_t gen = 0; gen < entity::MAX_GENERATIONS; ++gen)
+    {
+        mgr.destroy(e);
+        e = mgr.create();
+    }
+
+    mgr.destroy(e);
+
+    // Id is permanently retired - never handed out again by a later create() call.
+    for (int i = 0; i < 100; ++i)
+        EXPECT_NE(mgr.create().id(), id);
+}
+#endif
+
+//==============================================================================
 //                        Move Semantics
 //==============================================================================
 
