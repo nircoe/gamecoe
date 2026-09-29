@@ -6,6 +6,7 @@
 #include <chrono>
 #include <vector>
 #include <support/test_utils.hpp>
+#include <support/scene_id.hpp>
 
 using namespace gamecoe;
 using namespace test_utils;
@@ -1134,6 +1135,117 @@ TEST_F(EntitiesTests, ReparentRecomputesWorldActive)
 
         mgr.set_parent(child, new_parent);
         EXPECT_FALSE(mgr.is_active(child));
+    }
+}
+
+//==============================================================================
+//                        SetParent Scene Adoption
+//==============================================================================
+
+TEST_F(EntitiesTests, SetParentAdoptsSubtreeScene)
+{
+    // Test 1: reparenting a multi-level subtree re-tags every level to the new parent's scene,
+    // and leaves everything outside the moved subtree untouched
+    {
+        mgr.clear();
+        entity old_parent = mgr.create();
+        entity root = mgr.create();
+        entity mid = mgr.create();
+        entity leaf = mgr.create();
+        entity other_child = mgr.create();
+        entity new_parent = mgr.create();
+
+        mgr.add_component<components::scene_tag>(old_parent, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(root, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(mid, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(leaf, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(other_child, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(new_parent, components::scene_tag{ scene_id::TestScene1 });
+
+        mgr.set_parent(mid, root);
+        mgr.set_parent(root, old_parent);
+        mgr.set_parent(leaf, mid);
+        mgr.set_parent(other_child, old_parent);
+
+        mgr.set_parent(root, new_parent);
+
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(root)->id, scene_id::TestScene1);
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(mid)->id, scene_id::TestScene1);
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(leaf)->id, scene_id::TestScene1);
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(old_parent)->id, scene_id::TestScene2);
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(other_child)->id, scene_id::TestScene2);
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(new_parent)->id, scene_id::TestScene1);
+    }
+
+    // Test 2: reparenting under a global (untagged) parent strips the tag from the whole
+    // subtree, without breaking the hierarchy links themselves
+    {
+        mgr.clear();
+        entity root = mgr.create();
+        entity mid = mgr.create();
+        entity leaf = mgr.create();
+        entity global_parent = mgr.create();
+
+        mgr.add_component<components::scene_tag>(root, components::scene_tag{ scene_id::TestScene1 });
+        mgr.add_component<components::scene_tag>(mid, components::scene_tag{ scene_id::TestScene1 });
+        mgr.add_component<components::scene_tag>(leaf, components::scene_tag{ scene_id::TestScene1 });
+
+        mgr.set_parent(mid, root);
+        mgr.set_parent(leaf, mid);
+
+        mgr.set_parent(root, global_parent);
+
+        EXPECT_FALSE(mgr.has_component<components::scene_tag>(root));
+        EXPECT_FALSE(mgr.has_component<components::scene_tag>(mid));
+        EXPECT_FALSE(mgr.has_component<components::scene_tag>(leaf));
+        EXPECT_FALSE(mgr.has_component<components::scene_tag>(global_parent));
+
+        EXPECT_EQ(mgr.get_component<components::parent>(leaf)->handle, mid);
+    }
+
+    // Test 3: adopting a global subtree into a scene tags every level, and an inactive
+    // descendant's new tag lands in the inactive partition (visible via for_each_all() only)
+    {
+        mgr.clear();
+        entity root = mgr.create();
+        entity mid = mgr.create();
+        entity leaf = mgr.create();
+        entity new_parent = mgr.create();
+
+        mgr.add_component<components::scene_tag>(new_parent, components::scene_tag{ scene_id::TestScene1 });
+
+        mgr.set_parent(mid, root);
+        mgr.set_parent(leaf, mid);
+        mgr.deactivate(leaf);
+
+        mgr.set_parent(root, new_parent);
+
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(root)->id, scene_id::TestScene1);
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(mid)->id, scene_id::TestScene1);
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(leaf)->id, scene_id::TestScene1);
+        EXPECT_FALSE(mgr.is_active(leaf));
+
+        bool active_found_root = false, active_found_mid = false, active_found_leaf = false;
+        mgr.for_each<components::scene_tag>([&](entity e, components::scene_tag&)
+        {
+            if (e == root) active_found_root = true;
+            if (e == mid) active_found_mid = true;
+            if (e == leaf) active_found_leaf = true;
+        });
+        EXPECT_TRUE(active_found_root);
+        EXPECT_TRUE(active_found_mid);
+        EXPECT_FALSE(active_found_leaf);
+
+        bool all_found_root = false, all_found_mid = false, all_found_leaf = false;
+        mgr.for_each_all<components::scene_tag>([&](entity e, components::scene_tag&)
+        {
+            if (e == root) all_found_root = true;
+            if (e == mid) all_found_mid = true;
+            if (e == leaf) all_found_leaf = true;
+        });
+        EXPECT_TRUE(all_found_root);
+        EXPECT_TRUE(all_found_mid);
+        EXPECT_TRUE(all_found_leaf);
     }
 }
 
