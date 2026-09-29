@@ -7,6 +7,7 @@
 #include <gamecoe/component/parent_child.hpp>
 #include <support/scene_id.hpp>
 #include <support/test_utils.hpp>
+#include <algorithm>
 #include <optional>
 #include <vector>
 
@@ -223,6 +224,48 @@ TEST_F(GameTests, UnloadDestroysParentedSceneEntities)
         EXPECT_FALSE(g->entities().valid(e));
 }
 
+TEST_F(GameTests, UnloadSparesEntitiesAdoptedIntoAnotherScene)
+{
+    g->create_scene(scene_a, build_scene_a);
+    g->create_scene(scene_b, build_scene_b);
+    test_prepare_to_play(*g);
+    g->load_scene(scene_a);
+    g->activate_scene(scene_a);
+    g->load_scene(scene_b);
+    g->activate_scene(scene_b);
+
+    std::vector<entity> entities_a = g->scene_entities(scene_a);
+    ASSERT_EQ(entities_a.size(), 3u);
+    entity a0 = entities_a[0], a1 = entities_a[1], a2 = entities_a[2];
+    entity b0 = g->scene_entities(scene_b)[0];
+
+    g->entities().set_parent(a0, b0);
+
+    entity C = g->create_entity(scene_b);
+    g->entities().set_parent(C, a1);
+
+    g->unload_scene(scene_a);
+
+    // Before the fix, a0 kept scene A's tag and would have been destroyed here even though
+    // it's now a live child of b0 in scene B.
+    EXPECT_TRUE(g->entities().valid(a0));
+    EXPECT_TRUE(g->entities().is_active(a0));
+    ASSERT_NE(g->entities().get_component<components::scene_tag>(a0), nullptr);
+    EXPECT_EQ(g->entities().get_component<components::scene_tag>(a0)->id, scene_b);
+
+    ASSERT_TRUE(g->entities().valid(b0));
+    const components::children *b0_children = g->entities().get_component<components::children>(b0);
+    ASSERT_NE(b0_children, nullptr);
+    EXPECT_NE(std::find(b0_children->handles.begin(), b0_children->handles.end(), a0), b0_children->handles.end());
+
+    EXPECT_FALSE(g->entities().valid(a1));
+    EXPECT_FALSE(g->entities().valid(a2));
+    EXPECT_FALSE(g->entities().valid(C));
+
+    EXPECT_EQ(g->status(scene_b), scene_status::active);
+    EXPECT_EQ(count_scene_entities(*g, scene_b), 2u);
+}
+
 TEST_F(GameTests, ActivateSceneFlushesHierarchyAndNonTransformComponents)
 {
     g->create_scene(scene_a, build_scene_hierarchy);
@@ -243,6 +286,10 @@ TEST_F(GameTests, ActivateSceneFlushesHierarchyAndNonTransformComponents)
     ASSERT_TRUE(g->entities().has_component<components::parent>(real_child));
     EXPECT_EQ(g->entities().get_component<components::parent>(real_child)->handle, real_parent);
     EXPECT_EQ(g->entities().get_component<marker>(real_child)->value, 5);
+    ASSERT_NE(g->entities().get_component<components::scene_tag>(real_parent), nullptr);
+    EXPECT_EQ(g->entities().get_component<components::scene_tag>(real_parent)->id, scene_a);
+    ASSERT_NE(g->entities().get_component<components::scene_tag>(real_child), nullptr);
+    EXPECT_EQ(g->entities().get_component<components::scene_tag>(real_child)->id, scene_a);
 
     g->deactivate_scene(scene_a);
     EXPECT_FALSE(g->entities().is_active(real_parent));
@@ -335,6 +382,45 @@ TEST_F(GameTests, MultipleActiveScenesShareOneRegistry)
 
     ASSERT_EQ(g->scene_entities(scene_a).size(), 3u);
     ASSERT_EQ(g->scene_entities(scene_b).size(), 1u);
+}
+
+TEST_F(GameTests, SetParentAcrossScenesAdoptsIntoParentScene)
+{
+    g->create_scene(scene_a, build_scene_a);
+    g->create_scene(scene_b, build_scene_b);
+    test_prepare_to_play(*g);
+    g->load_scene(scene_a);
+    g->activate_scene(scene_a);
+    g->load_scene(scene_b);
+    g->activate_scene(scene_b);
+
+    entity P = g->scene_entities(scene_a)[0];
+    entity C = g->scene_entities(scene_b)[0];
+    g->entities().set_parent(C, P);
+
+    // Before the fix, C kept scene B's tag instead of adopting P's scene A.
+    ASSERT_NE(g->entities().get_component<components::scene_tag>(C), nullptr);
+    EXPECT_EQ(g->entities().get_component<components::scene_tag>(C)->id, scene_a);
+    EXPECT_EQ(count_scene_entities(*g, scene_a), 4u);
+    EXPECT_EQ(count_scene_entities(*g, scene_b), 0u);
+
+    g->deactivate_scene(scene_a);
+    EXPECT_FALSE(g->entities().is_active(P));
+    EXPECT_FALSE(g->entities().is_active(C));
+
+    // C no longer carries scene B's tag, so deactivating B has no effect on it.
+    g->deactivate_scene(scene_b);
+
+    g->activate_scene(scene_a);
+    EXPECT_TRUE(g->entities().is_active(P));
+    EXPECT_TRUE(g->entities().is_active(C));
+    EXPECT_EQ(g->status(scene_b), scene_status::inactive);
+
+    g->activate_scene(scene_b);
+    g->deactivate_scene(scene_b);
+    // Before the fix, C would still carry scene B's tag, so this deactivate_scene(scene_b)
+    // would wrongly deactivate it even though its parent P (scene A) stays active.
+    EXPECT_TRUE(g->entities().is_active(C));
 }
 
 TEST_F(GameTests, HasSceneAndWindow)
