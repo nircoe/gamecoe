@@ -246,8 +246,7 @@ TEST_F(GameTests, UnloadSparesEntitiesAdoptedIntoAnotherScene)
 
     g->unload_scene(scene_a);
 
-    // Before the fix, a0 kept scene A's tag and would have been destroyed here even though
-    // it's now a live child of b0 in scene B.
+    // a0 was moved into scene B, so unloading scene A must not destroy it.
     EXPECT_TRUE(g->entities().valid(a0));
     EXPECT_TRUE(g->entities().is_active(a0));
     ASSERT_NE(g->entities().get_component<components::scene_tag>(a0), nullptr);
@@ -398,7 +397,7 @@ TEST_F(GameTests, SetParentAcrossScenesAdoptsIntoParentScene)
     entity C = g->scene_entities(scene_b)[0];
     g->entities().set_parent(C, P);
 
-    // Before the fix, C kept scene B's tag instead of adopting P's scene A.
+    // C now carries scene A's tag, since it was reparented under P.
     ASSERT_NE(g->entities().get_component<components::scene_tag>(C), nullptr);
     EXPECT_EQ(g->entities().get_component<components::scene_tag>(C)->id, scene_a);
     EXPECT_EQ(count_scene_entities(*g, scene_a), 4u);
@@ -418,8 +417,7 @@ TEST_F(GameTests, SetParentAcrossScenesAdoptsIntoParentScene)
 
     g->activate_scene(scene_b);
     g->deactivate_scene(scene_b);
-    // Before the fix, C would still carry scene B's tag, so this deactivate_scene(scene_b)
-    // would wrongly deactivate it even though its parent P (scene A) stays active.
+    // C belongs to scene A now, so deactivating scene B must not touch it.
     EXPECT_TRUE(g->entities().is_active(C));
 }
 
