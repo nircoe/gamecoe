@@ -1,7 +1,9 @@
 #include <gamecoe/entity/entities.hpp>
 #include <gamecoe/component/transform.hpp>
 #include <gamecoe/component/parent_child.hpp>
+#include <gamecoe/component/scene_tag.hpp>
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <gamecoe_config.hpp>
 
@@ -220,6 +222,47 @@ namespace gamecoe
         else children_pool->add(parent, is_active(parent), components::children{ { child } });
 
         set_active(child, compute_world_active(child));
+
+        // Whole moved subtree joins parent's scene, or goes global if parent has no tag.
+        // deactivate_scene()'s paused_active bookkeeping and unload_scene()'s destroy cascade
+        // both assume every hierarchy edge stays inside one scene. If the pool doesn't exist yet,
+        // nothing anywhere has ever been tagged, so there's nothing to retag.
+        auto* scene_tag_pool = find_pool<components::scene_tag>();
+        if (!scene_tag_pool) return;
+
+        std::optional<components::scene_tag> parent_scene_tag;
+        if (auto* t = scene_tag_pool->try_get(parent)) parent_scene_tag = *t;   // copy, retag_subtree_scene's add() may reallocate the pool
+        retag_subtree_scene(*scene_tag_pool, child, parent_scene_tag);
+    }
+
+    void entities::retag_subtree_scene(component_pool<components::scene_tag>& scene_tag_pool, entity root, const std::optional<components::scene_tag>& target_tag)
+    {
+        auto children_pool = get_pool<components::children>();
+
+        // Root's own tag already matches, so the whole subtree does too. Skip the walk entirely.
+        auto* root_tag = scene_tag_pool.try_get(root);
+        if (target_tag ? (root_tag && root_tag->id == target_tag->id) : !root_tag) return;
+
+        std::vector<entity> to_retag{ root };
+        while (!to_retag.empty())
+        {
+            entity current = to_retag.back();
+            to_retag.pop_back();
+
+            if (!valid(current)) continue;
+
+            // Tag matches, so the subtree already does too. Skip descending.
+            auto* existing_tag = scene_tag_pool.try_get(current);
+            bool already_matches = target_tag ? (existing_tag && existing_tag->id == target_tag->id) : !existing_tag;
+            if (already_matches) continue;
+
+            if (!target_tag)        scene_tag_pool.remove(current);
+            else if (existing_tag)  existing_tag->id = target_tag->id;
+            else                    scene_tag_pool.add(current, is_active(current), *target_tag);
+
+            if (auto* kids = children_pool->try_get(current))
+                to_retag.insert(to_retag.end(), kids->handles.begin(), kids->handles.end());
+        }
     }
 
     bool entities::unlink_parent(entity child)

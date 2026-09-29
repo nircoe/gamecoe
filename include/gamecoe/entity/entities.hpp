@@ -5,6 +5,7 @@
 #include <gamecoe/entity/component_pool.hpp>
 #include <gamecoe/entity/extraction.hpp>
 #include <gamecoe/component/transform.hpp>
+#include <optional>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -91,6 +92,10 @@ namespace gamecoe
         // calls it directly so re-parenting recomputes once.
         // Returns true if child had a parent link that was removed, false if it had none.
         bool unlink_parent(entity child);
+
+        // Re-tags root's subtree to target_tag, or clears the tag if target_tag is empty.
+        // Stops at a node whose tag already matches, so it won't re-walk an already-correct subtree.
+        void retag_subtree_scene(component_pool<components::scene_tag>& scene_tag_pool, entity root, const std::optional<components::scene_tag>& target_tag);
 
     public:
         entities() = default;
@@ -208,7 +213,9 @@ namespace gamecoe
         // Transform always exists for a valid entity. Returns nullptr in Release if e is invalid.
         const components::transform* transform(entity e) const;
 
-        // Updates both sides.
+        // Updates both sides. Parenting implies scene ownership: also re-tags child's whole subtree
+        // into parent's scene (or clears it if parent is global). For cosmetic cross-scene following,
+        // copy the transform in a system instead of parenting.
         void set_parent(entity child, entity parent);
 
         // Updates both sides.
