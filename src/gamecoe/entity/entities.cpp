@@ -227,8 +227,17 @@ namespace gamecoe
         auto scene_tag_pool = get_pool<components::scene_tag>();
         std::optional<components::scene_tag> parent_scene_tag;
         if (auto* t = scene_tag_pool->try_get(parent)) parent_scene_tag = *t;   // copy, add() below may reallocate the pool
+        retag_subtree_scene(child, parent_scene_tag);
 
-        std::vector<entity> to_retag{ child };
+        set_active(child, compute_world_active(child));
+    }
+
+    void entities::retag_subtree_scene(entity root, const std::optional<components::scene_tag>& target_tag)
+    {
+        auto scene_tag_pool = get_pool<components::scene_tag>();
+        auto children_pool = get_pool<components::children>();
+
+        std::vector<entity> to_retag{ root };
         while (!to_retag.empty())
         {
             entity current = to_retag.back();
@@ -238,18 +247,16 @@ namespace gamecoe
 
             // Tag matches, so the subtree already does too. Skip descending.
             auto* existing_tag = scene_tag_pool->try_get(current);
-            bool already_matches = parent_scene_tag ? (existing_tag && existing_tag->id == parent_scene_tag->id) : !existing_tag;
+            bool already_matches = target_tag ? (existing_tag && existing_tag->id == target_tag->id) : !existing_tag;
             if (already_matches) continue;
 
-            if (!parent_scene_tag)  scene_tag_pool->remove(current);
-            else if (existing_tag)  existing_tag->id = parent_scene_tag->id;
-            else                    scene_tag_pool->add(current, is_active(current), *parent_scene_tag);
+            if (!target_tag)        scene_tag_pool->remove(current);
+            else if (existing_tag)  existing_tag->id = target_tag->id;
+            else                    scene_tag_pool->add(current, is_active(current), *target_tag);
 
             if (auto* kids = children_pool->try_get(current))
                 to_retag.insert(to_retag.end(), kids->handles.begin(), kids->handles.end());
         }
-
-        set_active(child, compute_world_active(child));
     }
 
     bool entities::unlink_parent(entity child)

@@ -92,6 +92,10 @@ namespace gamecoe
         // Returns true if child had a parent link that was removed, false if it had none.
         bool unlink_parent(entity child);
 
+        // Re-tags root's subtree to target_tag, or clears the tag if target_tag is empty.
+        // Stops at a node whose tag already matches, so it won't re-walk an already-correct subtree.
+        void retag_subtree_scene(entity root, const std::optional<components::scene_tag>& target_tag);
+
     public:
         entities() = default;
         entities(const entities&) = delete;
