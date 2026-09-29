@@ -1,7 +1,9 @@
 #include <gamecoe/entity/entities.hpp>
 #include <gamecoe/component/transform.hpp>
 #include <gamecoe/component/parent_child.hpp>
+#include <gamecoe/component/scene_tag.hpp>
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <gamecoe_config.hpp>
 
@@ -218,6 +220,34 @@ namespace gamecoe
 
         if (auto* kids = children_pool->try_get(parent)) kids->handles.push_back(child);
         else children_pool->add(parent, is_active(parent), components::children{ { child } });
+
+        // Whole moved subtree joins parent's scene, or goes global if parent has no tag.
+        // deactivate_scene()'s paused_active bookkeeping and unload_scene()'s destroy cascade
+        // both assume every hierarchy edge stays inside one scene.
+        auto scene_tag_pool = get_pool<components::scene_tag>();
+        std::optional<components::scene_tag> parent_scene_tag;
+        if (auto* t = scene_tag_pool->try_get(parent)) parent_scene_tag = *t;   // copy, add() below may reallocate the pool
+
+        std::vector<entity> to_retag{ child };
+        while (!to_retag.empty())
+        {
+            entity current = to_retag.back();
+            to_retag.pop_back();
+
+            if (!valid(current)) continue;
+
+            // Tag matches, so the subtree already does too. Skip descending.
+            auto* existing_tag = scene_tag_pool->try_get(current);
+            bool already_matches = parent_scene_tag ? (existing_tag && existing_tag->id == parent_scene_tag->id) : !existing_tag;
+            if (already_matches) continue;
+
+            if (!parent_scene_tag)  scene_tag_pool->remove(current);
+            else if (existing_tag)  existing_tag->id = parent_scene_tag->id;
+            else                    scene_tag_pool->add(current, is_active(current), *parent_scene_tag);
+
+            if (auto* kids = children_pool->try_get(current))
+                to_retag.insert(to_retag.end(), kids->handles.begin(), kids->handles.end());
+        }
 
         set_active(child, compute_world_active(child));
     }

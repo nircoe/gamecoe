@@ -208,7 +208,9 @@ namespace gamecoe
         // Transform always exists for a valid entity. Returns nullptr in Release if e is invalid.
         const components::transform* transform(entity e) const;
 
-        // Updates both sides.
+        // Updates both sides. Parenting implies scene ownership: also re-tags child's whole subtree
+        // into parent's scene (or clears it if parent is global). For cosmetic cross-scene following,
+        // copy the transform in a system instead of parenting.
         void set_parent(entity child, entity parent);
 
         // Updates both sides.
