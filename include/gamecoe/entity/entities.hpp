@@ -5,6 +5,7 @@
 #include <gamecoe/entity/component_pool.hpp>
 #include <gamecoe/entity/extraction.hpp>
 #include <gamecoe/component/transform.hpp>
+#include <gamecoe/core/scene_id.hpp>
 #include <optional>
 #include <type_traits>
 #include <utility>
@@ -38,6 +39,9 @@ namespace gamecoe
         std::vector<std::uint16_t> m_generations;
         // Per-entity activate()/deactivate() request, independent of any inherited parent state.
         std::vector<bool> m_self_active;
+        // Scenes paused by game::deactivate_scene(). Kept apart from m_self_active, so resuming a scene
+        // never undoes an entity's own deactivate().
+        std::vector<scene_id> m_paused_scenes;
 
         std::uint32_t m_current_entity_id{0};
 
@@ -79,14 +83,17 @@ namespace gamecoe
             return static_cast<const component_pool<T>*>(m_pools[comp_id].get());
         }
 
-        // Applies world_active to e and cascades to its subtree per each descendant's own self_active.
+        // Applies world_active to e and cascades to its subtree per each descendant's own self_active and scene pause.
         void set_active(entity e, bool world_active);
 
-        // self_active AND (no parent OR the parent's own world-active state) - the formula every
+        // self_active AND scene not paused AND (no parent OR the parent's own world-active state) - the formula every
         // hierarchy-aware active-state recompute in this file is built on. Reads e's *current*
         // self_active and parent link, so callers update those first if this call means to reflect
         // a change (e.g. activate() sets m_self_active[e.id()] = true before calling this).
         bool compute_world_active(entity e);
+
+        // True if e carries a scene_tag whose scene is paused.
+        bool in_paused_scene(entity e) const;
 
         // Pool-unlink half of remove_parent(), with no active-state recompute - set_parent()
         // calls it directly so re-parenting recomputes once.
@@ -105,6 +112,7 @@ namespace gamecoe
             , m_recycle_ids(std::move(other.m_recycle_ids))
             , m_generations(std::move(other.m_generations))
             , m_self_active(std::move(other.m_self_active))
+            , m_paused_scenes(std::move(other.m_paused_scenes))
             , m_current_entity_id(std::exchange(other.m_current_entity_id, 0))
         {}
         entities &operator=(const entities&) = delete;
@@ -123,6 +131,11 @@ namespace gamecoe
         void activate(entity e);
         void deactivate(entity e);
         bool is_active(entity e) const;
+
+        // Scene-level pause, driven by game::deactivate_scene()/activate_scene(). Separate from
+        // activate()/deactivate(), so resuming a scene never overrides an entity's own state.
+        // Returns how many entities were re-evaluated, 0 if the scene was already in that state.
+        std::size_t set_scene_paused(scene_id id, bool paused);
 
         void clear();
 
@@ -213,9 +226,9 @@ namespace gamecoe
         // Transform always exists for a valid entity. Returns nullptr in Release if e is invalid.
         const components::transform* transform(entity e) const;
 
-        // Updates both sides. Parenting implies scene ownership: also re-tags child's whole subtree
-        // into parent's scene (or clears it if parent is global). For cosmetic cross-scene following,
-        // copy the transform in a system instead of parenting.
+        // Updates both sides. Parenting implies scene ownership: also re-tags child's whole subtree into
+        // parent's scene (or clears it if parent is global), so the subtree follows that scene's pause.
+        // For cosmetic cross-scene following, copy the transform in a system instead of parenting.
         void set_parent(entity child, entity parent);
 
         // Updates both sides.

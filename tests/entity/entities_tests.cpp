@@ -174,12 +174,20 @@ TEST_F(EntitiesTests, MoveConstructorResetsMovedFromCounter)
     entity e2 = source.create();
     ASSERT_EQ(source.size(), 3u);
 
+    source.add_component<components::scene_tag>(e1, components::scene_tag{ scene_id::TestScene1 });
+    source.set_scene_paused(scene_id::TestScene1, true);
+
     entities dest(std::move(source));
 
     EXPECT_EQ(dest.size(), 3u);
     EXPECT_TRUE(dest.valid(e0));
     EXPECT_TRUE(dest.valid(e1));
     EXPECT_TRUE(dest.valid(e2));
+
+    EXPECT_FALSE(dest.is_active(e1));
+    EXPECT_EQ(dest.set_scene_paused(scene_id::TestScene1, true), 0u);
+    EXPECT_EQ(dest.set_scene_paused(scene_id::TestScene1, false), 1u);
+    EXPECT_TRUE(dest.is_active(e1));
 
     EXPECT_EQ(source.size(), 0u);
     entity fresh = source.create();
@@ -1250,6 +1258,380 @@ TEST_F(EntitiesTests, SetParentAdoptsSubtreeScene)
 }
 
 //==============================================================================
+//                        Scene Pause
+//==============================================================================
+
+TEST_F(EntitiesTests, ScenePause)
+{
+    // Test 1: pausing deactivates every pool of the scene's entities, resuming restores them
+    {
+        mgr.clear();
+        entity e = mgr.create();
+        mgr.add_component<Position>(e, Position{1.0f, 2.0f, 3.0f});
+        mgr.add_component<components::scene_tag>(e, components::scene_tag{ scene_id::TestScene1 });
+
+        EXPECT_EQ(mgr.set_scene_paused(scene_id::TestScene1, true), 1u);
+
+        EXPECT_FALSE(mgr.is_active(e));
+        bool found = false;
+        for (auto [ent, pos] : mgr.extract<Position>())
+            if (ent == e) found = true;
+        EXPECT_FALSE(found);
+
+        EXPECT_EQ(mgr.set_scene_paused(scene_id::TestScene1, false), 1u);
+
+        EXPECT_TRUE(mgr.is_active(e));
+        found = false;
+        for (auto [ent, pos] : mgr.extract<Position>())
+            if (ent == e)
+            {
+                found = true;
+                EXPECT_FLOAT_EQ(pos.x, 1.0f);
+                EXPECT_FLOAT_EQ(pos.y, 2.0f);
+                EXPECT_FLOAT_EQ(pos.z, 3.0f);
+            }
+        EXPECT_TRUE(found);
+    }
+
+    // Test 2: the pause and self_active are independent of each other
+    {
+        mgr.clear();
+
+        entity a = mgr.create();
+        mgr.add_component<components::scene_tag>(a, components::scene_tag{ scene_id::TestScene1 });
+        mgr.deactivate(a);
+        mgr.set_scene_paused(scene_id::TestScene1, true);
+        mgr.set_scene_paused(scene_id::TestScene1, false);
+        EXPECT_FALSE(mgr.is_active(a));
+        mgr.activate(a);
+        EXPECT_TRUE(mgr.is_active(a));
+
+        mgr.clear();
+
+        entity b = mgr.create();
+        mgr.add_component<components::scene_tag>(b, components::scene_tag{ scene_id::TestScene1 });
+        mgr.deactivate(b);
+        mgr.set_scene_paused(scene_id::TestScene1, true);
+        mgr.activate(b);
+        EXPECT_FALSE(mgr.is_active(b));
+        mgr.set_scene_paused(scene_id::TestScene1, false);
+        EXPECT_TRUE(mgr.is_active(b));
+
+        mgr.clear();
+
+        entity c = mgr.create();
+        mgr.add_component<components::scene_tag>(c, components::scene_tag{ scene_id::TestScene1 });
+        mgr.set_scene_paused(scene_id::TestScene1, true);
+        mgr.deactivate(c);
+        mgr.set_scene_paused(scene_id::TestScene1, false);
+        EXPECT_FALSE(mgr.is_active(c));
+    }
+
+    // Test 3: a child in a paused scene stays inactive when its parent is deactivated and reactivated
+    {
+        mgr.clear();
+        entity p = mgr.create();
+        entity c = mgr.create();
+        mgr.add_component<components::scene_tag>(p, components::scene_tag{ scene_id::TestScene1 });
+        mgr.set_parent(c, p);
+        mgr.get_component<components::scene_tag>(c)->id = scene_id::TestScene2;
+
+        mgr.set_scene_paused(scene_id::TestScene2, true);
+        EXPECT_FALSE(mgr.is_active(c));
+
+        mgr.deactivate(p);
+        mgr.activate(p);
+
+        EXPECT_TRUE(mgr.is_active(p));
+        EXPECT_FALSE(mgr.is_active(c));
+
+        mgr.set_scene_paused(scene_id::TestScene2, false);
+        EXPECT_TRUE(mgr.is_active(c));
+    }
+
+    // Test 4: the order the scene walk visits a hierarchy in doesn't matter
+    {
+        mgr.clear();
+        entity p1 = mgr.create();
+        entity c1 = mgr.create();
+        entity g1 = mgr.create();
+        entity p2 = mgr.create();
+        entity c2 = mgr.create();
+        entity g2 = mgr.create();
+        mgr.add_component<Position>(g1, Position{1.0f, 0.0f, 0.0f});
+        mgr.add_component<Position>(g2, Position{2.0f, 0.0f, 0.0f});
+
+        mgr.add_component<components::scene_tag>(p1, components::scene_tag{ scene_id::TestScene1 });
+        mgr.add_component<components::scene_tag>(c1, components::scene_tag{ scene_id::TestScene1 });
+        mgr.add_component<components::scene_tag>(g1, components::scene_tag{ scene_id::TestScene1 });
+        mgr.add_component<components::scene_tag>(g2, components::scene_tag{ scene_id::TestScene1 });
+        mgr.add_component<components::scene_tag>(c2, components::scene_tag{ scene_id::TestScene1 });
+        mgr.add_component<components::scene_tag>(p2, components::scene_tag{ scene_id::TestScene1 });
+        mgr.set_parent(c1, p1);
+        mgr.set_parent(g1, c1);
+        mgr.set_parent(c2, p2);
+        mgr.set_parent(g2, c2);
+
+        mgr.set_scene_paused(scene_id::TestScene1, true);
+        for (entity e : { p1, c1, g1, p2, c2, g2 })
+            EXPECT_FALSE(mgr.is_active(e));
+
+        mgr.set_scene_paused(scene_id::TestScene1, false);
+        for (entity e : { p1, c1, g1, p2, c2, g2 })
+            EXPECT_TRUE(mgr.is_active(e));
+
+        bool found_g1 = false, found_g2 = false;
+        for (auto [ent, pos] : mgr.extract<Position>())
+        {
+            if (ent == g1) found_g1 = true;
+            if (ent == g2) found_g2 = true;
+        }
+        EXPECT_TRUE(found_g1);
+        EXPECT_TRUE(found_g2);
+    }
+
+    // Test 5: detaching a child from a paused scene keeps it paused
+    {
+        mgr.clear();
+        entity p = mgr.create();
+        entity c = mgr.create();
+        entity c2 = mgr.create();
+        mgr.add_component<components::scene_tag>(p, components::scene_tag{ scene_id::TestScene1 });
+        mgr.set_parent(c, p);
+        mgr.set_scene_paused(scene_id::TestScene1, true);
+
+        mgr.remove_parent(c);
+        EXPECT_FALSE(mgr.is_active(c));
+
+        mgr.set_parent(c2, p);
+        mgr.remove_children(p);
+        EXPECT_FALSE(mgr.is_active(c2));
+
+        mgr.set_scene_paused(scene_id::TestScene1, false);
+        EXPECT_TRUE(mgr.is_active(c));
+        EXPECT_TRUE(mgr.is_active(c2));
+    }
+
+    // Test 6: setting the same state again is a no-op, and only the scene's own entities are touched
+    {
+        mgr.clear();
+        entity a = mgr.create();
+        entity b = mgr.create();
+        entity g = mgr.create();
+        mgr.add_component<components::scene_tag>(a, components::scene_tag{ scene_id::TestScene1 });
+        mgr.add_component<components::scene_tag>(b, components::scene_tag{ scene_id::TestScene2 });
+
+        EXPECT_EQ(mgr.set_scene_paused(scene_id::TestScene1, true), 1u);
+        EXPECT_EQ(mgr.set_scene_paused(scene_id::TestScene1, true), 0u);
+        EXPECT_FALSE(mgr.is_active(a));
+        EXPECT_TRUE(mgr.is_active(b));
+        EXPECT_TRUE(mgr.is_active(g));
+
+        EXPECT_EQ(mgr.set_scene_paused(scene_id::TestScene1, false), 1u);
+        EXPECT_EQ(mgr.set_scene_paused(scene_id::TestScene1, false), 0u);
+        EXPECT_TRUE(mgr.is_active(a));
+        EXPECT_TRUE(mgr.is_active(b));
+        EXPECT_TRUE(mgr.is_active(g));
+
+        EXPECT_EQ(mgr.set_scene_paused(scene_id::TestScene2, false), 0u);
+
+        entities fresh;
+        EXPECT_EQ(fresh.set_scene_paused(scene_id::TestScene1, true), 0u);
+        entity p = fresh.create();
+        entity c = fresh.create();
+        fresh.set_parent(c, p);
+        EXPECT_TRUE(fresh.is_active(p));
+        EXPECT_TRUE(fresh.is_active(c));
+    }
+
+    // Test 7: clear() forgets which scenes were paused
+    {
+        mgr.clear();
+        entity e = mgr.create();
+        mgr.add_component<components::scene_tag>(e, components::scene_tag{ scene_id::TestScene1 });
+        EXPECT_EQ(mgr.set_scene_paused(scene_id::TestScene1, true), 1u);
+
+        mgr.clear();
+
+        entity e2 = mgr.create();
+        mgr.add_component<components::scene_tag>(e2, components::scene_tag{ scene_id::TestScene1 });
+        EXPECT_EQ(mgr.set_scene_paused(scene_id::TestScene1, true), 1u);
+        EXPECT_FALSE(mgr.is_active(e2));
+    }
+}
+
+//==============================================================================
+//                        SetParent Follows Scene Pause
+//==============================================================================
+
+TEST_F(EntitiesTests, SetParentFollowsScenePause)
+{
+    // Test 1: a paused subtree adopted by a parent in an unpaused scene becomes active
+    {
+        mgr.clear();
+        entity root = mgr.create();
+        entity mid = mgr.create();
+        entity leaf = mgr.create();
+        entity p = mgr.create();
+        mgr.add_component<Position>(leaf, Position{1.0f, 2.0f, 3.0f});
+
+        mgr.add_component<components::scene_tag>(root, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(mid, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(leaf, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(p, components::scene_tag{ scene_id::TestScene1 });
+        mgr.set_parent(mid, root);
+        mgr.set_parent(leaf, mid);
+        mgr.set_scene_paused(scene_id::TestScene2, true);
+        ASSERT_FALSE(mgr.is_active(root));
+        ASSERT_FALSE(mgr.is_active(mid));
+        ASSERT_FALSE(mgr.is_active(leaf));
+
+        mgr.set_parent(root, p);
+
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(root)->id, scene_id::TestScene1);
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(mid)->id, scene_id::TestScene1);
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(leaf)->id, scene_id::TestScene1);
+        EXPECT_TRUE(mgr.is_active(root));
+        EXPECT_TRUE(mgr.is_active(mid));
+        EXPECT_TRUE(mgr.is_active(leaf));
+
+        bool found_leaf = false;
+        for (auto [ent, pos] : mgr.extract<Position>())
+            if (ent == leaf) found_leaf = true;
+        EXPECT_TRUE(found_leaf);
+
+        bool found_mid_parent = false;
+        for (auto [ent, par] : mgr.extract<components::parent>())
+            if (ent == mid) found_mid_parent = true;
+        EXPECT_TRUE(found_mid_parent);
+
+        mgr.remove_parent(root);
+        EXPECT_TRUE(mgr.is_active(root));
+    }
+
+    // Test 2: a paused subtree adopted by a global parent loses its tags and becomes active
+    {
+        mgr.clear();
+        entity root = mgr.create();
+        entity mid = mgr.create();
+        entity leaf = mgr.create();
+        entity g = mgr.create();
+
+        mgr.add_component<components::scene_tag>(root, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(mid, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(leaf, components::scene_tag{ scene_id::TestScene2 });
+        mgr.set_parent(mid, root);
+        mgr.set_parent(leaf, mid);
+        mgr.set_scene_paused(scene_id::TestScene2, true);
+
+        mgr.set_parent(root, g);
+
+        EXPECT_FALSE(mgr.has_component<components::scene_tag>(root));
+        EXPECT_FALSE(mgr.has_component<components::scene_tag>(mid));
+        EXPECT_FALSE(mgr.has_component<components::scene_tag>(leaf));
+        EXPECT_TRUE(mgr.is_active(root));
+        EXPECT_TRUE(mgr.is_active(mid));
+        EXPECT_TRUE(mgr.is_active(leaf));
+    }
+
+    // Test 3: an active subtree adopted by a parent in a paused scene goes inactive
+    {
+        mgr.clear();
+        entity root = mgr.create();
+        entity mid = mgr.create();
+        entity leaf = mgr.create();
+        entity p = mgr.create();
+        mgr.add_component<Position>(leaf, Position{1.0f, 2.0f, 3.0f});
+
+        mgr.add_component<components::scene_tag>(p, components::scene_tag{ scene_id::TestScene1 });
+        mgr.add_component<components::scene_tag>(root, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(mid, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(leaf, components::scene_tag{ scene_id::TestScene2 });
+        mgr.set_parent(mid, root);
+        mgr.set_parent(leaf, mid);
+        mgr.set_scene_paused(scene_id::TestScene1, true);
+
+        mgr.set_parent(root, p);
+
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(root)->id, scene_id::TestScene1);
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(mid)->id, scene_id::TestScene1);
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(leaf)->id, scene_id::TestScene1);
+        EXPECT_FALSE(mgr.is_active(root));
+        EXPECT_FALSE(mgr.is_active(mid));
+        EXPECT_FALSE(mgr.is_active(leaf));
+
+        bool found_leaf = false;
+        for (auto [ent, pos] : mgr.extract<Position>())
+            if (ent == leaf) found_leaf = true;
+        EXPECT_FALSE(found_leaf);
+
+        mgr.remove_parent(root);
+        EXPECT_FALSE(mgr.is_active(root));
+        EXPECT_FALSE(mgr.is_active(leaf));
+
+        mgr.set_scene_paused(scene_id::TestScene1, false);
+        EXPECT_TRUE(mgr.is_active(root));
+        EXPECT_TRUE(mgr.is_active(mid));
+        EXPECT_TRUE(mgr.is_active(leaf));
+    }
+
+    // Test 4: a self-inactive descendant stays inactive through adoption
+    {
+        mgr.clear();
+        entity root = mgr.create();
+        entity mid = mgr.create();
+        entity leaf = mgr.create();
+        entity p = mgr.create();
+
+        mgr.add_component<components::scene_tag>(root, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(mid, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(leaf, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(p, components::scene_tag{ scene_id::TestScene1 });
+        mgr.set_parent(mid, root);
+        mgr.set_parent(leaf, mid);
+        mgr.set_scene_paused(scene_id::TestScene2, true);
+        mgr.deactivate(mid);
+
+        mgr.set_parent(root, p);
+
+        EXPECT_TRUE(mgr.is_active(root));
+        EXPECT_FALSE(mgr.is_active(mid));
+        EXPECT_FALSE(mgr.is_active(leaf));
+
+        mgr.activate(mid);
+        EXPECT_TRUE(mgr.is_active(mid));
+        EXPECT_TRUE(mgr.is_active(leaf));
+    }
+
+    // Test 5: a paused subtree adopted into another paused scene stays inactive
+    {
+        mgr.clear();
+        entity root = mgr.create();
+        entity mid = mgr.create();
+        entity leaf = mgr.create();
+        entity p = mgr.create();
+
+        mgr.add_component<components::scene_tag>(root, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(mid, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(leaf, components::scene_tag{ scene_id::TestScene2 });
+        mgr.add_component<components::scene_tag>(p, components::scene_tag{ scene_id::TestScene1 });
+        mgr.set_parent(mid, root);
+        mgr.set_parent(leaf, mid);
+        mgr.set_scene_paused(scene_id::TestScene2, true);
+        mgr.set_scene_paused(scene_id::TestScene1, true);
+
+        mgr.set_parent(root, p);
+
+        EXPECT_FALSE(mgr.is_active(root));
+        EXPECT_FALSE(mgr.is_active(mid));
+        EXPECT_FALSE(mgr.is_active(leaf));
+
+        mgr.remove_parent(root);
+        EXPECT_FALSE(mgr.is_active(root));
+    }
+}
+
+//==============================================================================
 //                        Add Component To Inactive Entity
 //==============================================================================
 
@@ -1343,7 +1725,7 @@ TEST_F(EntitiesTests, AddComponentToInactiveEntity)
 
 TEST_F(EntitiesTests, DeepHierarchyCascade)
 {
-    // destroy()/set_active() cascade a hierarchy via an explicit std::vector-backed worklist,
+    // destroy(), set_active() and set_parent()'s retag walk cascade a hierarchy via an explicit std::vector-backed worklist,
     // deliberately not recursion, so a malformed/deep parent chain can't stack-overflow. Every
     // other test in this file tops out at 2-3 levels deep, so a recursive rewrite of either
     // cascade would pass the whole suite - this is the one guard deep enough to actually catch
@@ -1400,7 +1782,37 @@ TEST_F(EntitiesTests, DeepHierarchyCascade)
         EXPECT_TRUE(mgr.is_active(near_root)); // ancestor of midpoint, restored with root
     }
 
-    // Test 4: destroy(root) cascades removal all the way down to the deepest descendant
+    // Test 4: set_parent() retags the whole chain into a paused parent's scene and inactivates it,
+    // and a global parent clears the tags again
+    {
+        entity p = mgr.create();
+        mgr.add_component<components::scene_tag>(p, components::scene_tag{ scene_id::TestScene1 });
+        mgr.set_scene_paused(scene_id::TestScene1, true);
+        entity near_root = chain[chain.size() - 2];
+
+        mgr.set_parent(root, p);
+
+        ASSERT_NE(mgr.get_component<components::scene_tag>(deepest), nullptr);
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(deepest)->id, scene_id::TestScene1);
+        EXPECT_FALSE(mgr.is_active(deepest));
+        EXPECT_FALSE(mgr.is_active(near_root));
+
+        mgr.remove_parent(root);
+        EXPECT_FALSE(mgr.is_active(near_root));
+
+        entity g = mgr.create();
+        mgr.set_parent(root, g);
+
+        EXPECT_TRUE(mgr.is_active(near_root));
+        EXPECT_FALSE(mgr.is_active(deepest));
+        EXPECT_FALSE(mgr.has_component<components::scene_tag>(deepest));
+
+        mgr.remove_parent(root);
+        mgr.destroy(g);
+        mgr.destroy(p);
+    }
+
+    // Test 5: destroy(root) cascades removal all the way down to the deepest descendant
     {
         mgr.destroy(root);
 
