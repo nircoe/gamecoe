@@ -1,5 +1,4 @@
 #include <gamecoe/entity/command_buffer.hpp>
-#include <gamecoe/component/scene_tag.hpp>
 #include <string>
 #include <gamecoe/utils/error_handler.hpp>
 #include <gamecoe_config.hpp>
@@ -37,8 +36,7 @@ namespace gamecoe
 
         for (const components::transform& t : m_spawn_transforms)
         {
-            entity e = ents.create(t);
-            if (scene) ents.add_component<components::scene_tag>(e, components::scene_tag{ *scene });
+            entity e = ents.create(t, scene);
             created.push_back(e);
         }
 

@@ -140,8 +140,7 @@ namespace gamecoe
         // entities can only be created into an active scene.
         GAMECOE_ASSERT_GUARD(meta->status == scene_status::active, "game::create_entity(): scene is not active", entity::invalid());
 
-        entity e = m_entities.create(std::move(initial_transform));
-        m_entities.add_component<components::scene_tag>(e, components::scene_tag{ id });
+        entity e = m_entities.create(std::move(initial_transform), id);
         (m_entities.add_component<std::decay_t<Comps>>(e, std::forward<Comps>(comps)), ...);
         return e;
     }

@@ -16,7 +16,7 @@ namespace gamecoe
 {
     std::uint32_t entities::s_component_id{0};
 
-    entity entities::create(components::transform initial_transform)
+    entity entities::create(components::transform initial_transform, std::optional<scene_id> in_scene)
     {
         std::uint32_t id;
         std::uint16_t generation;
@@ -40,7 +40,9 @@ namespace gamecoe
         }
 
         entity e = entity::create(id, generation);
-        get_pool<components::transform>()->add(e, true, std::move(initial_transform));
+        const bool active = !(in_scene && is_scene_paused(*in_scene));
+        get_pool<components::transform>()->add(e, active, std::move(initial_transform));
+        if (in_scene) get_pool<components::scene_tag>()->add(e, active, components::scene_tag{ *in_scene });
 
         return e;
     }
@@ -61,6 +63,20 @@ namespace gamecoe
         const components::transform* t = get_component<components::transform>(e);
         GAMECOE_ASSERT_LOG(t != nullptr, "entities::transform(): transform missing (should be impossible - mandatory component)");
         return t;
+    }
+
+    components::scene_tag* entities::scene(entity e)
+    {
+        GAMECOE_ASSERT_GUARD(valid(e), "entities::scene(): entity is not valid", nullptr);
+
+        return get_component<components::scene_tag>(e);
+    }
+
+    const components::scene_tag* entities::scene(entity e) const
+    {
+        GAMECOE_ASSERT_GUARD(valid(e), "entities::scene(): entity is not valid", nullptr);
+
+        return get_component<components::scene_tag>(e);
     }
 
     void entities::destroy(entity e)
@@ -186,12 +202,17 @@ namespace gamecoe
         return !p || is_active(p->handle);
     }
 
+    bool entities::is_scene_paused(scene_id id) const
+    {
+        return std::find(m_paused_scenes.begin(), m_paused_scenes.end(), id) != m_paused_scenes.end();
+    }
+
     bool entities::in_paused_scene(entity e) const
     {
         if (m_paused_scenes.empty()) return false;
         auto* pool = find_pool<components::scene_tag>();
         auto* tag = pool ? pool->try_get(e) : nullptr;
-        return tag && std::find(m_paused_scenes.begin(), m_paused_scenes.end(), tag->id) != m_paused_scenes.end();
+        return tag && is_scene_paused(tag->id);
     }
 
     // Reads the transform pool's partition boundary directly - transform is mandatory, so
