@@ -159,6 +159,25 @@ TEST_F(CommandBufferTests, SceneTagging)
 
         EXPECT_FALSE(mgr.has_component<components::scene_tag>(e));
     }
+
+    // Test 3: flushing into a paused scene creates the entity inactive, still tagged
+    {
+        mgr.clear();
+        mgr.set_scene_paused(scene_id{1}, true);
+        buf.spawn();
+        buf.flush(mgr, scene_id{1});
+
+        ASSERT_EQ(mgr.size(), 1u);
+        entity e = entity::invalid();
+        mgr.for_each_all<components::transform>([&e](entity ent, [[maybe_unused]] const components::transform &tr)
+        {
+            e = ent;
+        });
+
+        EXPECT_FALSE(mgr.is_active(e));
+        ASSERT_TRUE(mgr.has_component<components::scene_tag>(e));
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(e)->id, scene_id{1});
+    }
 }
 
 //==============================================================================

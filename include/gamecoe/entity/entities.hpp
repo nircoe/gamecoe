@@ -5,6 +5,7 @@
 #include <gamecoe/entity/component_pool.hpp>
 #include <gamecoe/entity/extraction.hpp>
 #include <gamecoe/component/transform.hpp>
+#include <gamecoe/core/scene_id.hpp>
 #include <optional>
 #include <type_traits>
 #include <utility>
@@ -38,6 +39,9 @@ namespace gamecoe
         std::vector<std::uint16_t> m_generations;
         // Per-entity activate()/deactivate() request, independent of any inherited parent state.
         std::vector<bool> m_self_active;
+        // Scenes paused by game::deactivate_scene(). Kept apart from m_self_active, so resuming a scene
+        // never undoes an entity's own deactivate().
+        std::vector<scene_id> m_paused_scenes;
 
         std::uint32_t m_current_entity_id{0};
 
@@ -79,14 +83,20 @@ namespace gamecoe
             return static_cast<const component_pool<T>*>(m_pools[comp_id].get());
         }
 
-        // Applies world_active to e and cascades to its subtree per each descendant's own self_active.
+        // Applies world_active to e and cascades to its subtree per each descendant's own self_active and scene pause.
         void set_active(entity e, bool world_active);
 
-        // self_active AND (no parent OR the parent's own world-active state) - the formula every
+        // self_active AND scene not paused AND (no parent OR the parent's own world-active state) - the formula every
         // hierarchy-aware active-state recompute in this file is built on. Reads e's *current*
         // self_active and parent link, so callers update those first if this call means to reflect
         // a change (e.g. activate() sets m_self_active[e.id()] = true before calling this).
         bool compute_world_active(entity e);
+
+        // True if the scene is in m_paused_scenes.
+        bool is_scene_paused(scene_id id) const;
+
+        // True if e carries a scene_tag whose scene is paused.
+        bool in_paused_scene(entity e) const;
 
         // Pool-unlink half of remove_parent(), with no active-state recompute - set_parent()
         // calls it directly so re-parenting recomputes once.
@@ -105,6 +115,7 @@ namespace gamecoe
             , m_recycle_ids(std::move(other.m_recycle_ids))
             , m_generations(std::move(other.m_generations))
             , m_self_active(std::move(other.m_self_active))
+            , m_paused_scenes(std::move(other.m_paused_scenes))
             , m_current_entity_id(std::exchange(other.m_current_entity_id, 0))
         {}
         entities &operator=(const entities&) = delete;
@@ -113,7 +124,9 @@ namespace gamecoe
         ~entities() = default;
 
         // May return a recycled id. Returns entity::invalid() in Release if the entity limit is reached.
-        entity create(components::transform initial_transform = components::transform{});
+        // scene_tag is stamped here and nowhere else, add/remove/set_component block it. No in_scene means
+        // a global entity. An entity created into a paused scene starts inactive.
+        entity create(components::transform initial_transform = components::transform{}, std::optional<scene_id> in_scene = std::nullopt);
 
         // No-op if e is already invalid.
         void destroy(entity e);
@@ -123,6 +136,11 @@ namespace gamecoe
         void activate(entity e);
         void deactivate(entity e);
         bool is_active(entity e) const;
+
+        // Scene-level pause, driven by game::deactivate_scene()/activate_scene(). Separate from
+        // activate()/deactivate(), so resuming a scene never overrides an entity's own state.
+        // Returns how many entities were re-evaluated, 0 if the scene was already in that state.
+        std::size_t set_scene_paused(scene_id id, bool paused);
 
         void clear();
 
@@ -141,6 +159,8 @@ namespace gamecoe
                 "entities::add_component(): transform is mandatory, added automatically by create()");
             static_assert(!hierarchy_component<T>,
                 "entities::add_component(): hierarchy components are managed - use entities::set_parent() instead");
+            static_assert(!std::is_same_v<T, components::scene_tag>,
+                "entities::add_component(): scene_tag is stamped by create(), pass the scene_id to create() instead");
 
             GAMECOE_ASSERT_GUARD(valid(e), "entities::add_component(): entity is not valid", nullptr);
 
@@ -166,6 +186,8 @@ namespace gamecoe
                 "entities::remove_component(): transform is mandatory and cannot be removed");
             static_assert(!hierarchy_component<T>,
                 "entities::remove_component(): hierarchy components are managed - use entities::remove_parent() instead");
+            static_assert(!std::is_same_v<T, components::scene_tag>,
+                "entities::remove_component(): scene_tag is managed by set_parent() and destroy(), not removable directly");
 
             if (!has_component<T>(e)) return;
 
@@ -199,7 +221,7 @@ namespace gamecoe
             static_assert(!hierarchy_component<T>,
                 "entities::set_component(): hierarchy components are managed - use entities::set_parent() instead");
             static_assert(!std::is_same_v<std::decay_t<T>, components::scene_tag>,
-                "entities::set_component(): scene_tag is stamped at creation/flush time, not settable afterward");
+                "entities::set_component(): scene_tag is stamped by create(), not settable afterward");
             static_assert(!std::is_same_v<std::decay_t<T>, components::transform>,
                 "entities::set_component(): transform is a built-in component, use entities::transform(e) directly");
 
@@ -213,9 +235,17 @@ namespace gamecoe
         // Transform always exists for a valid entity. Returns nullptr in Release if e is invalid.
         const components::transform* transform(entity e) const;
 
-        // Updates both sides. Parenting implies scene ownership: also re-tags child's whole subtree
-        // into parent's scene (or clears it if parent is global). For cosmetic cross-scene following,
-        // copy the transform in a system instead of parenting.
+        // nullptr if e is global (no scene_tag). Returns nullptr in Release if e is invalid.
+        // Pointer may be invalidated by any add_component call, create() with a scene, or set_parent() (pool reallocation).
+        components::scene_tag* scene(entity e);
+
+        // nullptr if e is global (no scene_tag). Returns nullptr in Release if e is invalid.
+        // Pointer may be invalidated by any add_component call, create() with a scene, or set_parent() (pool reallocation).
+        const components::scene_tag* scene(entity e) const;
+
+        // Updates both sides. Parenting implies scene ownership: also re-tags child's whole subtree into
+        // parent's scene (or clears it if parent is global), so the subtree follows that scene's pause.
+        // For cosmetic cross-scene following, copy the transform in a system instead of parenting.
         void set_parent(entity child, entity parent);
 
         // Updates both sides.
