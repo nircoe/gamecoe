@@ -183,7 +183,7 @@ TEST_F(GameTests, DeactivateReactivateSkipsIndividuallyDeactivated)
     g->deactivate_scene(scene_a);
     g->activate_scene(scene_a);
 
-    // paused_active only restores entities that were active before deactivate_scene, not this one
+    // activate_scene() only lifts the scene pause. This entity's own deactivate() still holds.
     EXPECT_FALSE(g->entities().is_active(individually_deactivated));
     EXPECT_EQ(count_active_scene_entities(*g, scene_a), 2u);
 }
@@ -419,6 +419,101 @@ TEST_F(GameTests, SetParentAcrossScenesAdoptsIntoParentScene)
     g->deactivate_scene(scene_b);
     // C belongs to scene A now, so deactivating scene B must not touch it.
     EXPECT_TRUE(g->entities().is_active(C));
+}
+
+TEST_F(GameTests, AdoptedOutOfPausedSceneLeavesOldSceneBehind)
+{
+    g->create_scene(scene_a, build_scene_a);
+    g->create_scene(scene_b, build_scene_b);
+    test_prepare_to_play(*g);
+    g->load_scene(scene_a);
+    g->activate_scene(scene_a);
+    g->load_scene(scene_b);
+    g->activate_scene(scene_b);
+
+    entity P = g->scene_entities(scene_a)[0];
+    entity C = g->scene_entities(scene_b)[0];
+
+    // Test 1: adopted out of a paused scene, the entity follows its new scene
+    {
+        g->deactivate_scene(scene_b);
+        g->entities().set_parent(C, P);
+        ASSERT_NE(g->entities().get_component<components::scene_tag>(C), nullptr);
+        EXPECT_EQ(g->entities().get_component<components::scene_tag>(C)->id, scene_a);
+        EXPECT_TRUE(g->entities().is_active(C));
+        EXPECT_EQ(count_scene_entities(*g, scene_a), 4u);
+        EXPECT_EQ(count_scene_entities(*g, scene_b), 0u);
+
+        g->activate_scene(scene_b);
+        EXPECT_EQ(g->status(scene_b), scene_status::active);
+        EXPECT_EQ(g->entities().get_component<components::scene_tag>(C)->id, scene_a);
+        EXPECT_TRUE(g->entities().is_active(C));
+
+        g->deactivate_scene(scene_a);
+        EXPECT_FALSE(g->entities().is_active(C));
+        g->activate_scene(scene_a);
+        EXPECT_TRUE(g->entities().is_active(C));
+    }
+
+    // Test 2: unloading the old paused scene leaves the adopted entity alone
+    {
+        g->deactivate_scene(scene_b);
+        g->unload_scene(scene_b);
+        EXPECT_TRUE(g->entities().valid(C));
+        EXPECT_TRUE(g->entities().is_active(C));
+        ASSERT_NE(g->entities().get_component<components::scene_tag>(C), nullptr);
+        EXPECT_EQ(g->entities().get_component<components::scene_tag>(C)->id, scene_a);
+        EXPECT_EQ(g->status(scene_b), scene_status::unloaded);
+
+        g->deactivate_scene(scene_a);
+        EXPECT_FALSE(g->entities().is_active(C));
+        g->activate_scene(scene_a);
+        EXPECT_TRUE(g->entities().is_active(C));
+    }
+
+    // Test 3: reloading a scene that was unloaded while paused starts unpaused
+    {
+        g->load_scene(scene_b);
+        g->activate_scene(scene_b);
+        EXPECT_EQ(count_active_scene_entities(*g, scene_b), 1u);
+        entity C2 = g->scene_entities(scene_b)[0];
+        EXPECT_TRUE(g->entities().is_active(C2));
+
+        g->deactivate_scene(scene_b);
+        EXPECT_FALSE(g->entities().is_active(C2));
+        g->activate_scene(scene_b);
+        EXPECT_TRUE(g->entities().is_active(C2));
+    }
+}
+
+TEST_F(GameTests, AdoptedIntoPausedSceneWaitsForResume)
+{
+    g->create_scene(scene_a, build_scene_a);
+    g->create_scene(scene_b, build_scene_b);
+    test_prepare_to_play(*g);
+    g->load_scene(scene_a);
+    g->activate_scene(scene_a);
+    g->load_scene(scene_b);
+    g->activate_scene(scene_b);
+
+    entity P = g->scene_entities(scene_a)[0];
+    entity C = g->scene_entities(scene_b)[0];
+
+    // Test 1: an entity adopted into a paused scene stays inactive until the scene resumes
+    {
+        g->deactivate_scene(scene_a);
+        g->entities().set_parent(C, P);
+        ASSERT_NE(g->entities().get_component<components::scene_tag>(C), nullptr);
+        EXPECT_EQ(g->entities().get_component<components::scene_tag>(C)->id, scene_a);
+        EXPECT_FALSE(g->entities().is_active(C));
+        EXPECT_EQ(count_scene_entities(*g, scene_b), 0u);
+
+        g->entities().remove_parent(C);
+        EXPECT_FALSE(g->entities().is_active(C));
+
+        g->activate_scene(scene_a);
+        EXPECT_TRUE(g->entities().is_active(C));
+    }
 }
 
 TEST_F(GameTests, HasSceneAndWindow)

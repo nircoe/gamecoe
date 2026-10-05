@@ -44,7 +44,6 @@ namespace gamecoe
         struct scene_metadata
         {
             command_buffer       pending;
-            std::vector<entity>  paused_active;   // snapshot of the active entities before the scene was deactivated
             scene_builder        builder;
             std::int8_t          layer;
             scene_status         status = scene_status::unloaded;

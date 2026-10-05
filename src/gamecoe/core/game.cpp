@@ -315,11 +315,8 @@ namespace gamecoe
         }
         else
         {
-            // Only reactivate entities that were active before the deactivation of the scene.
-            activated_count = meta->paused_active.size();
-            for (entity e : meta->paused_active)
-                if (m_entities.valid(e)) m_entities.activate(e);
-            meta->paused_active.clear();
+            // Resuming only lifts the scene pause. Entities deactivated on their own stay inactive.
+            activated_count = m_entities.set_scene_paused(id, false);
         }
 
         insert_active_scene_sorted(id, meta->layer);
@@ -344,19 +341,12 @@ namespace gamecoe
 
         std::erase(m_active_scenes, id);
 
-        meta->paused_active.clear();
-        m_entities.for_each<components::scene_tag>(
-            [id, meta](entity e, const components::scene_tag &tag)
-            {
-                if (tag.id == id) meta->paused_active.push_back(e);
-            });
-        for (entity e : meta->paused_active)
-            m_entities.deactivate(e);
+        const std::size_t paused_count = m_entities.set_scene_paused(id, true);
 
         meta->status = scene_status::inactive;
 
-        logcoe::info("game::deactivate_scene(): deactivated " + std::to_string(meta->paused_active.size()) +
-                     " entities in scene \"" + to_string(id) + "\"");
+        logcoe::info("game::deactivate_scene(): deactivated scene \"" + to_string(id) + "\" (" +
+                     std::to_string(paused_count) + " entities)");
     }
 
     void game::unload_scene(scene_id id)
@@ -391,11 +381,13 @@ namespace gamecoe
             }
         }
 
+        // A deactivated scene's pause has to be cleared, or a reload would start paused.
+        m_entities.set_scene_paused(id, false);
+
         if (!soundcoe::unloadScene(scene_name))
             logcoe::debug("game::unload_scene(): soundcoe had nothing loaded for scene \"" + scene_name + "\"");
 
         meta->pending.clear();
-        meta->paused_active.clear();
         meta->status = scene_status::unloaded;
 
         logcoe::info("game::unload_scene(): unloaded scene \"" + scene_name + "\" (" +
