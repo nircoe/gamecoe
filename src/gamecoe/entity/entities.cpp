@@ -79,6 +79,17 @@ namespace gamecoe
         return get_component<components::scene_tag>(e);
     }
 
+    std::vector<entity> entities::scene_entities(scene_id id) const
+    {
+        std::vector<entity> matches;
+        for_each_all<components::scene_tag>(
+            [id, &matches](entity e, const components::scene_tag &tag)
+            {
+                if (tag.id == id) matches.push_back(e);
+            });
+        return matches;
+    }
+
     void entities::destroy(entity e)
     {
         if (!valid(e))
@@ -163,12 +174,7 @@ namespace gamecoe
         else m_paused_scenes.erase(it);
 
         // set_active() swaps slots in every pool, so collect the scene's entities before touching any.
-        std::vector<entity> scene_ents;
-        for_each_all<components::scene_tag>(
-            [&](entity e, const components::scene_tag &tag)
-            {
-                if (tag.id == id) scene_ents.push_back(e);
-            });
+        std::vector<entity> scene_ents = scene_entities(id);
         for (entity e : scene_ents) set_active(e, compute_world_active(e));
 
         return scene_ents.size();
@@ -191,13 +197,13 @@ namespace gamecoe
 
             if (auto* kids = get_pool<components::children>()->try_get(current))
                 for (entity child : kids->handles)
-                    worklist.emplace_back(child, m_self_active[child.id()] && !in_paused_scene(child) && target);
+                    worklist.emplace_back(child, target && own_active(child));
         }
     }
 
     bool entities::compute_world_active(entity e)
     {
-        if (!m_self_active[e.id()] || in_paused_scene(e)) return false;
+        if (!own_active(e)) return false;
         auto* p = get_pool<components::parent>()->try_get(e);
         return !p || is_active(p->handle);
     }
@@ -205,6 +211,11 @@ namespace gamecoe
     bool entities::is_scene_paused(scene_id id) const
     {
         return std::find(m_paused_scenes.begin(), m_paused_scenes.end(), id) != m_paused_scenes.end();
+    }
+
+    bool entities::own_active(entity e) const
+    {
+        return m_self_active[e.id()] && !in_paused_scene(e);
     }
 
     bool entities::in_paused_scene(entity e) const

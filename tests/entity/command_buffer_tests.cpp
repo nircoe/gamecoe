@@ -167,12 +167,8 @@ TEST_F(CommandBufferTests, SceneTagging)
         buf.spawn();
         buf.flush(mgr, scene_id{1});
 
-        ASSERT_EQ(mgr.size(), 1u);
         entity e = entity::invalid();
-        mgr.for_each_all<components::transform>([&e](entity ent, [[maybe_unused]] const components::transform &tr)
-        {
-            e = ent;
-        });
+        ASSERT_NO_FATAL_FAILURE(sole_entity(mgr, e));
 
         EXPECT_FALSE(mgr.is_active(e));
         ASSERT_TRUE(mgr.has_component<components::scene_tag>(e));

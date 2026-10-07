@@ -98,6 +98,9 @@ namespace gamecoe
         // True if e carries a scene_tag whose scene is paused.
         bool in_paused_scene(entity e) const;
 
+        // self_active AND e's own scene not paused. Ignores the parent chain.
+        bool own_active(entity e) const;
+
         // Pool-unlink half of remove_parent(), with no active-state recompute - set_parent()
         // calls it directly so re-parenting recomputes once.
         // Returns true if child had a parent link that was removed, false if it had none.
@@ -242,6 +245,9 @@ namespace gamecoe
         // nullptr if e is global (no scene_tag). Returns nullptr in Release if e is invalid.
         // Pointer may be invalidated by any add_component call, create() with a scene, or set_parent() (pool reallocation).
         const components::scene_tag* scene(entity e) const;
+
+        // Snapshot of every entity tagged with the scene (active + inactive).
+        std::vector<entity> scene_entities(scene_id id) const;
 
         // Updates both sides. Parenting implies scene ownership: also re-tags child's whole subtree into
         // parent's scene (or clears it if parent is global), so the subtree follows that scene's pause.

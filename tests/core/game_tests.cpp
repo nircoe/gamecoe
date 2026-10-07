@@ -9,6 +9,7 @@
 #include <support/test_utils.hpp>
 #include <algorithm>
 #include <optional>
+#include <utility>
 #include <vector>
 
 using namespace gamecoe;
@@ -52,6 +53,18 @@ namespace
         g.entities().for_each<components::scene_tag>(
             [id, &count](entity, const components::scene_tag &tag) { if (tag.id == id) ++count; });
         return count;
+    }
+
+    std::pair<entity, entity> setup_two_scenes(game &g)
+    {
+        g.create_scene(scene_a, build_scene_a);
+        g.create_scene(scene_b, build_scene_b);
+        test_prepare_to_play(g);
+        g.load_scene(scene_a);
+        g.activate_scene(scene_a);
+        g.load_scene(scene_b);
+        g.activate_scene(scene_b);
+        return { g.scene_entities(scene_a)[0], g.scene_entities(scene_b)[0] };
     }
 } // namespace
 
@@ -385,16 +398,7 @@ TEST_F(GameTests, MultipleActiveScenesShareOneRegistry)
 
 TEST_F(GameTests, SetParentAcrossScenesAdoptsIntoParentScene)
 {
-    g->create_scene(scene_a, build_scene_a);
-    g->create_scene(scene_b, build_scene_b);
-    test_prepare_to_play(*g);
-    g->load_scene(scene_a);
-    g->activate_scene(scene_a);
-    g->load_scene(scene_b);
-    g->activate_scene(scene_b);
-
-    entity P = g->scene_entities(scene_a)[0];
-    entity C = g->scene_entities(scene_b)[0];
+    auto [P, C] = setup_two_scenes(*g);
     g->entities().set_parent(C, P);
 
     // C now carries scene A's tag, since it was reparented under P.
@@ -423,16 +427,7 @@ TEST_F(GameTests, SetParentAcrossScenesAdoptsIntoParentScene)
 
 TEST_F(GameTests, AdoptedOutOfPausedSceneLeavesOldSceneBehind)
 {
-    g->create_scene(scene_a, build_scene_a);
-    g->create_scene(scene_b, build_scene_b);
-    test_prepare_to_play(*g);
-    g->load_scene(scene_a);
-    g->activate_scene(scene_a);
-    g->load_scene(scene_b);
-    g->activate_scene(scene_b);
-
-    entity P = g->scene_entities(scene_a)[0];
-    entity C = g->scene_entities(scene_b)[0];
+    auto [P, C] = setup_two_scenes(*g);
 
     // Test 1: adopted out of a paused scene, the entity follows its new scene
     {
@@ -488,16 +483,7 @@ TEST_F(GameTests, AdoptedOutOfPausedSceneLeavesOldSceneBehind)
 
 TEST_F(GameTests, AdoptedIntoPausedSceneWaitsForResume)
 {
-    g->create_scene(scene_a, build_scene_a);
-    g->create_scene(scene_b, build_scene_b);
-    test_prepare_to_play(*g);
-    g->load_scene(scene_a);
-    g->activate_scene(scene_a);
-    g->load_scene(scene_b);
-    g->activate_scene(scene_b);
-
-    entity P = g->scene_entities(scene_a)[0];
-    entity C = g->scene_entities(scene_b)[0];
+    auto [P, C] = setup_two_scenes(*g);
 
     // Test 1: an entity adopted into a paused scene stays inactive until the scene resumes
     {

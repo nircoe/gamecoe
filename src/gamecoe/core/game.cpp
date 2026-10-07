@@ -241,13 +241,7 @@ namespace gamecoe
 
     std::vector<entity> game::scene_entities(scene_id id) const
     {
-        std::vector<entity> matches;
-        m_entities.for_each_all<components::scene_tag>(
-            [id, &matches](entity e, const components::scene_tag &tag)
-            {
-                if (tag.id == id) matches.push_back(e);
-            });
-        return matches;
+        return m_entities.scene_entities(id);
     }
 
     void game::create_scene(scene_id id, scene_builder builder, int layer)
