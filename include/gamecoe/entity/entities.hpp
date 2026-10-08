@@ -129,7 +129,8 @@ namespace gamecoe
         // May return a recycled id. Returns entity::invalid() in Release if the entity limit is reached.
         // scene_tag is stamped here and nowhere else, add/remove/set_component block it. No in_scene means
         // a global entity. An entity created into a paused scene starts inactive.
-        entity create(components::transform initial_transform = components::transform{}, std::optional<scene_id> in_scene = std::nullopt);
+        entity create(components::transform initial_transform = components::transform{},
+                      std::optional<scene_id> in_scene = std::nullopt);
 
         // No-op if e is already invalid.
         void destroy(entity e);
@@ -188,9 +189,11 @@ namespace gamecoe
             static_assert(!std::is_same_v<T, components::transform>,
                 "entities::remove_component(): transform is mandatory and cannot be removed");
             static_assert(!hierarchy_component<T>,
-                "entities::remove_component(): hierarchy components are managed - use entities::remove_parent() instead");
+                "entities::remove_component(): hierarchy components are managed - use "
+                "entities::remove_parent() instead");
             static_assert(!std::is_same_v<T, components::scene_tag>,
-                "entities::remove_component(): scene_tag is managed by set_parent() and destroy(), not removable directly");
+                "entities::remove_component(): scene_tag is managed by set_parent() and destroy(), "
+                "not removable directly");
 
             if (!has_component<T>(e)) return;
 
@@ -239,11 +242,8 @@ namespace gamecoe
         const components::transform* transform(entity e) const;
 
         // nullptr if e is global (no scene_tag). Returns nullptr in Release if e is invalid.
-        // Pointer may be invalidated by any add_component call, create() with a scene, or set_parent() (pool reallocation).
-        components::scene_tag* scene(entity e);
-
-        // nullptr if e is global (no scene_tag). Returns nullptr in Release if e is invalid.
-        // Pointer may be invalidated by any add_component call, create() with a scene, or set_parent() (pool reallocation).
+        // Pointer may be invalidated by any add_component call, create() with a scene, or set_parent()
+        // (pool reallocation).
         const components::scene_tag* scene(entity e) const;
 
         // Snapshot of every entity tagged with the scene (active + inactive).

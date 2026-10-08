@@ -1187,11 +1187,6 @@ TEST_F(EntitiesTests, CreateWithScene)
         EXPECT_EQ(mgr.scene(scoped)->id, scene_id::TestScene1);
         EXPECT_TRUE(mgr.is_active(scoped));
         EXPECT_EQ(mgr.scene(global), nullptr);
-
-        const entities &const_mgr = mgr;
-        ASSERT_NE(const_mgr.scene(scoped), nullptr);
-        EXPECT_EQ(const_mgr.scene(scoped)->id, scene_id::TestScene1);
-        EXPECT_EQ(const_mgr.scene(global), nullptr);
     }
 
     // Test 2: an entity created into a paused scene starts inactive in every pool
@@ -1570,6 +1565,56 @@ TEST_F(EntitiesTests, ScenePause)
         EXPECT_EQ(mgr.set_scene_paused(scene_id::TestScene1, true), 1u);
         EXPECT_FALSE(mgr.is_active(e2));
     }
+
+    // Test 8: resuming keeps a self-inactive middle node and its subtree inactive until it is activated
+    {
+        mgr.clear();
+        auto [root, mid, leaf] = make_chain(mgr, scene_id::TestScene1);
+        mgr.add_component<Position>(leaf, Position{1.0f, 2.0f, 3.0f});
+        mgr.deactivate(mid);
+
+        EXPECT_EQ(mgr.set_scene_paused(scene_id::TestScene1, true), 3u);
+        EXPECT_EQ(mgr.set_scene_paused(scene_id::TestScene1, false), 3u);
+
+        EXPECT_TRUE(mgr.is_active(root));
+        EXPECT_FALSE(mgr.is_active(mid));
+        EXPECT_FALSE(mgr.is_active(leaf));
+        EXPECT_FALSE(in_active_extract<Position>(mgr, leaf));
+
+        mgr.activate(mid);
+
+        EXPECT_TRUE(mgr.is_active(mid));
+        EXPECT_TRUE(mgr.is_active(leaf));
+        EXPECT_TRUE(in_active_extract<Position>(mgr, leaf));
+    }
+
+    // Test 9: destroying a parent while its scene is paused leaves no stale state behind
+    {
+        mgr.clear();
+        entity parent = mgr.create({}, scene_id::TestScene1);
+        entity child = mgr.create({}, scene_id::TestScene1);
+        entity other = mgr.create({}, scene_id::TestScene1);
+        mgr.set_parent(child, parent);
+
+        ASSERT_EQ(mgr.set_scene_paused(scene_id::TestScene1, true), 3u);
+        mgr.destroy(parent);
+        EXPECT_FALSE(mgr.valid(child));
+
+        entity during = mgr.create({}, scene_id::TestScene1);
+        ASSERT_NE(mgr.scene(during), nullptr);
+        EXPECT_EQ(mgr.scene(during)->id, scene_id::TestScene1);
+        EXPECT_FALSE(mgr.is_active(during));
+
+        EXPECT_EQ(mgr.set_scene_paused(scene_id::TestScene1, false), 2u);
+        EXPECT_TRUE(mgr.is_active(other));
+        EXPECT_TRUE(mgr.is_active(during));
+
+        entity after = mgr.create({}, scene_id::TestScene1);
+        ASSERT_NE(mgr.scene(after), nullptr);
+        EXPECT_EQ(mgr.scene(after)->id, scene_id::TestScene1);
+        EXPECT_TRUE(mgr.is_active(after));
+        EXPECT_EQ(mgr.scene_entities(scene_id::TestScene1).size(), 3u);
+    }
 }
 
 //==============================================================================
@@ -1601,6 +1646,8 @@ TEST_F(EntitiesTests, SetParentFollowsScenePause)
 
         EXPECT_TRUE(in_active_extract<Position>(mgr, leaf));
         EXPECT_TRUE(in_active_extract<components::parent>(mgr, mid));
+        for (entity e : { root, mid, leaf })
+            EXPECT_TRUE(in_active_extract<components::scene_tag>(mgr, e));
 
         mgr.remove_parent(root);
         EXPECT_TRUE(mgr.is_active(root));
@@ -1643,6 +1690,8 @@ TEST_F(EntitiesTests, SetParentFollowsScenePause)
         EXPECT_FALSE(mgr.is_active(leaf));
 
         EXPECT_FALSE(in_active_extract<Position>(mgr, leaf));
+        for (entity e : { root, mid, leaf })
+            EXPECT_FALSE(in_active_extract<components::scene_tag>(mgr, e));
 
         mgr.remove_parent(root);
         EXPECT_FALSE(mgr.is_active(root));
@@ -1652,6 +1701,8 @@ TEST_F(EntitiesTests, SetParentFollowsScenePause)
         EXPECT_TRUE(mgr.is_active(root));
         EXPECT_TRUE(mgr.is_active(mid));
         EXPECT_TRUE(mgr.is_active(leaf));
+        for (entity e : { root, mid, leaf })
+            EXPECT_TRUE(in_active_extract<components::scene_tag>(mgr, e));
     }
 
     // Test 4: a self-inactive descendant stays inactive through adoption
@@ -1668,10 +1719,15 @@ TEST_F(EntitiesTests, SetParentFollowsScenePause)
         EXPECT_TRUE(mgr.is_active(root));
         EXPECT_FALSE(mgr.is_active(mid));
         EXPECT_FALSE(mgr.is_active(leaf));
+        EXPECT_TRUE(in_active_extract<components::scene_tag>(mgr, root));
+        EXPECT_FALSE(in_active_extract<components::scene_tag>(mgr, mid));
+        EXPECT_FALSE(in_active_extract<components::scene_tag>(mgr, leaf));
 
         mgr.activate(mid);
         EXPECT_TRUE(mgr.is_active(mid));
         EXPECT_TRUE(mgr.is_active(leaf));
+        EXPECT_TRUE(in_active_extract<components::scene_tag>(mgr, mid));
+        EXPECT_TRUE(in_active_extract<components::scene_tag>(mgr, leaf));
     }
 
     // Test 5: a paused subtree adopted into another paused scene stays inactive
@@ -1688,6 +1744,8 @@ TEST_F(EntitiesTests, SetParentFollowsScenePause)
         EXPECT_FALSE(mgr.is_active(root));
         EXPECT_FALSE(mgr.is_active(mid));
         EXPECT_FALSE(mgr.is_active(leaf));
+        for (entity e : { root, mid, leaf })
+            EXPECT_FALSE(in_active_extract<components::scene_tag>(mgr, e));
 
         mgr.remove_parent(root);
         EXPECT_FALSE(mgr.is_active(root));

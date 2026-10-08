@@ -241,6 +241,8 @@ namespace gamecoe
 
     std::vector<entity> game::scene_entities(scene_id id) const
     {
+        GAMECOE_ASSERT_GUARD(has_scene(id), "game::scene_entities(): scene is not registered", std::vector<entity>{});
+
         return m_entities.scene_entities(id);
     }
 

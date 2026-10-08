@@ -615,6 +615,18 @@ TEST_F(GameTests, UnregisteredSceneGuarded)
     }
 }
 
+#ifndef NDEBUG
+TEST_F(GameTests, SceneEntitiesUnregisteredSceneIsGuarded)
+{
+    EXPECT_DEATH(g->scene_entities(scene_a), "game::scene_entities\\(\\): scene is not registered");
+}
+#else
+TEST_F(GameTests, SceneEntitiesUnregisteredSceneReturnsEmpty)
+{
+    EXPECT_TRUE(g->scene_entities(scene_a).empty());
+}
+#endif
+
 TEST_F(GameTests, RepeatedLoadOrActivateGuarded)
 {
     g->create_scene(scene_a, build_scene_a);

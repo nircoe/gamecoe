@@ -65,13 +65,6 @@ namespace gamecoe
         return t;
     }
 
-    components::scene_tag* entities::scene(entity e)
-    {
-        GAMECOE_ASSERT_GUARD(valid(e), "entities::scene(): entity is not valid", nullptr);
-
-        return get_component<components::scene_tag>(e);
-    }
-
     const components::scene_tag* entities::scene(entity e) const
     {
         GAMECOE_ASSERT_GUARD(valid(e), "entities::scene(): entity is not valid", nullptr);
@@ -145,7 +138,8 @@ namespace gamecoe
             if (is_active(e))
                 logcoe::debug("entities::activate(): entity already active, ignoring");
             else
-                logcoe::debug("entities::activate(): entity is already marked active, it stays inactive until its parent or scene is active");
+                logcoe::debug("entities::activate(): entity is already marked active, "
+                              "it stays inactive until its parent or scene is active");
             return;
         }
         m_self_active[e.id()] = true;
@@ -167,11 +161,10 @@ namespace gamecoe
 
     std::size_t entities::set_scene_paused(scene_id id, bool paused)
     {
-        auto it = std::find(m_paused_scenes.begin(), m_paused_scenes.end(), id);
-        if ((it != m_paused_scenes.end()) == paused) return 0;
+        if (is_scene_paused(id) == paused) return 0;
 
         if (paused) m_paused_scenes.push_back(id);
-        else m_paused_scenes.erase(it);
+        else std::erase(m_paused_scenes, id);
 
         // set_active() swaps slots in every pool, so collect the scene's entities before touching any.
         std::vector<entity> scene_ents = scene_entities(id);
