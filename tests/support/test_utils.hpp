@@ -31,7 +31,7 @@ namespace test_utils
     {
         ASSERT_EQ(mgr.size(), 1u) << "test_utils::sole_entity(): expected exactly one entity in mgr";
         out = gamecoe::entity::invalid();
-        mgr.for_each<gamecoe::components::transform>([&out](gamecoe::entity ent, [[maybe_unused]] const gamecoe::components::transform &tr)
+        mgr.for_each_all<gamecoe::components::transform>([&out](gamecoe::entity ent, [[maybe_unused]] const gamecoe::components::transform &tr)
         {
             out = ent;
         });

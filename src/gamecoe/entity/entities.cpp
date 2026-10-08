@@ -2,6 +2,7 @@
 #include <gamecoe/component/transform.hpp>
 #include <gamecoe/component/parent_child.hpp>
 #include <gamecoe/component/scene_tag.hpp>
+#include <algorithm>
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -15,7 +16,7 @@ namespace gamecoe
 {
     std::uint32_t entities::s_component_id{0};
 
-    entity entities::create(components::transform initial_transform)
+    entity entities::create(components::transform initial_transform, std::optional<scene_id> in_scene)
     {
         std::uint32_t id;
         std::uint16_t generation;
@@ -39,7 +40,9 @@ namespace gamecoe
         }
 
         entity e = entity::create(id, generation);
-        get_pool<components::transform>()->add(e, true, std::move(initial_transform));
+        const bool active = !(in_scene && is_scene_paused(*in_scene));
+        get_pool<components::transform>()->add(e, active, std::move(initial_transform));
+        if (in_scene) get_pool<components::scene_tag>()->add(e, active, components::scene_tag{ *in_scene });
 
         return e;
     }
@@ -60,6 +63,24 @@ namespace gamecoe
         const components::transform* t = get_component<components::transform>(e);
         GAMECOE_ASSERT_LOG(t != nullptr, "entities::transform(): transform missing (should be impossible - mandatory component)");
         return t;
+    }
+
+    const components::scene_tag* entities::scene(entity e) const
+    {
+        GAMECOE_ASSERT_GUARD(valid(e), "entities::scene(): entity is not valid", nullptr);
+
+        return get_component<components::scene_tag>(e);
+    }
+
+    std::vector<entity> entities::scene_entities(scene_id id) const
+    {
+        std::vector<entity> matches;
+        for_each_all<components::scene_tag>(
+            [id, &matches](entity e, const components::scene_tag &tag)
+            {
+                if (tag.id == id) matches.push_back(e);
+            });
+        return matches;
     }
 
     void entities::destroy(entity e)
@@ -98,6 +119,7 @@ namespace gamecoe
         m_recycle_ids.clear();
         m_generations.clear();
         m_self_active.clear();
+        m_paused_scenes.clear();
         m_current_entity_id = 0;
         logcoe::info("entities::clear(): cleared all entities");
     }
@@ -113,7 +135,11 @@ namespace gamecoe
 
         if (m_self_active[e.id()])
         {
-            logcoe::debug("entities::activate(): entity already active, ignoring");
+            if (is_active(e))
+                logcoe::debug("entities::activate(): entity already active, ignoring");
+            else
+                logcoe::debug("entities::activate(): entity is already marked active, "
+                              "it stays inactive until its parent or scene is active");
             return;
         }
         m_self_active[e.id()] = true;
@@ -133,8 +159,22 @@ namespace gamecoe
         set_active(e, false);
     }
 
-    // Each node carries its own target: a self-inactive descendant stays inactive even when
-    // an ancestor above it reactivates.
+    std::size_t entities::set_scene_paused(scene_id id, bool paused)
+    {
+        if (is_scene_paused(id) == paused) return 0;
+
+        if (paused) m_paused_scenes.push_back(id);
+        else std::erase(m_paused_scenes, id);
+
+        // set_active() swaps slots in every pool, so collect the scene's entities before touching any.
+        std::vector<entity> scene_ents = scene_entities(id);
+        for (entity e : scene_ents) set_active(e, compute_world_active(e));
+
+        return scene_ents.size();
+    }
+
+    // Each node carries its own target: a self-inactive descendant, or one in a paused scene, stays
+    // inactive even when an ancestor above it reactivates.
     void entities::set_active(entity e, bool world_active)
     {
         std::vector<std::pair<entity, bool>> worklist{ { e, world_active } };
@@ -150,15 +190,33 @@ namespace gamecoe
 
             if (auto* kids = get_pool<components::children>()->try_get(current))
                 for (entity child : kids->handles)
-                    worklist.emplace_back(child, m_self_active[child.id()] && target);
+                    worklist.emplace_back(child, target && own_active(child));
         }
     }
 
     bool entities::compute_world_active(entity e)
     {
-        if (!m_self_active[e.id()]) return false;
+        if (!own_active(e)) return false;
         auto* p = get_pool<components::parent>()->try_get(e);
         return !p || is_active(p->handle);
+    }
+
+    bool entities::is_scene_paused(scene_id id) const
+    {
+        return std::find(m_paused_scenes.begin(), m_paused_scenes.end(), id) != m_paused_scenes.end();
+    }
+
+    bool entities::own_active(entity e) const
+    {
+        return m_self_active[e.id()] && !in_paused_scene(e);
+    }
+
+    bool entities::in_paused_scene(entity e) const
+    {
+        if (m_paused_scenes.empty()) return false;
+        auto* pool = find_pool<components::scene_tag>();
+        auto* tag = pool ? pool->try_get(e) : nullptr;
+        return tag && is_scene_paused(tag->id);
     }
 
     // Reads the transform pool's partition boundary directly - transform is mandatory, so
@@ -221,18 +279,18 @@ namespace gamecoe
         if (auto* kids = children_pool->try_get(parent)) kids->handles.push_back(child);
         else children_pool->add(parent, is_active(parent), components::children{ { child } });
 
+        // Whole moved subtree joins parent's scene, or goes global if parent has no tag. The set_active()
+        // below then follows the new scene's pause state. unload_scene()'s destroy cascade assumes every
+        // hierarchy edge stays inside one scene. If the pool doesn't exist yet, nothing has ever been
+        // tagged, so there's nothing to retag.
+        if (auto* scene_tag_pool = find_pool<components::scene_tag>())
+        {
+            std::optional<components::scene_tag> parent_scene_tag;
+            if (auto* t = scene_tag_pool->try_get(parent)) parent_scene_tag = *t;   // copy, retag_subtree_scene's add() may reallocate the pool
+            retag_subtree_scene(*scene_tag_pool, child, parent_scene_tag);
+        }
+
         set_active(child, compute_world_active(child));
-
-        // Whole moved subtree joins parent's scene, or goes global if parent has no tag.
-        // deactivate_scene()'s paused_active bookkeeping and unload_scene()'s destroy cascade
-        // both assume every hierarchy edge stays inside one scene. If the pool doesn't exist yet,
-        // nothing anywhere has ever been tagged, so there's nothing to retag.
-        auto* scene_tag_pool = find_pool<components::scene_tag>();
-        if (!scene_tag_pool) return;
-
-        std::optional<components::scene_tag> parent_scene_tag;
-        if (auto* t = scene_tag_pool->try_get(parent)) parent_scene_tag = *t;   // copy, retag_subtree_scene's add() may reallocate the pool
-        retag_subtree_scene(*scene_tag_pool, child, parent_scene_tag);
     }
 
     void entities::retag_subtree_scene(component_pool<components::scene_tag>& scene_tag_pool, entity root, const std::optional<components::scene_tag>& target_tag)

@@ -15,7 +15,7 @@ namespace gamecoe
 {
     namespace
     {
-        std::expected<std::filesystem::path, error> getExecutablePath()
+        [[nodiscard]] std::expected<std::filesystem::path, error> getExecutablePath()
         {
             std::filesystem::path exe;
 #if _WIN32

@@ -49,8 +49,8 @@ namespace gamecoe
 #endif
             }
 
-            std::expected<std::string, error> prepare_for_preprocessor(const std::string &shader_code,
-                                                                         const std::vector<std::string> &macros)
+            [[nodiscard]] std::expected<std::string, error> prepare_for_preprocessor(
+                const std::string &shader_code, const std::vector<std::string> &macros)
             {
                 if (shader_code.find("#version") != std::string::npos)
                     return std::unexpected(
@@ -68,7 +68,7 @@ namespace gamecoe
                 return defines + shader_code;
             }
 
-            std::expected<std::pair<std::string, std::string>, error> read_shader_files(
+            [[nodiscard]] std::expected<std::pair<std::string, std::string>, error> read_shader_files(
                 const std::string &vertex_path, const std::string &fragment_path,
                 const std::vector<std::string> &macros)
             {
@@ -108,8 +108,8 @@ namespace gamecoe
                 return std::make_pair(*vertex_result, *fragment_result);
             }
 
-            std::expected<void, error> check_compile_or_link_status(std::uint32_t id, bool is_program,
-                                                                      error_code failure_code)
+            [[nodiscard]] std::expected<void, error> check_compile_or_link_status(std::uint32_t id, bool is_program,
+                                                                                    error_code failure_code)
             {
                 GLint success = GL_FALSE;
                 is_program ? glGetProgramiv(id, GL_LINK_STATUS, &success) : glGetShaderiv(id, GL_COMPILE_STATUS, &success);

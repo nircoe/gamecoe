@@ -35,4 +35,8 @@ else()
     target_compile_options(gamecoe PRIVATE -Werror -Wall -Wextra -Wpedantic)
 endif()
 
+if(MINGW)
+    target_link_options(gamecoe INTERFACE -static-libgcc -static-libstdc++ -static)
+endif()
+
 add_dependencies(gamecoe glad)

@@ -159,6 +159,57 @@ TEST_F(CommandBufferTests, SceneTagging)
 
         EXPECT_FALSE(mgr.has_component<components::scene_tag>(e));
     }
+
+    // Test 3: flushing into a paused scene creates the entity inactive, still tagged
+    {
+        mgr.clear();
+        mgr.set_scene_paused(scene_id{1}, true);
+        buf.spawn();
+        buf.flush(mgr, scene_id{1});
+
+        entity e = entity::invalid();
+        ASSERT_NO_FATAL_FAILURE(sole_entity(mgr, e));
+
+        EXPECT_FALSE(mgr.is_active(e));
+        ASSERT_TRUE(mgr.has_component<components::scene_tag>(e));
+        EXPECT_EQ(mgr.get_component<components::scene_tag>(e)->id, scene_id{1});
+    }
+
+    // Test 4: buffered add and set_parent flushed into a paused scene stay inactive until it resumes
+    {
+        mgr.clear();
+        mgr.set_scene_paused(scene_id{1}, true);
+        command_buffer::placeholder p_child = buf.spawn();
+        command_buffer::placeholder p_parent = buf.spawn();
+        buf.add<Tag>(p_child, Tag{1});
+        buf.set_parent(p_child, p_parent);
+        buf.flush(mgr, scene_id{1});
+
+        ASSERT_EQ(mgr.size(), 2);
+        entity child = entity::invalid();
+        mgr.for_each_all<Tag>([&child](entity ent, const Tag &) { child = ent; });
+        ASSERT_NE(child, entity::invalid());
+        entity parent = mgr.get_component<components::parent>(child)->handle;
+
+        EXPECT_FALSE(mgr.is_active(child));
+        EXPECT_FALSE(mgr.is_active(parent));
+        bool found = false;
+        for ([[maybe_unused]] auto [ent, tag] : mgr.extract<Tag>())
+            found = true;
+        EXPECT_FALSE(found);
+
+        mgr.set_scene_paused(scene_id{1}, false);
+
+        EXPECT_TRUE(mgr.is_active(child));
+        EXPECT_TRUE(mgr.is_active(parent));
+        for (auto [ent, tag] : mgr.extract<Tag>())
+        {
+            EXPECT_EQ(ent, child);
+            EXPECT_EQ(tag.value, 1);
+            found = true;
+        }
+        EXPECT_TRUE(found);
+    }
 }
 
 //==============================================================================
