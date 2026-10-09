@@ -51,7 +51,7 @@ jobs:
 
     - name: Cache Mesa software OpenGL
       id: mesa-cache
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: mesa3d-cache
         key: mesa3d-${{ env.MESA_VERSION }}-x64
