@@ -1,21 +1,41 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <gamecoe/entity/entity.hpp>
 #include <gamecoe/entity/component_pool.hpp>
+#include <gamecoe/component/scene_tag.hpp>
+#include <gamecoe/core/scene_id.hpp>
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace gamecoe
 {
+    namespace detail
+    {
+        inline bool in_frozen_scene(entity e, const component_pool<components::scene_tag> *tags,
+                                    const std::vector<scene_id> *frozen)
+        {
+            if (!frozen || frozen->empty() || !tags) return false;
+
+            const components::scene_tag *tag = tags->try_get(e);
+            return tag && std::find(frozen->begin(), frozen->end(), tag->id) != frozen->end();
+        }
+    } // namespace detail
+
     // Iterates the smallest pool's active partition and checks membership in the rest via
-    // contains(), minimizing total contains() calls across the whole extraction. Mutating any
+    // contains(), minimizing total contains() calls across the whole extraction. Entities in a
+    // frozen scene are skipped unless the extraction came from extract_with_frozen(). Mutating any
     // pool (activate/deactivate/add/remove) during iteration invalidates the cached bound.
+    // Don't keep an extraction across a move or clear of the entities it came from.
     template <typename... Components>
     class extraction
     {
         std::tuple<component_pool<std::remove_const_t<Components>>*...> m_pools;
+        const component_pool<components::scene_tag> *m_scene_tags;
+        const std::vector<scene_id> *m_frozen_scenes;
         std::size_t m_smallest_pool_index;
         std::size_t m_smallest_pool_size;
 
@@ -54,7 +74,11 @@ namespace gamecoe
                 {
                     entity e = get_current_entity(std::index_sequence_for<Components...>{});
 
-                    if (has_all_components(e)) return;
+                    // The frozen list is read on every call, so a scene frozen mid-iteration is skipped from the
+                    // next entity on.
+                    if (has_all_components(e)
+                        && !detail::in_frozen_scene(e, m_extracted->m_scene_tags, m_extracted->m_frozen_scenes))
+                        return;
                     ++m_index; // entity e is not in all pools, check the next one
                 }
             }
@@ -85,7 +109,10 @@ namespace gamecoe
             bool operator!=(const iterator &other) const { return m_index != other.m_index; }
         };
 
-        explicit extraction(component_pool<std::remove_const_t<Components>>*... pools) : m_pools(pools...)
+        explicit extraction(component_pool<std::remove_const_t<Components>>*... pools,
+                            const component_pool<components::scene_tag> *scene_tags,
+                            const std::vector<scene_id> *frozen_scenes)
+            : m_pools(pools...), m_scene_tags(scene_tags), m_frozen_scenes(frozen_scenes)
         {
             std::size_t sizes[] = { (pools ? pools->active_size() : std::size_t{0})... };
 

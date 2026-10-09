@@ -4,6 +4,7 @@
 #include <gamecoe/entity/entity.hpp>
 #include <gamecoe/entity/component_pool.hpp>
 #include <gamecoe/entity/extraction.hpp>
+#include <gamecoe/component/scene_tag.hpp>
 #include <gamecoe/component/transform.hpp>
 #include <gamecoe/core/scene_id.hpp>
 #include <optional>
@@ -21,7 +22,6 @@ namespace gamecoe
     {
         struct parent;
         struct children;
-        struct scene_tag;
     } // namespace components
 
     // True for the hierarchy-managed relationship components - see entities::set_parent()/remove_parent()
@@ -42,6 +42,9 @@ namespace gamecoe
         // Scenes paused by game::deactivate_scene(). Kept apart from m_self_active, so resuming a scene
         // never undoes an entity's own deactivate().
         std::vector<scene_id> m_paused_scenes;
+        // Scenes frozen by game::freeze_scene(). Frozen entities stay in the active partition, extract() and
+        // for_each() skip them by their scene_tag.
+        std::vector<scene_id> m_frozen_scenes;
 
         std::uint32_t m_current_entity_id{0};
 
@@ -83,6 +86,23 @@ namespace gamecoe
             return static_cast<const component_pool<T>*>(m_pools[comp_id].get());
         }
 
+        bool in_frozen_scene(entity e, const component_pool<components::scene_tag> *tags) const
+        {
+            return detail::in_frozen_scene(e, tags, &m_frozen_scenes);
+        }
+
+        template <typename Pool, typename Func>
+        void for_each_unfrozen(Pool *pool, Func &func) const
+        {
+            if (!pool) return;
+
+            const auto *tags = find_pool<components::scene_tag>();
+            pool->for_each([this, tags, &func](entity e, auto &component)
+            {
+                if (!in_frozen_scene(e, tags)) func(e, component);
+            });
+        }
+
         // Applies world_active to e and cascades to its subtree per each descendant's own self_active and scene pause.
         void set_active(entity e, bool world_active);
 
@@ -119,6 +139,7 @@ namespace gamecoe
             , m_generations(std::move(other.m_generations))
             , m_self_active(std::move(other.m_self_active))
             , m_paused_scenes(std::move(other.m_paused_scenes))
+            , m_frozen_scenes(std::move(other.m_frozen_scenes))
             , m_current_entity_id(std::exchange(other.m_current_entity_id, 0))
         {}
         entities &operator=(const entities&) = delete;
@@ -145,6 +166,16 @@ namespace gamecoe
         // activate()/deactivate(), so resuming a scene never overrides an entity's own state.
         // Returns how many entities were re-evaluated, 0 if the scene was already in that state.
         std::size_t set_scene_paused(scene_id id, bool paused);
+
+        // Scene-level freeze, driven by game::freeze_scene()/unfreeze_scene(). The scene's entities stay active,
+        // extract() and for_each() skip them and extract_with_frozen() still returns them.
+        // Returns true if the state changed, false if the scene was already in that state.
+        bool set_scene_frozen(scene_id id, bool frozen);
+
+        bool is_scene_frozen(scene_id id) const;
+
+        // True if e carries a scene_tag whose scene is frozen. Says nothing about whether e is active.
+        bool is_frozen(entity e) const;
 
         void clear();
 
@@ -260,18 +291,17 @@ namespace gamecoe
         // Updates both sides.
         void remove_children(entity parent);
 
+        // Active entities only, and not the ones in a frozen scene. for_each_all() visits everything.
         template <typename T, typename Func>
         void for_each(Func &&func)
         {
-            auto pool = find_pool<T>();
-            if (pool) pool->for_each(std::forward<Func>(func));
+            for_each_unfrozen(find_pool<T>(), func);
         }
 
         template <typename T, typename Func>
         void for_each(Func &&func) const
         {
-            auto pool = find_pool<T>();
-            if (pool) pool->for_each(std::forward<Func>(func));
+            for_each_unfrozen(find_pool<T>(), func);
         }
 
         template <typename T, typename Func>
@@ -288,16 +318,34 @@ namespace gamecoe
             if (pool) pool->for_each_all(std::forward<Func>(func));
         }
 
+        // Active entities only, and not the ones in a frozen scene.
         template <typename... Components>
         extraction<Components...> extract()
         {
-            return extraction<Components...>(find_pool<std::remove_const_t<Components>>()...);
+            return extraction<Components...>(find_pool<std::remove_const_t<Components>>()...,
+                                             find_pool<components::scene_tag>(), &m_frozen_scenes);
         }
 
         template <typename... Components>
         extraction<std::add_const_t<Components>...> extract() const
         {
-            return extraction<std::add_const_t<Components>...>(const_cast<entities*>(this)->find_pool<Components>()...);
+            return extraction<std::add_const_t<Components>...>(const_cast<entities*>(this)->find_pool<Components>()...,
+                                                               find_pool<components::scene_tag>(), &m_frozen_scenes);
+        }
+
+        // Like extract(), but also returns entities in a frozen scene. For systems that must keep running over a
+        // frozen scene, e.g. rendering.
+        template <typename... Components>
+        extraction<Components...> extract_with_frozen()
+        {
+            return extraction<Components...>(find_pool<std::remove_const_t<Components>>()..., nullptr, nullptr);
+        }
+
+        template <typename... Components>
+        extraction<std::add_const_t<Components>...> extract_with_frozen() const
+        {
+            return extraction<std::add_const_t<Components>...>(const_cast<entities*>(this)->find_pool<Components>()...,
+                                                               nullptr, nullptr);
         }
     };
 } // namespace gamecoe

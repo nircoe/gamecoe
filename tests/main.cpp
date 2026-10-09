@@ -25,6 +25,7 @@ int printHelp()
     std::cout << "  SparseSetTests           - Sparse set data structure tests" << std::endl;
     std::cout << "  ComponentPoolTests       - Component pool wrapper tests" << std::endl;
     std::cout << "  EntitiesTests            - Entities manager tests" << std::endl;
+    std::cout << "  ExtractionTests          - Extraction system tests" << std::endl;
     std::cout << "  CommandBufferTests       - Command buffer tests" << std::endl;
     std::cout << "  TransformTests           - Transform component tests" << std::endl;
     std::cout << "  ParentTests              - Parent component tests" << std::endl;
@@ -48,7 +49,7 @@ int main(int argc, char **argv)
     std::cout << "Comprehensive testing for gamecoe." << std::endl;
     std::cout << "Testing Core Module: window, game" << std::endl;
     std::cout << "Testing Graphics Module: buffer, vertex_array, shader, texture" << std::endl;
-    std::cout << "Testing Entity Module: entity, sparse_set, component_pool, entities, command_buffer" << std::endl;
+    std::cout << "Testing Entity Module: entity, sparse_set, component_pool, entities, extraction, command_buffer" << std::endl;
     std::cout << "Testing Component Module: transform, parent, children, scene_tag, shape_renderer, shape_collider" << std::endl;
     std::cout << std::endl;
 

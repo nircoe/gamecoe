@@ -28,9 +28,11 @@ namespace
 {
     constexpr scene_id scene_a = scene_id::TestScene1;
     constexpr scene_id scene_b = scene_id::TestScene2;
+    constexpr scene_id scene_c = scene_id::TestScene3;
 
     void build_scene_a(command_buffer &buf) { buf.spawn(); buf.spawn(); buf.spawn(); }
     void build_scene_b(command_buffer &buf) { buf.spawn(); }
+    void build_scene_c(command_buffer &buf) { buf.spawn(); buf.spawn(); }
 
     struct marker { int value; };
 
@@ -695,6 +697,381 @@ TEST_F(GameTests, InvalidDeactivateOrUnloadGuarded)
     }
 }
 
+TEST_F(GameTests, FreezeSceneBasics)
+{
+    setup_two_scenes(*g);
+    std::vector<entity> entities_a = g->scene_entities(scene_a);
+
+    // Test 1: a frozen scene stays active but is hidden from extract() and for_each()
+    {
+        g->freeze_scene(scene_a);
+        EXPECT_TRUE(g->is_scene_frozen(scene_a));
+        EXPECT_FALSE(g->is_scene_frozen(scene_b));
+        EXPECT_EQ(g->status(scene_a), scene_status::active);
+        for (entity e : entities_a)
+            EXPECT_TRUE(g->entities().is_active(e));
+        EXPECT_EQ(count_active_scene_entities(*g, scene_a), 0u);
+        EXPECT_EQ(count_scene_entities(*g, scene_a), 3u);
+        EXPECT_EQ(count_scene_entities(*g, scene_a), 3u);
+        EXPECT_EQ(count_active_scene_entities(*g, scene_b), 1u);
+    }
+
+    // Test 2: freezing or unfreezing twice is a no-op
+    {
+        g->freeze_scene(scene_a);
+        EXPECT_TRUE(g->is_scene_frozen(scene_a));
+
+        g->unfreeze_scene(scene_a);
+        g->unfreeze_scene(scene_a);
+        EXPECT_FALSE(g->is_scene_frozen(scene_a));
+    }
+
+    // Test 3: unfreezing makes the scene visible again
+    {
+        g->freeze_scene(scene_a);
+        g->unfreeze_scene(scene_a);
+        EXPECT_EQ(count_active_scene_entities(*g, scene_a), 3u);
+    }
+
+    // Test 4: an entity created into a frozen scene is frozen at once
+    {
+        g->freeze_scene(scene_a);
+        entity e = g->create_entity(scene_a);
+        EXPECT_TRUE(g->entities().valid(e));
+        EXPECT_TRUE(g->entities().is_active(e));
+        EXPECT_EQ(count_active_scene_entities(*g, scene_a), 0u);
+        EXPECT_EQ(count_scene_entities(*g, scene_a), 4u);
+
+        g->unfreeze_scene(scene_a);
+        EXPECT_EQ(count_active_scene_entities(*g, scene_a), 4u);
+    }
+}
+
+TEST_F(GameTests, FreezeScenesListOverloads)
+{
+    setup_two_scenes(*g);
+
+    g->freeze_scenes({scene_a, scene_b});
+    EXPECT_TRUE(g->is_scene_frozen(scene_a));
+    EXPECT_TRUE(g->is_scene_frozen(scene_b));
+
+    g->unfreeze_scenes({scene_a});
+    EXPECT_FALSE(g->is_scene_frozen(scene_a));
+    EXPECT_TRUE(g->is_scene_frozen(scene_b));
+
+    // The repeated id is the already-frozen no-op.
+    g->freeze_scenes({scene_a, scene_a});
+    EXPECT_TRUE(g->is_scene_frozen(scene_a));
+
+    g->freeze_scenes({});
+    g->unfreeze_scenes({});
+    EXPECT_TRUE(g->is_scene_frozen(scene_a));
+    EXPECT_TRUE(g->is_scene_frozen(scene_b));
+
+    g->unfreeze_scenes({scene_a, scene_b});
+    EXPECT_FALSE(g->is_scene_frozen(scene_a));
+    EXPECT_FALSE(g->is_scene_frozen(scene_b));
+}
+
+TEST_F(GameTests, FreezeAllExceptSnapshot)
+{
+    g->create_scene(scene_a, build_scene_a);
+    g->create_scene(scene_b, build_scene_b);
+    g->create_scene(scene_c, build_scene_c);
+    test_prepare_to_play(*g);
+    g->load_scene(scene_a);
+    g->activate_scene(scene_a);
+    g->load_scene(scene_b);
+    g->activate_scene(scene_b);
+    g->load_scene(scene_c);
+
+    // Test 1: only active scenes are frozen, the kept one and the merely loaded one are not
+    {
+        g->freeze_all_except(scene_a);
+        EXPECT_FALSE(g->is_scene_frozen(scene_a));
+        EXPECT_TRUE(g->is_scene_frozen(scene_b));
+        EXPECT_FALSE(g->is_scene_frozen(scene_c));
+    }
+
+    // Test 2: a scene activated afterwards is not frozen
+    {
+        g->activate_scene(scene_c);
+        EXPECT_FALSE(g->is_scene_frozen(scene_c));
+    }
+
+    // Test 3: the list overload keeps every listed scene, and a kept frozen scene stays frozen
+    {
+        g->freeze_all_except({scene_a, scene_b});
+        EXPECT_FALSE(g->is_scene_frozen(scene_a));
+        EXPECT_TRUE(g->is_scene_frozen(scene_b));
+        EXPECT_TRUE(g->is_scene_frozen(scene_c));
+    }
+
+    // Test 4: an empty list or an unregistered id keeps nothing
+    {
+        g->unfreeze_all();
+        g->freeze_all_except({});
+        EXPECT_TRUE(g->is_scene_frozen(scene_a));
+        EXPECT_TRUE(g->is_scene_frozen(scene_b));
+        EXPECT_TRUE(g->is_scene_frozen(scene_c));
+
+        g->unfreeze_all();
+        g->freeze_all_except(static_cast<scene_id>(999));
+        EXPECT_TRUE(g->is_scene_frozen(scene_a));
+        EXPECT_TRUE(g->is_scene_frozen(scene_b));
+        EXPECT_TRUE(g->is_scene_frozen(scene_c));
+    }
+}
+
+TEST_F(GameTests, UnfreezeAll)
+{
+    setup_two_scenes(*g);
+
+    // Test 1: clears every frozen scene
+    {
+        g->freeze_scenes({scene_a, scene_b});
+        g->unfreeze_all();
+        EXPECT_FALSE(g->is_scene_frozen(scene_a));
+        EXPECT_FALSE(g->is_scene_frozen(scene_b));
+    }
+
+    // Test 2: clears a flag set on an inactive scene through entities()
+    {
+        g->deactivate_scene(scene_b);
+        g->entities().set_scene_frozen(scene_b, true);
+        ASSERT_TRUE(g->is_scene_frozen(scene_b));
+
+        g->unfreeze_all();
+        EXPECT_FALSE(g->is_scene_frozen(scene_b));
+    }
+
+    // Test 3: with nothing frozen it does nothing
+    {
+        g->unfreeze_all();
+        EXPECT_FALSE(g->is_scene_frozen(scene_a));
+        EXPECT_FALSE(g->is_scene_frozen(scene_b));
+    }
+}
+
+TEST_F(GameTests, DeactivateAndUnloadClearFreeze)
+{
+    setup_two_scenes(*g);
+
+    // Test 1: deactivate then activate returns an unfrozen, fully visible scene
+    {
+        g->freeze_scene(scene_a);
+        g->deactivate_scene(scene_a);
+        EXPECT_FALSE(g->is_scene_frozen(scene_a));
+        EXPECT_FALSE(g->entities().is_scene_frozen(scene_a));
+
+        g->activate_scene(scene_a);
+        EXPECT_FALSE(g->is_scene_frozen(scene_a));
+        EXPECT_EQ(count_active_scene_entities(*g, scene_a), 3u);
+    }
+
+    // Test 2: unload then reload returns an unfrozen, fully visible scene
+    {
+        std::vector<entity> old_entities = g->scene_entities(scene_a);
+        g->freeze_scene(scene_a);
+        g->unload_scene(scene_a);
+        EXPECT_FALSE(g->is_scene_frozen(scene_a));
+        EXPECT_FALSE(g->entities().is_scene_frozen(scene_a));
+        for (entity e : old_entities)
+            EXPECT_FALSE(g->entities().valid(e));
+
+        g->load_scene(scene_a);
+        g->activate_scene(scene_a);
+        EXPECT_FALSE(g->is_scene_frozen(scene_a));
+        EXPECT_EQ(count_active_scene_entities(*g, scene_a), 3u);
+    }
+
+    // Test 3: unloading an inactive or a loaded scene leaves another scene's freeze alone
+    {
+        g->freeze_scene(scene_b);
+
+        g->deactivate_scene(scene_a);
+        g->unload_scene(scene_a);
+        EXPECT_FALSE(g->is_scene_frozen(scene_a));
+        EXPECT_TRUE(g->is_scene_frozen(scene_b));
+
+        g->load_scene(scene_a);
+        g->unload_scene(scene_a);
+        EXPECT_FALSE(g->is_scene_frozen(scene_a));
+        EXPECT_TRUE(g->is_scene_frozen(scene_b));
+    }
+
+    // Test 4: a freeze set directly on entities() for a loaded or an inactive scene doesn't survive activation
+    {
+        g->load_scene(scene_a);
+        g->entities().set_scene_frozen(scene_a, true);
+        g->activate_scene(scene_a);
+        EXPECT_FALSE(g->is_scene_frozen(scene_a));
+        EXPECT_EQ(count_active_scene_entities(*g, scene_a), 3u);
+
+        g->deactivate_scene(scene_a);
+        g->entities().set_scene_frozen(scene_a, true);
+        g->activate_scene(scene_a);
+        EXPECT_FALSE(g->is_scene_frozen(scene_a));
+        EXPECT_EQ(count_active_scene_entities(*g, scene_a), 3u);
+    }
+}
+
+TEST_F(GameTests, FreezeGuarded)
+{
+    const scene_id unregistered = static_cast<scene_id>(999);
+
+    g->create_scene(scene_a, build_scene_a);
+    g->create_scene(scene_b, build_scene_b);
+    g->create_scene(scene_c, build_scene_c);
+    test_prepare_to_play(*g);
+    g->load_scene(scene_a);
+    g->activate_scene(scene_a);
+    g->load_scene(scene_b);
+    g->activate_scene(scene_b);
+    g->load_scene(scene_c);
+
+    // Test 1: freeze_scene on an unregistered scene
+    {
+#ifndef NDEBUG
+        EXPECT_SCENE_UNREGISTERED_DEATH(g->freeze_scene(unregistered));
+#else
+        // Release: guard-return, nothing gets frozen.
+        g->freeze_scene(unregistered);
+        EXPECT_FALSE(g->entities().is_scene_frozen(unregistered));
+#endif
+    }
+
+    // Test 2: freeze_scene on a loaded-only scene and on an inactive scene
+    {
+        g->deactivate_scene(scene_b);
+
+#ifndef NDEBUG
+        EXPECT_DEATH(g->freeze_scene(scene_c), "scene is not active");
+        EXPECT_DEATH(g->freeze_scene(scene_b), "scene is not active");
+#else
+        // Release: guard-return, both stay unfrozen and keep their status.
+        g->freeze_scene(scene_c);
+        g->freeze_scene(scene_b);
+        EXPECT_FALSE(g->entities().is_scene_frozen(scene_c));
+        EXPECT_FALSE(g->entities().is_scene_frozen(scene_b));
+        EXPECT_EQ(g->status(scene_c), scene_status::loaded);
+        EXPECT_EQ(g->status(scene_b), scene_status::inactive);
+#endif
+    }
+
+    // Test 3: unfreeze_scene on an unregistered, a loaded-only and an inactive scene
+    {
+#ifndef NDEBUG
+        EXPECT_SCENE_UNREGISTERED_DEATH(g->unfreeze_scene(unregistered));
+        EXPECT_DEATH(g->unfreeze_scene(scene_c), "scene is not active");
+        EXPECT_DEATH(g->unfreeze_scene(scene_b), "scene is not active");
+#else
+        // Release: guard-return, a flag set through entities() on a non-active scene is left alone.
+        g->entities().set_scene_frozen(scene_c, true);
+        g->unfreeze_scene(unregistered);
+        g->unfreeze_scene(scene_c);
+        g->unfreeze_scene(scene_b);
+        EXPECT_TRUE(g->entities().is_scene_frozen(scene_c));
+        EXPECT_EQ(g->status(scene_c), scene_status::loaded);
+        EXPECT_EQ(g->status(scene_b), scene_status::inactive);
+#endif
+    }
+
+    // Test 4: a bad element in the list overloads
+    {
+        g->activate_scene(scene_b);
+        g->unfreeze_all();
+
+#ifndef NDEBUG
+        EXPECT_SCENE_UNREGISTERED_DEATH((g->freeze_scenes({scene_a, unregistered, scene_b})));
+        EXPECT_SCENE_UNREGISTERED_DEATH((g->unfreeze_scenes({scene_a, unregistered, scene_b})));
+#else
+        // Release: the bad element is skipped and the rest are still applied.
+        g->freeze_scenes({scene_a, unregistered, scene_b});
+        EXPECT_TRUE(g->is_scene_frozen(scene_a));
+        EXPECT_TRUE(g->is_scene_frozen(scene_b));
+        EXPECT_FALSE(g->entities().is_scene_frozen(unregistered));
+
+        g->unfreeze_scenes({scene_a, unregistered, scene_b});
+        EXPECT_FALSE(g->is_scene_frozen(scene_a));
+        EXPECT_FALSE(g->is_scene_frozen(scene_b));
+#endif
+    }
+
+    // Test 5: is_scene_frozen on an unregistered scene
+    {
+#ifndef NDEBUG
+        EXPECT_SCENE_UNREGISTERED_DEATH(g->is_scene_frozen(unregistered));
+#else
+        // Release: guard-return, an unregistered scene is not frozen.
+        EXPECT_FALSE(g->is_scene_frozen(unregistered));
+#endif
+    }
+}
+
+TEST_F(GameTests, PrePlayFreezeIsGuarded)
+{
+    g->create_scene(scene_a, build_scene_a);
+    g->load_scene(scene_a);
+    g->activate_scene(scene_a);
+    ASSERT_EQ(g->status(scene_a), scene_status::unloaded);
+
+#ifndef NDEBUG
+    EXPECT_DEATH(g->freeze_scene(scene_a), "scene is not active");
+#else
+    // Release: guard-return, nothing is queued or applied.
+    g->freeze_scene(scene_a);
+    EXPECT_FALSE(g->entities().is_scene_frozen(scene_a));
+#endif
+
+    // No scene is active yet, so these are silent no-ops in both builds.
+    g->freeze_all_except(scene_a);
+    g->unfreeze_all();
+    g->freeze_scenes({});
+
+    test_prepare_to_play(*g);
+    EXPECT_EQ(g->status(scene_a), scene_status::active);
+    EXPECT_FALSE(g->is_scene_frozen(scene_a));
+    EXPECT_EQ(count_active_scene_entities(*g, scene_a), 3u);
+}
+
+TEST_F(GameTests, FreezeCoexistsWithOtherSceneApis)
+{
+    auto [P, C] = setup_two_scenes(*g);
+
+    // Test 1: changing the layer of a frozen scene keeps it frozen and active
+    {
+        g->freeze_scene(scene_a);
+        g->set_scene_layer(scene_a, 5);
+        EXPECT_EQ(g->scene_layer(scene_a), 5);
+        EXPECT_TRUE(g->is_scene_frozen(scene_a));
+        EXPECT_EQ(g->status(scene_a), scene_status::active);
+    }
+
+    // Test 2: an entity adopted into a frozen scene is frozen, and visible again once adopted out
+    {
+        g->entities().set_parent(C, P);
+        ASSERT_NE(g->entities().get_component<components::scene_tag>(C), nullptr);
+        EXPECT_EQ(g->entities().get_component<components::scene_tag>(C)->id, scene_a);
+        EXPECT_TRUE(g->entities().is_active(C));
+        EXPECT_EQ(count_active_scene_entities(*g, scene_a), 0u);
+        EXPECT_EQ(count_scene_entities(*g, scene_a), 4u);
+
+        entity new_parent = g->create_entity(scene_b);
+        g->entities().set_parent(C, new_parent);
+        EXPECT_EQ(g->entities().get_component<components::scene_tag>(C)->id, scene_b);
+        EXPECT_EQ(count_active_scene_entities(*g, scene_a), 0u);
+        EXPECT_EQ(count_scene_entities(*g, scene_a), 3u);
+        EXPECT_EQ(count_active_scene_entities(*g, scene_b), 2u);
+    }
+
+    // Test 3: unloading another scene leaves the freeze alone
+    {
+        g->unload_scene(scene_b);
+        EXPECT_TRUE(g->is_scene_frozen(scene_a));
+    }
+}
+
 TEST_F(GameTests, SecondCreateFailsWhileFirstAlive)
 {
 #ifndef NDEBUG
@@ -738,4 +1115,22 @@ TEST(GameMoveTests, MovedFromGameGuardsAgainstUse)
     source.set_background_color(colorcoe::blue());
     source.play();
 #endif
+}
+
+TEST(GameMoveTests, FrozenStateSurvivesGameMove)
+{
+    test_utils::init_headless_gl();
+    auto result = game::create("GameMoveTests.FrozenStateSurvivesGameMove");
+    SKIP_IF_NO_GAME(result);
+
+    setup_two_scenes(*result);
+    result->freeze_scene(scene_a);
+
+    game moved(std::move(*result));
+
+    EXPECT_TRUE(moved.is_scene_frozen(scene_a));
+    EXPECT_FALSE(moved.is_scene_frozen(scene_b));
+
+    EXPECT_EQ(count_active_scene_entities(moved, scene_a), 0u);
+    EXPECT_EQ(count_scene_entities(moved, scene_a), 3u);
 }
