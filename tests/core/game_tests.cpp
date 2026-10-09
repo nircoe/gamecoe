@@ -57,14 +57,6 @@ namespace
         return count;
     }
 
-    std::size_t count_scene_entities_including_frozen(game &g, scene_id id)
-    {
-        std::size_t count = 0;
-        for ([[maybe_unused]] auto [e, tag] : g.entities().extract_with_frozen<components::scene_tag>())
-            if (tag.id == id) ++count;
-        return count;
-    }
-
     std::pair<entity, entity> setup_two_scenes(game &g)
     {
         g.create_scene(scene_a, build_scene_a);
@@ -719,7 +711,7 @@ TEST_F(GameTests, FreezeSceneBasics)
         for (entity e : entities_a)
             EXPECT_TRUE(g->entities().is_active(e));
         EXPECT_EQ(count_active_scene_entities(*g, scene_a), 0u);
-        EXPECT_EQ(count_scene_entities_including_frozen(*g, scene_a), 3u);
+        EXPECT_EQ(count_scene_entities(*g, scene_a), 3u);
         EXPECT_EQ(count_scene_entities(*g, scene_a), 3u);
         EXPECT_EQ(count_active_scene_entities(*g, scene_b), 1u);
     }
@@ -748,7 +740,7 @@ TEST_F(GameTests, FreezeSceneBasics)
         EXPECT_TRUE(g->entities().valid(e));
         EXPECT_TRUE(g->entities().is_active(e));
         EXPECT_EQ(count_active_scene_entities(*g, scene_a), 0u);
-        EXPECT_EQ(count_scene_entities_including_frozen(*g, scene_a), 4u);
+        EXPECT_EQ(count_scene_entities(*g, scene_a), 4u);
 
         g->unfreeze_scene(scene_a);
         EXPECT_EQ(count_active_scene_entities(*g, scene_a), 4u);
@@ -1048,13 +1040,13 @@ TEST_F(GameTests, FreezeCoexistsWithOtherSceneApis)
         EXPECT_EQ(g->entities().get_component<components::scene_tag>(C)->id, scene_a);
         EXPECT_TRUE(g->entities().is_active(C));
         EXPECT_EQ(count_active_scene_entities(*g, scene_a), 0u);
-        EXPECT_EQ(count_scene_entities_including_frozen(*g, scene_a), 4u);
+        EXPECT_EQ(count_scene_entities(*g, scene_a), 4u);
 
         entity new_parent = g->create_entity(scene_b);
         g->entities().set_parent(C, new_parent);
         EXPECT_EQ(g->entities().get_component<components::scene_tag>(C)->id, scene_b);
         EXPECT_EQ(count_active_scene_entities(*g, scene_a), 0u);
-        EXPECT_EQ(count_scene_entities_including_frozen(*g, scene_a), 3u);
+        EXPECT_EQ(count_scene_entities(*g, scene_a), 3u);
         EXPECT_EQ(count_active_scene_entities(*g, scene_b), 2u);
     }
 
@@ -1124,9 +1116,6 @@ TEST(GameMoveTests, FrozenStateSurvivesGameMove)
     EXPECT_TRUE(moved.is_scene_frozen(scene_a));
     EXPECT_FALSE(moved.is_scene_frozen(scene_b));
 
-    std::size_t seen_in_a = 0;
-    for ([[maybe_unused]] auto [e, tag] : moved.entities().extract<components::scene_tag>())
-        if (tag.id == scene_a) ++seen_in_a;
-    EXPECT_EQ(seen_in_a, 0u);
-    EXPECT_EQ(count_scene_entities_including_frozen(moved, scene_a), 3u);
+    EXPECT_EQ(count_active_scene_entities(moved, scene_a), 0u);
+    EXPECT_EQ(count_scene_entities(moved, scene_a), 3u);
 }

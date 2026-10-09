@@ -224,10 +224,7 @@ namespace gamecoe
 
     bool entities::is_frozen(entity e) const
     {
-        if (m_frozen_scenes.empty()) return false;
-        auto *pool = find_pool<components::scene_tag>();
-        auto *tag = pool ? pool->try_get(e) : nullptr;
-        return tag && is_scene_frozen(tag->id);
+        return in_frozen_scene(e, find_pool<components::scene_tag>());
     }
 
     bool entities::own_active(entity e) const

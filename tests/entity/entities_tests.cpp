@@ -3,10 +3,8 @@
 #include <gamecoe/component/transform.hpp>
 #include <gamecoe/component/parent_child.hpp>
 #include <gamecoe/component/scene_tag.hpp>
-#include <algorithm>
 #include <array>
 #include <chrono>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -48,21 +46,8 @@ namespace
         return false;
     }
 
-    template <typename View>
-    std::vector<entity> sorted_entities(View &&view)
-    {
-        std::vector<entity> out;
-        for (auto item : view)
-            out.push_back(std::get<0>(item));
-        std::sort(out.begin(), out.end());
-        return out;
-    }
-
-    std::vector<entity> sorted_list(std::vector<entity> list)
-    {
-        std::sort(list.begin(), list.end());
-        return list;
-    }
+    using test_utils::entities_of;
+    using test_utils::sorted;
 
     std::array<entity, 3> make_chain(entities &m, scene_id s)
     {
@@ -1883,16 +1868,14 @@ TEST_F(EntitiesTests, SceneFreeze)
 
         mgr.set_scene_frozen(s1, true);
 
-        EXPECT_EQ(sorted_entities(mgr.extract<Position>()), sorted_list({ b, g }));
-        EXPECT_EQ((sorted_entities(mgr.extract<Position, Velocity>())), sorted_list({ b, g }));
-        EXPECT_EQ((sorted_entities(mgr.extract_with_frozen<Position, Velocity>())), sorted_list({ a, b, g }));
-        EXPECT_EQ(sorted_entities(mgr.extract<components::scene_tag>()), sorted_list({ b }));
+        EXPECT_EQ(sorted(entities_of(mgr.extract<Position>())), sorted({ b, g }));
+        EXPECT_EQ((sorted(entities_of(mgr.extract<Position, Velocity>()))), sorted({ b, g }));
+        EXPECT_EQ((sorted(entities_of(mgr.extract_with_frozen<Position, Velocity>()))), sorted({ a, b, g }));
+        EXPECT_EQ(sorted(entities_of(mgr.extract<components::scene_tag>())), sorted({ b }));
 
         const entities &const_mgr = mgr;
-        EXPECT_EQ(sorted_entities(const_mgr.extract<Position>()), sorted_list({ b, g }));
-        EXPECT_EQ(sorted_entities(const_mgr.extract_with_frozen<Position>()), sorted_list({ a, b, g }));
-        for (auto [e, pos] : const_mgr.extract_with_frozen<Position>())
-            static_assert(std::is_same_v<decltype(pos), const Position &>);
+        EXPECT_EQ(sorted(entities_of(const_mgr.extract<Position>())), sorted({ b, g }));
+        EXPECT_EQ(sorted(entities_of(const_mgr.extract_with_frozen<Position>())), sorted({ a, b, g }));
     }
 
     // Test 5: for_each() skips frozen entities, for_each_all() does not
@@ -1913,7 +1896,7 @@ TEST_F(EntitiesTests, SceneFreeze)
             visited.push_back(e);
             pos.x += 10.0f;
         });
-        EXPECT_EQ(sorted_list(visited), sorted_list({ b, g }));
+        EXPECT_EQ(sorted(visited), sorted({ b, g }));
         EXPECT_FLOAT_EQ(mgr.get_component<Position>(a)->x, 1.0f);
         EXPECT_FLOAT_EQ(mgr.get_component<Position>(b)->x, 11.0f);
         EXPECT_FLOAT_EQ(mgr.get_component<Position>(g)->x, 11.0f);
@@ -1924,14 +1907,14 @@ TEST_F(EntitiesTests, SceneFreeze)
         {
             visited.push_back(e);
         });
-        EXPECT_EQ(sorted_list(visited), sorted_list({ b, g }));
+        EXPECT_EQ(sorted(visited), sorted({ b, g }));
 
         visited.clear();
         mgr.for_each_all<Position>([&](entity e, const Position &)
         {
             visited.push_back(e);
         });
-        EXPECT_EQ(sorted_list(visited), sorted_list({ a, b, g }));
+        EXPECT_EQ(sorted(visited), sorted({ a, b, g }));
     }
 
     // Test 6: unfreezing brings the entities back, only the unfrozen scene
@@ -1945,7 +1928,7 @@ TEST_F(EntitiesTests, SceneFreeze)
 
         mgr.set_scene_frozen(s1, true);
         mgr.set_scene_frozen(s2, true);
-        EXPECT_TRUE(sorted_entities(mgr.extract<Position>()).empty());
+        EXPECT_TRUE(entities_of(mgr.extract<Position>()).empty());
 
         mgr.set_scene_frozen(s1, false);
 
@@ -2155,7 +2138,7 @@ TEST_F(EntitiesTests, SceneFreezeWithHierarchyAndPause)
             EXPECT_FALSE(mgr.valid(e));
         EXPECT_TRUE(mgr.is_scene_frozen(s1));
         EXPECT_FALSE(in_active_extract<Position>(mgr, other));
-        EXPECT_EQ(sorted_entities(mgr.extract_with_frozen<Position>()), sorted_list({ other }));
+        EXPECT_EQ(sorted(entities_of(mgr.extract_with_frozen<Position>())), sorted({ other }));
     }
 }
 

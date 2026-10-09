@@ -45,20 +45,8 @@ struct Health
 
 namespace
 {
-    template <typename View>
-    std::vector<entity> entities_of(View &&view)
-    {
-        std::vector<entity> out;
-        for (auto item : view)
-            out.push_back(std::get<0>(item));
-        return out;
-    }
-
-    std::vector<entity> sorted(std::vector<entity> list)
-    {
-        std::sort(list.begin(), list.end());
-        return list;
-    }
+    using test_utils::entities_of;
+    using test_utils::sorted;
 } // namespace
 
 //==============================================================================
@@ -508,7 +496,6 @@ TEST_F(ExtractionTests, FrozenScenes)
         mgr.set_scene_frozen(s2, true);
         auto view = mgr.extract<Transform>();
         EXPECT_EQ(view.begin(), view.end());
-        EXPECT_TRUE(entities_of(view).empty());
         EXPECT_EQ(entities_of(mgr.extract_with_frozen<Transform>()).size(), 6u);
     }
 

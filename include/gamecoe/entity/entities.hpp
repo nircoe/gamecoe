@@ -86,6 +86,14 @@ namespace gamecoe
             return static_cast<const component_pool<T>*>(m_pools[comp_id].get());
         }
 
+        bool in_frozen_scene(entity e, const component_pool<components::scene_tag> *tags) const
+        {
+            if (m_frozen_scenes.empty() || !tags) return false;
+
+            const components::scene_tag *tag = tags->try_get(e);
+            return tag && is_scene_frozen(tag->id);
+        }
+
         // Applies world_active to e and cascades to its subtree per each descendant's own self_active and scene pause.
         void set_active(entity e, bool world_active);
 
@@ -281,9 +289,10 @@ namespace gamecoe
             auto pool = find_pool<T>();
             if (!pool) return;
 
-            pool->for_each([this, &func](entity e, auto &component)
+            const auto *tags = find_pool<components::scene_tag>();
+            pool->for_each([this, tags, &func](entity e, auto &component)
             {
-                if (m_frozen_scenes.empty() || !is_frozen(e)) func(e, component);
+                if (!in_frozen_scene(e, tags)) func(e, component);
             });
         }
 
@@ -293,9 +302,10 @@ namespace gamecoe
             auto pool = find_pool<T>();
             if (!pool) return;
 
-            pool->for_each([this, &func](entity e, auto &component)
+            const auto *tags = find_pool<components::scene_tag>();
+            pool->for_each([this, tags, &func](entity e, auto &component)
             {
-                if (m_frozen_scenes.empty() || !is_frozen(e)) func(e, component);
+                if (!in_frozen_scene(e, tags)) func(e, component);
             });
         }
 

@@ -9,6 +9,7 @@
 #include <GLFW/glfw3.h>
 #include <vector>
 #include <algorithm>
+#include <tuple>
 #define SKIP_IF_NOT(condition, message) \
     do { if (!(condition)) \
     { \
@@ -41,6 +42,21 @@ namespace test_utils
     bool has(const std::vector<T> &values, const T &value)
     {
         return std::find(values.begin(), values.end(), value) != values.end();
+    }
+
+    template <typename View>
+    std::vector<gamecoe::entity> entities_of(View &&view)
+    {
+        std::vector<gamecoe::entity> out;
+        for (auto item : view)
+            out.push_back(std::get<0>(item));
+        return out;
+    }
+
+    inline std::vector<gamecoe::entity> sorted(std::vector<gamecoe::entity> list)
+    {
+        std::sort(list.begin(), list.end());
+        return list;
     }
 
     inline void expect_vec3_near(const glm::vec3 &actual, const glm::vec3 &expected, float epsilon = 1e-5f)
