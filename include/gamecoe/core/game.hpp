@@ -13,6 +13,7 @@
 #include <cstdint>
 #include <expected>
 #include <flat_map>
+#include <initializer_list>
 #include <optional>
 #include <string>
 #include <type_traits>
@@ -110,6 +111,20 @@ namespace gamecoe
         void activate_scene(scene_id id);
         void deactivate_scene(scene_id id);
         void unload_scene(scene_id id);
+
+        // Frozen scene: still active and rendered, but skipped by entities::extract() and for_each().
+        // Only an active scene can be frozen. deactivate_scene() and unload_scene() unfreeze it.
+        void freeze_scene(scene_id id);
+        void unfreeze_scene(scene_id id);
+        void freeze_scenes(std::initializer_list<scene_id> ids);
+        void unfreeze_scenes(std::initializer_list<scene_id> ids);
+
+        // Freezes every scene that is active right now except the kept ones. Scenes activated later are not frozen.
+        void freeze_all_except(scene_id keep);
+        void freeze_all_except(std::initializer_list<scene_id> keep);
+
+        void unfreeze_all();
+        bool is_scene_frozen(scene_id id) const;
 
         bool has_scene(scene_id id) const;
         scene_status status(scene_id id) const;

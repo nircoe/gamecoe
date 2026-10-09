@@ -337,6 +337,10 @@ namespace gamecoe
 
         std::erase(m_active_scenes, id);
 
+        // Deactivating ends the freeze, a scene reactivated later starts unfrozen.
+        if (m_entities.set_scene_frozen(id, false))
+            logcoe::debug("game::deactivate_scene(): cleared the freeze on scene \"" + to_string(id) + "\"");
+
         const std::size_t paused_count = m_entities.set_scene_paused(id, true);
 
         meta->status = scene_status::inactive;
@@ -380,6 +384,10 @@ namespace gamecoe
         // A deactivated scene's pause has to be cleared, or a reload would start paused.
         m_entities.set_scene_paused(id, false);
 
+        // A frozen scene's flag has to be cleared too, or a reload would start frozen.
+        if (m_entities.set_scene_frozen(id, false))
+            logcoe::debug("game::unload_scene(): cleared the freeze on scene \"" + scene_name + "\"");
+
         if (!soundcoe::unloadScene(scene_name))
             logcoe::debug("game::unload_scene(): soundcoe had nothing loaded for scene \"" + scene_name + "\"");
 
@@ -388,6 +396,87 @@ namespace gamecoe
 
         logcoe::info("game::unload_scene(): unloaded scene \"" + scene_name + "\" (" +
                      std::to_string(destroyed_count) + " destroyed entities)");
+    }
+
+    void game::freeze_scene(scene_id id)
+    {
+        const scene_metadata* meta = find_scene(id);
+        GAMECOE_ASSERT_GUARD(meta != nullptr, "game::freeze_scene(): scene is not registered");
+        GAMECOE_ASSERT_GUARD(meta->status == scene_status::active, "game::freeze_scene(): scene is not active");
+
+        if (!m_entities.set_scene_frozen(id, true))
+        {
+            logcoe::debug("game::freeze_scene(): scene \"" + to_string(id) + "\" is already frozen, ignoring");
+            return;
+        }
+
+        logcoe::info("game::freeze_scene(): froze scene \"" + to_string(id) + "\"");
+        logcoe::debug("game::freeze_scene(): extract() and for_each() now skip the entities of scene \"" +
+                      to_string(id) + "\", systems that must still process it (rendering, transform, camera) "
+                      "should use extract_with_frozen()");
+    }
+
+    void game::unfreeze_scene(scene_id id)
+    {
+        const scene_metadata* meta = find_scene(id);
+        GAMECOE_ASSERT_GUARD(meta != nullptr, "game::unfreeze_scene(): scene is not registered");
+        GAMECOE_ASSERT_GUARD(meta->status == scene_status::active, "game::unfreeze_scene(): scene is not active");
+
+        if (!m_entities.set_scene_frozen(id, false))
+        {
+            logcoe::debug("game::unfreeze_scene(): scene \"" + to_string(id) + "\" is not frozen, ignoring");
+            return;
+        }
+
+        logcoe::info("game::unfreeze_scene(): unfroze scene \"" + to_string(id) + "\"");
+    }
+
+    void game::freeze_scenes(std::initializer_list<scene_id> ids)
+    {
+        for (scene_id id : ids)
+            freeze_scene(id);
+    }
+
+    void game::unfreeze_scenes(std::initializer_list<scene_id> ids)
+    {
+        for (scene_id id : ids)
+            unfreeze_scene(id);
+    }
+
+    void game::freeze_all_except(scene_id keep)
+    {
+        freeze_all_except(std::initializer_list<scene_id>{ keep });
+    }
+
+    void game::freeze_all_except(std::initializer_list<scene_id> keep)
+    {
+        std::size_t frozen_count = 0;
+        for (scene_id id : m_active_scenes)
+        {
+            if (std::find(keep.begin(), keep.end(), id) != keep.end()) continue;
+            if (m_entities.set_scene_frozen(id, true)) ++frozen_count;
+        }
+
+        logcoe::info("game::freeze_all_except(): froze " + std::to_string(frozen_count) + " scene(s)");
+        if (frozen_count > 0)
+            logcoe::debug("game::freeze_all_except(): extract() and for_each() now skip the entities of those scenes, "
+                          "systems that must still process them (rendering, transform, camera) "
+                          "should use extract_with_frozen()");
+    }
+
+    void game::unfreeze_all()
+    {
+        std::size_t unfrozen_count = 0;
+        for (const auto &entry : m_scenes)
+            if (m_entities.set_scene_frozen(entry.first, false)) ++unfrozen_count;
+
+        logcoe::info("game::unfreeze_all(): unfroze " + std::to_string(unfrozen_count) + " scene(s)");
+    }
+
+    bool game::is_scene_frozen(scene_id id) const
+    {
+        GAMECOE_ASSERT_GUARD(has_scene(id), "game::is_scene_frozen(): scene is not registered", false);
+        return m_entities.is_scene_frozen(id);
     }
 
     void game::prepare_to_play()
