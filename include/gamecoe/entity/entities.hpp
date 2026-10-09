@@ -88,10 +88,19 @@ namespace gamecoe
 
         bool in_frozen_scene(entity e, const component_pool<components::scene_tag> *tags) const
         {
-            if (m_frozen_scenes.empty() || !tags) return false;
+            return detail::in_frozen_scene(e, tags, &m_frozen_scenes);
+        }
 
-            const components::scene_tag *tag = tags->try_get(e);
-            return tag && is_scene_frozen(tag->id);
+        template <typename Pool, typename Func>
+        void for_each_unfrozen(Pool *pool, Func &func) const
+        {
+            if (!pool) return;
+
+            const auto *tags = find_pool<components::scene_tag>();
+            pool->for_each([this, tags, &func](entity e, auto &component)
+            {
+                if (!in_frozen_scene(e, tags)) func(e, component);
+            });
         }
 
         // Applies world_active to e and cascades to its subtree per each descendant's own self_active and scene pause.
@@ -286,27 +295,13 @@ namespace gamecoe
         template <typename T, typename Func>
         void for_each(Func &&func)
         {
-            auto pool = find_pool<T>();
-            if (!pool) return;
-
-            const auto *tags = find_pool<components::scene_tag>();
-            pool->for_each([this, tags, &func](entity e, auto &component)
-            {
-                if (!in_frozen_scene(e, tags)) func(e, component);
-            });
+            for_each_unfrozen(find_pool<T>(), func);
         }
 
         template <typename T, typename Func>
         void for_each(Func &&func) const
         {
-            auto pool = find_pool<T>();
-            if (!pool) return;
-
-            const auto *tags = find_pool<components::scene_tag>();
-            pool->for_each([this, tags, &func](entity e, auto &component)
-            {
-                if (!in_frozen_scene(e, tags)) func(e, component);
-            });
+            for_each_unfrozen(find_pool<T>(), func);
         }
 
         template <typename T, typename Func>

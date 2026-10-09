@@ -13,6 +13,18 @@
 
 namespace gamecoe
 {
+    namespace detail
+    {
+        inline bool in_frozen_scene(entity e, const component_pool<components::scene_tag> *tags,
+                                    const std::vector<scene_id> *frozen)
+        {
+            if (!frozen || frozen->empty() || !tags) return false;
+
+            const components::scene_tag *tag = tags->try_get(e);
+            return tag && std::find(frozen->begin(), frozen->end(), tag->id) != frozen->end();
+        }
+    } // namespace detail
+
     // Iterates the smallest pool's active partition and checks membership in the rest via
     // contains(), minimizing total contains() calls across the whole extraction. Entities in a
     // frozen scene are skipped unless the extraction came from extract_with_frozen(). Mutating any
@@ -56,23 +68,17 @@ namespace gamecoe
                 return (std::get<component_pool<std::remove_const_t<Components>>*>(m_extracted->m_pools)->contains(e) && ...);
             }
 
-            // Reads the frozen list on every call, so a scene frozen mid-iteration is skipped from the next entity on.
-            bool in_frozen_scene(entity e) const
-            {
-                const std::vector<scene_id> *frozen = m_extracted->m_frozen_scenes;
-                if (!frozen || frozen->empty() || !m_extracted->m_scene_tags) return false;
-
-                const components::scene_tag *tag = m_extracted->m_scene_tags->try_get(e);
-                return tag && std::find(frozen->begin(), frozen->end(), tag->id) != frozen->end();
-            }
-
             void next()
             {
                 while (m_index < m_extracted->m_smallest_pool_size)
                 {
                     entity e = get_current_entity(std::index_sequence_for<Components...>{});
 
-                    if (has_all_components(e) && !in_frozen_scene(e)) return;
+                    // The frozen list is read on every call, so a scene frozen mid-iteration is skipped from the
+                    // next entity on.
+                    if (has_all_components(e)
+                        && !detail::in_frozen_scene(e, m_extracted->m_scene_tags, m_extracted->m_frozen_scenes))
+                        return;
                     ++m_index; // entity e is not in all pools, check the next one
                 }
             }

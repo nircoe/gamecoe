@@ -303,6 +303,9 @@ namespace gamecoe
         const scene_status prev_status = meta->status;
         meta->status = scene_status::active;
 
+        if (m_entities.set_scene_frozen(id, false))
+            logcoe::debug("game::activate_scene(): cleared a stray freeze on scene \"" + to_string(id) + "\"");
+
         std::size_t activated_count = 0;
         if (prev_status == scene_status::loaded)
         {

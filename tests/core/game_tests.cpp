@@ -899,6 +899,21 @@ TEST_F(GameTests, DeactivateAndUnloadClearFreeze)
         EXPECT_FALSE(g->is_scene_frozen(scene_a));
         EXPECT_TRUE(g->is_scene_frozen(scene_b));
     }
+
+    // Test 4: a freeze set directly on entities() for a loaded or an inactive scene doesn't survive activation
+    {
+        g->load_scene(scene_a);
+        g->entities().set_scene_frozen(scene_a, true);
+        g->activate_scene(scene_a);
+        EXPECT_FALSE(g->is_scene_frozen(scene_a));
+        EXPECT_EQ(count_active_scene_entities(*g, scene_a), 3u);
+
+        g->deactivate_scene(scene_a);
+        g->entities().set_scene_frozen(scene_a, true);
+        g->activate_scene(scene_a);
+        EXPECT_FALSE(g->is_scene_frozen(scene_a));
+        EXPECT_EQ(count_active_scene_entities(*g, scene_a), 3u);
+    }
 }
 
 TEST_F(GameTests, FreezeGuarded)
