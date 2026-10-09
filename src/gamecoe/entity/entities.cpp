@@ -120,6 +120,7 @@ namespace gamecoe
         m_generations.clear();
         m_self_active.clear();
         m_paused_scenes.clear();
+        m_frozen_scenes.clear();
         m_current_entity_id = 0;
         logcoe::info("entities::clear(): cleared all entities");
     }
@@ -173,6 +174,16 @@ namespace gamecoe
         return scene_ents.size();
     }
 
+    bool entities::set_scene_frozen(scene_id id, bool frozen)
+    {
+        if (is_scene_frozen(id) == frozen) return false;
+
+        if (frozen) m_frozen_scenes.push_back(id);
+        else std::erase(m_frozen_scenes, id);
+
+        return true;
+    }
+
     // Each node carries its own target: a self-inactive descendant, or one in a paused scene, stays
     // inactive even when an ancestor above it reactivates.
     void entities::set_active(entity e, bool world_active)
@@ -204,6 +215,19 @@ namespace gamecoe
     bool entities::is_scene_paused(scene_id id) const
     {
         return std::find(m_paused_scenes.begin(), m_paused_scenes.end(), id) != m_paused_scenes.end();
+    }
+
+    bool entities::is_scene_frozen(scene_id id) const
+    {
+        return std::find(m_frozen_scenes.begin(), m_frozen_scenes.end(), id) != m_frozen_scenes.end();
+    }
+
+    bool entities::is_frozen(entity e) const
+    {
+        if (m_frozen_scenes.empty()) return false;
+        auto *pool = find_pool<components::scene_tag>();
+        auto *tag = pool ? pool->try_get(e) : nullptr;
+        return tag && is_scene_frozen(tag->id);
     }
 
     bool entities::own_active(entity e) const

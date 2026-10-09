@@ -3,8 +3,12 @@
 #include <gamecoe/component/transform.hpp>
 #include <gamecoe/component/parent_child.hpp>
 #include <gamecoe/component/scene_tag.hpp>
+#include <algorithm>
 #include <array>
 #include <chrono>
+#include <tuple>
+#include <type_traits>
+#include <utility>
 #include <vector>
 #include <support/test_utils.hpp>
 #include <support/scene_id.hpp>
@@ -34,6 +38,30 @@ namespace
         for (auto [ent, c] : m.extract<T>())
             if (ent == e) return true;
         return false;
+    }
+
+    template <typename T>
+    bool in_extract_with_frozen(entities &m, entity e)
+    {
+        for (auto [ent, c] : m.extract_with_frozen<T>())
+            if (ent == e) return true;
+        return false;
+    }
+
+    template <typename View>
+    std::vector<entity> sorted_entities(View &&view)
+    {
+        std::vector<entity> out;
+        for (auto item : view)
+            out.push_back(std::get<0>(item));
+        std::sort(out.begin(), out.end());
+        return out;
+    }
+
+    std::vector<entity> sorted_list(std::vector<entity> list)
+    {
+        std::sort(list.begin(), list.end());
+        return list;
     }
 
     std::array<entity, 3> make_chain(entities &m, scene_id s)
@@ -1750,6 +1778,484 @@ TEST_F(EntitiesTests, SetParentFollowsScenePause)
         mgr.remove_parent(root);
         EXPECT_FALSE(mgr.is_active(root));
     }
+}
+
+//==============================================================================
+//                        Scene Freeze
+//==============================================================================
+
+TEST_F(EntitiesTests, SceneFreeze)
+{
+    constexpr scene_id s1 = scene_id::TestScene1;
+    constexpr scene_id s2 = scene_id::TestScene2;
+
+    // Test 1: set_scene_frozen() reports whether the state changed, is_scene_frozen() reads it back
+    {
+        mgr.clear();
+
+        EXPECT_FALSE(mgr.is_scene_frozen(s1));
+        EXPECT_FALSE(mgr.is_scene_frozen(s2));
+
+        EXPECT_TRUE(mgr.set_scene_frozen(s1, true));
+        EXPECT_FALSE(mgr.set_scene_frozen(s1, true));
+        EXPECT_TRUE(mgr.is_scene_frozen(s1));
+        EXPECT_FALSE(mgr.is_scene_frozen(s2));
+
+        EXPECT_TRUE(mgr.set_scene_frozen(s1, false));
+        EXPECT_FALSE(mgr.set_scene_frozen(s1, false));
+        EXPECT_FALSE(mgr.is_scene_frozen(s1));
+
+        // No scene_tag pool and no entities in the scene
+        EXPECT_TRUE(mgr.set_scene_frozen(s1, true));
+        entity e = mgr.create();
+        mgr.add_component<Position>(e, Position{1.0f, 2.0f, 3.0f});
+        EXPECT_TRUE(in_active_extract<Position>(mgr, e));
+    }
+
+    // Test 2: is_frozen() is true only for an entity tagged with a frozen scene
+    {
+        mgr.clear();
+
+        entity plain = mgr.create();
+        mgr.set_scene_frozen(s1, true);
+        EXPECT_FALSE(mgr.is_frozen(plain));
+
+        entity frozen = mgr.create({}, s1);
+        entity other = mgr.create({}, s2);
+        entity global = mgr.create();
+        entity stale = mgr.create({}, s1);
+        mgr.destroy(stale);
+
+        EXPECT_TRUE(mgr.is_frozen(frozen));
+        EXPECT_FALSE(mgr.is_frozen(other));
+        EXPECT_FALSE(mgr.is_frozen(global));
+        EXPECT_FALSE(mgr.is_frozen(plain));
+        EXPECT_FALSE(mgr.is_frozen(stale));
+
+        mgr.deactivate(frozen);
+        EXPECT_TRUE(mgr.is_frozen(frozen));
+
+        mgr.set_scene_paused(s1, true);
+        EXPECT_TRUE(mgr.is_frozen(frozen));
+
+        mgr.set_scene_frozen(s1, false);
+        EXPECT_FALSE(mgr.is_frozen(frozen));
+    }
+
+    // Test 3: freezing leaves the entity in the active partition
+    {
+        mgr.clear();
+
+        entity e = mgr.create({}, s1);
+        mgr.add_component<Position>(e, Position{1.0f, 2.0f, 3.0f});
+        std::size_t size_before = mgr.size();
+
+        mgr.set_scene_frozen(s1, true);
+
+        EXPECT_TRUE(mgr.is_active(e));
+        EXPECT_EQ(mgr.size(), size_before);
+        EXPECT_TRUE(in_extract_with_frozen<Position>(mgr, e));
+
+        bool found = false;
+        mgr.for_each_all<Position>([&](entity ent, const Position &pos)
+        {
+            if (ent != e) return;
+            found = true;
+            EXPECT_FLOAT_EQ(pos.x, 1.0f);
+            EXPECT_FLOAT_EQ(pos.y, 2.0f);
+            EXPECT_FLOAT_EQ(pos.z, 3.0f);
+        });
+        EXPECT_TRUE(found);
+    }
+
+    // Test 4: extract() skips frozen entities, extract_with_frozen() returns them
+    {
+        mgr.clear();
+
+        entity a = mgr.create({}, s1);
+        entity b = mgr.create({}, s2);
+        entity g = mgr.create();
+        for (entity e : { a, b, g })
+        {
+            mgr.add_component<Position>(e, Position{1.0f, 0.0f, 0.0f});
+            mgr.add_component<Velocity>(e, Velocity{0.0f, 1.0f, 0.0f});
+        }
+
+        mgr.set_scene_frozen(s1, true);
+
+        EXPECT_EQ(sorted_entities(mgr.extract<Position>()), sorted_list({ b, g }));
+        EXPECT_EQ((sorted_entities(mgr.extract<Position, Velocity>())), sorted_list({ b, g }));
+        EXPECT_EQ((sorted_entities(mgr.extract_with_frozen<Position, Velocity>())), sorted_list({ a, b, g }));
+        EXPECT_EQ(sorted_entities(mgr.extract<components::scene_tag>()), sorted_list({ b }));
+
+        const entities &const_mgr = mgr;
+        EXPECT_EQ(sorted_entities(const_mgr.extract<Position>()), sorted_list({ b, g }));
+        EXPECT_EQ(sorted_entities(const_mgr.extract_with_frozen<Position>()), sorted_list({ a, b, g }));
+        for (auto [e, pos] : const_mgr.extract_with_frozen<Position>())
+            static_assert(std::is_same_v<decltype(pos), const Position &>);
+    }
+
+    // Test 5: for_each() skips frozen entities, for_each_all() does not
+    {
+        mgr.clear();
+
+        entity a = mgr.create({}, s1);
+        entity b = mgr.create({}, s2);
+        entity g = mgr.create();
+        for (entity e : { a, b, g })
+            mgr.add_component<Position>(e, Position{1.0f, 0.0f, 0.0f});
+
+        mgr.set_scene_frozen(s1, true);
+
+        std::vector<entity> visited;
+        mgr.for_each<Position>([&](entity e, Position &pos)
+        {
+            visited.push_back(e);
+            pos.x += 10.0f;
+        });
+        EXPECT_EQ(sorted_list(visited), sorted_list({ b, g }));
+        EXPECT_FLOAT_EQ(mgr.get_component<Position>(a)->x, 1.0f);
+        EXPECT_FLOAT_EQ(mgr.get_component<Position>(b)->x, 11.0f);
+        EXPECT_FLOAT_EQ(mgr.get_component<Position>(g)->x, 11.0f);
+
+        visited.clear();
+        const entities &const_mgr = mgr;
+        const_mgr.for_each<Position>([&](entity e, const Position &)
+        {
+            visited.push_back(e);
+        });
+        EXPECT_EQ(sorted_list(visited), sorted_list({ b, g }));
+
+        visited.clear();
+        mgr.for_each_all<Position>([&](entity e, const Position &)
+        {
+            visited.push_back(e);
+        });
+        EXPECT_EQ(sorted_list(visited), sorted_list({ a, b, g }));
+    }
+
+    // Test 6: unfreezing brings the entities back, only the unfrozen scene
+    {
+        mgr.clear();
+
+        entity a = mgr.create({}, s1);
+        entity b = mgr.create({}, s2);
+        mgr.add_component<Position>(a, Position{1.0f, 2.0f, 3.0f});
+        mgr.add_component<Position>(b, Position{4.0f, 5.0f, 6.0f});
+
+        mgr.set_scene_frozen(s1, true);
+        mgr.set_scene_frozen(s2, true);
+        EXPECT_TRUE(sorted_entities(mgr.extract<Position>()).empty());
+
+        mgr.set_scene_frozen(s1, false);
+
+        EXPECT_TRUE(mgr.is_active(a));
+        EXPECT_TRUE(in_active_extract<Position>(mgr, a));
+        EXPECT_FALSE(in_active_extract<Position>(mgr, b));
+        EXPECT_FLOAT_EQ(mgr.get_component<Position>(a)->x, 1.0f);
+
+        std::vector<entity> visited;
+        mgr.for_each<Position>([&](entity e, const Position &)
+        {
+            visited.push_back(e);
+        });
+        EXPECT_EQ(visited, std::vector<entity>{ a });
+    }
+
+    // Test 7: freezing is independent of the entity's own active state
+    {
+        mgr.clear();
+
+        entity a = mgr.create({}, s1);
+        mgr.add_component<Position>(a, Position{1.0f, 0.0f, 0.0f});
+
+        mgr.set_scene_frozen(s1, true);
+        mgr.deactivate(a);
+        mgr.set_scene_frozen(s1, false);
+
+        EXPECT_FALSE(mgr.is_active(a));
+        EXPECT_FALSE(in_active_extract<Position>(mgr, a));
+
+        mgr.set_scene_frozen(s1, true);
+        mgr.activate(a);
+
+        EXPECT_TRUE(mgr.is_active(a));
+        EXPECT_FALSE(in_active_extract<Position>(mgr, a));
+        EXPECT_TRUE(in_extract_with_frozen<Position>(mgr, a));
+    }
+
+    // Test 8: entities created into a frozen scene are frozen at once
+    {
+        mgr.clear();
+        mgr.set_scene_frozen(s1, true);
+
+        entity a = mgr.create({}, s1);
+        mgr.add_component<Position>(a, Position{1.0f, 0.0f, 0.0f});
+        entity b = mgr.create({}, s2);
+        mgr.add_component<Position>(b, Position{2.0f, 0.0f, 0.0f});
+
+        EXPECT_TRUE(mgr.is_active(a));
+        EXPECT_TRUE(in_extract_with_frozen<Position>(mgr, a));
+        EXPECT_FALSE(in_active_extract<Position>(mgr, a));
+        EXPECT_TRUE(in_active_extract<Position>(mgr, b));
+
+        // A recycled id carries no scene_tag, so it isn't frozen
+        mgr.destroy(a);
+        entity g = mgr.create();
+        mgr.add_component<Position>(g, Position{3.0f, 0.0f, 0.0f});
+        EXPECT_EQ(g.id(), a.id());
+        EXPECT_TRUE(in_active_extract<Position>(mgr, g));
+        EXPECT_FALSE(mgr.is_frozen(g));
+    }
+
+    // Test 9: clear() forgets the frozen scenes
+    {
+        mgr.clear();
+        mgr.set_scene_frozen(s1, true);
+        mgr.clear();
+
+        EXPECT_FALSE(mgr.is_scene_frozen(s1));
+
+        entity e = mgr.create({}, s1);
+        mgr.add_component<Position>(e, Position{1.0f, 0.0f, 0.0f});
+        EXPECT_TRUE(in_active_extract<Position>(mgr, e));
+        EXPECT_TRUE(mgr.set_scene_frozen(s1, true));
+    }
+}
+
+TEST_F(EntitiesTests, SceneFreezeWithHierarchyAndPause)
+{
+    constexpr scene_id s1 = scene_id::TestScene1;
+    constexpr scene_id s2 = scene_id::TestScene2;
+
+    // Test 1: reparenting into a frozen scene freezes the whole subtree
+    {
+        mgr.clear();
+
+        auto [root, mid, leaf] = make_chain(mgr, s2);
+        entity p = mgr.create({}, s1);
+        mgr.add_component<Position>(p, Position{0.0f, 0.0f, 0.0f});
+        mgr.add_component<Position>(leaf, Position{1.0f, 0.0f, 0.0f});
+        mgr.set_scene_frozen(s1, true);
+        EXPECT_TRUE(in_active_extract<Position>(mgr, leaf));
+
+        mgr.set_parent(root, p);
+
+        for (entity e : { root, mid, leaf })
+        {
+            EXPECT_EQ(mgr.scene(e)->id, s1);
+            EXPECT_TRUE(mgr.is_active(e));
+        }
+        EXPECT_FALSE(in_active_extract<Position>(mgr, leaf));
+        EXPECT_TRUE(in_extract_with_frozen<Position>(mgr, leaf));
+    }
+
+    // Test 2: reparenting out of a frozen scene makes the subtree visible
+    {
+        mgr.clear();
+        mgr.set_scene_frozen(s1, true);
+
+        auto [root, mid, leaf] = make_chain(mgr, s1);
+        mgr.add_component<Position>(leaf, Position{1.0f, 0.0f, 0.0f});
+        EXPECT_FALSE(in_active_extract<Position>(mgr, leaf));
+
+        entity other = mgr.create({}, s2);
+        mgr.set_parent(root, other);
+
+        EXPECT_TRUE(mgr.is_active(leaf));
+        EXPECT_TRUE(in_active_extract<Position>(mgr, leaf));
+
+        // Adopted by a global parent, the subtree loses its tags and is never frozen
+        mgr.set_scene_frozen(s1, false);
+        auto [root2, mid2, leaf2] = make_chain(mgr, s1);
+        mgr.add_component<Position>(leaf2, Position{2.0f, 0.0f, 0.0f});
+        entity global = mgr.create();
+        mgr.set_parent(root2, global);
+        mgr.set_scene_frozen(s1, true);
+
+        EXPECT_EQ(mgr.scene(leaf2), nullptr);
+        EXPECT_TRUE(in_active_extract<Position>(mgr, leaf2));
+    }
+
+    // Test 3: detaching a child keeps its scene, so it stays frozen
+    {
+        mgr.clear();
+
+        entity p1 = mgr.create({}, s1);
+        entity c1 = mgr.create();
+        entity p2 = mgr.create({}, s1);
+        entity c2 = mgr.create();
+        mgr.add_component<Position>(c1, Position{1.0f, 0.0f, 0.0f});
+        mgr.add_component<Position>(c2, Position{2.0f, 0.0f, 0.0f});
+        mgr.set_parent(c1, p1);
+        mgr.set_parent(c2, p2);
+        mgr.set_scene_frozen(s1, true);
+
+        mgr.remove_parent(c1);
+        EXPECT_EQ(mgr.scene(c1)->id, s1);
+        EXPECT_FALSE(in_active_extract<Position>(mgr, c1));
+
+        mgr.remove_children(p2);
+        EXPECT_EQ(mgr.scene(c2)->id, s1);
+        EXPECT_FALSE(in_active_extract<Position>(mgr, c2));
+    }
+
+    // Test 4: a paused scene is outside both extractions, the freeze applies again on resume
+    {
+        mgr.clear();
+
+        entity e = mgr.create({}, s1);
+        mgr.add_component<Position>(e, Position{1.0f, 0.0f, 0.0f});
+
+        mgr.set_scene_frozen(s1, true);
+        mgr.set_scene_paused(s1, true);
+
+        EXPECT_FALSE(mgr.is_active(e));
+        EXPECT_FALSE(in_active_extract<Position>(mgr, e));
+        EXPECT_FALSE(in_extract_with_frozen<Position>(mgr, e));
+        EXPECT_TRUE(mgr.is_scene_frozen(s1));
+
+        EXPECT_EQ(mgr.set_scene_paused(s1, false), 1u);
+
+        EXPECT_TRUE(mgr.is_active(e));
+        EXPECT_FALSE(in_active_extract<Position>(mgr, e));
+        EXPECT_TRUE(in_extract_with_frozen<Position>(mgr, e));
+
+        // Freezing while the scene is paused ends the same way
+        mgr.set_scene_frozen(s1, false);
+        mgr.set_scene_paused(s1, true);
+        mgr.set_scene_frozen(s1, true);
+        mgr.set_scene_paused(s1, false);
+
+        EXPECT_TRUE(mgr.is_active(e));
+        EXPECT_FALSE(in_active_extract<Position>(mgr, e));
+        EXPECT_TRUE(in_extract_with_frozen<Position>(mgr, e));
+
+        // Unfreezing while paused leaves it visible on resume
+        mgr.set_scene_paused(s1, true);
+        mgr.set_scene_frozen(s1, false);
+        EXPECT_EQ(mgr.set_scene_paused(s1, false), 1u);
+
+        EXPECT_TRUE(in_active_extract<Position>(mgr, e));
+    }
+
+    // Test 5: destroying a frozen parent cascades as usual and keeps the scene frozen
+    {
+        mgr.clear();
+
+        auto [root, mid, leaf] = make_chain(mgr, s1);
+        entity other = mgr.create({}, s1);
+        for (entity e : { root, mid, leaf, other })
+            mgr.add_component<Position>(e, Position{1.0f, 0.0f, 0.0f});
+        mgr.set_scene_frozen(s1, true);
+
+        mgr.destroy(root);
+
+        for (entity e : { root, mid, leaf })
+            EXPECT_FALSE(mgr.valid(e));
+        EXPECT_TRUE(mgr.is_scene_frozen(s1));
+        EXPECT_FALSE(in_active_extract<Position>(mgr, other));
+        EXPECT_EQ(sorted_entities(mgr.extract_with_frozen<Position>()), sorted_list({ other }));
+    }
+}
+
+TEST_F(EntitiesTests, SceneFreezeMidIteration)
+{
+    constexpr scene_id s1 = scene_id::TestScene1;
+    constexpr scene_id s2 = scene_id::TestScene2;
+    constexpr scene_id s3 = scene_id::TestScene3;
+
+    // Test 1: a freeze made inside the callback applies to the rest of the loop
+    {
+        mgr.clear();
+
+        for (int i = 0; i < 4; ++i)
+        {
+            entity e = mgr.create({}, s1);
+            mgr.add_component<Position>(e, Position{0.0f, 0.0f, 0.0f});
+        }
+
+        int visited = 0;
+        mgr.for_each<Position>([&](entity, Position &)
+        {
+            ++visited;
+            mgr.set_scene_frozen(s1, true);
+        });
+        EXPECT_EQ(visited, 1);
+    }
+
+    // Test 2: so does an unfreeze, the trigger has to be an entity that is still visible
+    {
+        mgr.clear();
+        mgr.set_scene_frozen(s1, true);
+
+        entity trigger = mgr.create();
+        mgr.add_component<Position>(trigger, Position{0.0f, 0.0f, 0.0f});
+        for (int i = 0; i < 3; ++i)
+        {
+            entity e = mgr.create({}, s1);
+            mgr.add_component<Position>(e, Position{0.0f, 0.0f, 0.0f});
+        }
+
+        int visited = 0;
+        mgr.for_each<Position>([&](entity e, Position &)
+        {
+            ++visited;
+            if (e == trigger) mgr.set_scene_frozen(s1, false);
+        });
+        EXPECT_EQ(visited, 4);
+    }
+
+    // Test 3: the frozen list grows several times during one loop
+    {
+        mgr.clear();
+
+        const std::array<scene_id, 3> scenes = { s1, s2, s3 };
+        for (int i = 0; i < 3; ++i)
+        {
+            entity e = mgr.create();
+            mgr.add_component<Position>(e, Position{0.0f, 0.0f, 0.0f});
+        }
+        for (scene_id s : scenes)
+            for (int i = 0; i < 2; ++i)
+            {
+                entity e = mgr.create({}, s);
+                mgr.add_component<Position>(e, Position{0.0f, 0.0f, 0.0f});
+            }
+
+        std::size_t visited = 0;
+        mgr.for_each<Position>([&](entity, Position &)
+        {
+            mgr.set_scene_frozen(scenes[visited], true);
+            ++visited;
+        });
+        EXPECT_EQ(visited, 3u);
+        for (scene_id s : scenes)
+            EXPECT_TRUE(mgr.is_scene_frozen(s));
+    }
+}
+
+TEST_F(EntitiesTests, SceneFreezeSurvivesMove)
+{
+    constexpr scene_id s1 = scene_id::TestScene1;
+
+    entities source;
+    entity e = source.create({}, s1);
+    source.add_component<Position>(e, Position{1.0f, 0.0f, 0.0f});
+    source.set_scene_frozen(s1, true);
+
+    entities dest(std::move(source));
+
+    EXPECT_TRUE(dest.is_scene_frozen(s1));
+    EXPECT_FALSE(dest.set_scene_frozen(s1, true));
+    EXPECT_TRUE(dest.is_active(e));
+    EXPECT_FALSE(in_active_extract<Position>(dest, e));
+    EXPECT_TRUE(in_extract_with_frozen<Position>(dest, e));
+
+    EXPECT_FALSE(source.is_scene_frozen(s1));
+    entity fresh = source.create({}, s1);
+    source.add_component<Position>(fresh, Position{2.0f, 0.0f, 0.0f});
+    EXPECT_TRUE(in_active_extract<Position>(source, fresh));
 }
 
 //==============================================================================

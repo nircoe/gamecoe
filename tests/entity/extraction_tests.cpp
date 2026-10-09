@@ -2,7 +2,10 @@
 #include <gamecoe/entity/entities.hpp>
 #include <vector>
 #include <algorithm>
+#include <tuple>
+#include <type_traits>
 #include <support/test_utils.hpp>
+#include <support/scene_id.hpp>
 
 using namespace gamecoe;
 
@@ -39,6 +42,24 @@ struct Health
         return value == other.value;
     }
 };
+
+namespace
+{
+    template <typename View>
+    std::vector<entity> entities_of(View &&view)
+    {
+        std::vector<entity> out;
+        for (auto item : view)
+            out.push_back(std::get<0>(item));
+        return out;
+    }
+
+    std::vector<entity> sorted(std::vector<entity> list)
+    {
+        std::sort(list.begin(), list.end());
+        return list;
+    }
+} // namespace
 
 //==============================================================================
 //                    ExtractionTests - Multi-component query tests
@@ -395,6 +416,227 @@ TEST_F(ExtractionTests, ConstCorrectness)
             // v.dx = 1.0f; // Error: const Velocity&
         }
         EXPECT_EQ(count, 2);
+    }
+}
+
+//==============================================================================
+//                        Frozen Scenes
+//==============================================================================
+
+TEST_F(ExtractionTests, FrozenScenes)
+{
+    constexpr scene_id s1 = scene_id::TestScene1;
+    constexpr scene_id s2 = scene_id::TestScene2;
+    constexpr scene_id s3 = scene_id::TestScene3;
+
+    // Test 1: extract_with_frozen() returns the same extraction type as extract()
+    {
+        const entities &const_mgr = mgr;
+
+        static_assert(std::is_same_v<
+            decltype(mgr.extract_with_frozen<Transform>()),
+            decltype(mgr.extract<Transform>())
+        >);
+        static_assert(std::is_same_v<
+            decltype(const_mgr.extract_with_frozen<Transform>()),
+            extraction<const Transform>
+        >);
+        static_assert(std::is_same_v<
+            decltype(const_mgr.extract_with_frozen<Transform>()),
+            decltype(const_mgr.extract<Transform>())
+        >);
+    }
+
+    // Test 2: the filter applies whichever pool drives the iteration
+    {
+        mgr.clear();
+
+        entity f1 = mgr.create({}, s1);
+        entity f2 = mgr.create({}, s1);
+        entity v1 = mgr.create({}, s2);
+        for (entity e : { f1, f2, v1 })
+        {
+            mgr.add_component<Transform>(e, Transform{1.0f, 0.0f, 0.0f});
+            mgr.add_component<Health>(e, Health{10});
+        }
+        mgr.set_scene_frozen(s1, true);
+
+        // Transform is the smaller pool
+        for (int i = 0; i < 5; ++i)
+            mgr.add_component<Health>(mgr.create(), Health{i});
+
+        EXPECT_EQ((entities_of(mgr.extract<Transform, Health>())), std::vector<entity>{ v1 });
+        EXPECT_EQ((sorted(entities_of(mgr.extract_with_frozen<Transform, Health>()))), sorted({ f1, f2, v1 }));
+
+        // Velocity is the smallest pool and drives the iteration
+        mgr.clear();
+        f1 = mgr.create({}, s1);
+        f2 = mgr.create({}, s1);
+        v1 = mgr.create({}, s2);
+        for (entity e : { f1, f2, v1 })
+        {
+            mgr.add_component<Transform>(e, Transform{1.0f, 0.0f, 0.0f});
+            mgr.add_component<Health>(e, Health{10});
+        }
+        mgr.set_scene_frozen(s1, true);
+        for (int i = 0; i < 5; ++i)
+            mgr.add_component<Transform>(mgr.create(), Transform{0.0f, 0.0f, 0.0f});
+        for (entity e : { f1, f2, v1 })
+            mgr.add_component<Velocity>(e, Velocity{0.0f, 0.0f, 0.0f});
+
+        EXPECT_EQ((entities_of(mgr.extract<Velocity, Transform, Health>())), std::vector<entity>{ v1 });
+        EXPECT_EQ((sorted(entities_of(mgr.extract_with_frozen<Velocity, Transform, Health>()))),
+                  sorted({ f1, f2, v1 }));
+    }
+
+    // Test 3: frozen entities at the start, middle and end of the dense array are skipped
+    {
+        mgr.clear();
+
+        entity f1 = mgr.create({}, s1);
+        entity v1 = mgr.create({}, s2);
+        entity f2 = mgr.create({}, s1);
+        entity f3 = mgr.create({}, s1);
+        entity v2 = mgr.create({}, s2);
+        entity f4 = mgr.create({}, s1);
+        for (entity e : { f1, v1, f2, f3, v2, f4 })
+            mgr.add_component<Transform>(e, Transform{0.0f, 0.0f, 0.0f});
+
+        mgr.set_scene_frozen(s1, true);
+        EXPECT_EQ(sorted(entities_of(mgr.extract<Transform>())), sorted({ v1, v2 }));
+
+        mgr.set_scene_frozen(s2, true);
+        auto view = mgr.extract<Transform>();
+        EXPECT_EQ(view.begin(), view.end());
+        EXPECT_TRUE(entities_of(view).empty());
+        EXPECT_EQ(entities_of(mgr.extract_with_frozen<Transform>()).size(), 6u);
+    }
+
+    // Test 4: the iterator lands on the next visible entity
+    {
+        mgr.clear();
+
+        entity f1 = mgr.create({}, s1);
+        entity v1 = mgr.create({}, s2);
+        entity f2 = mgr.create({}, s1);
+        entity f3 = mgr.create({}, s1);
+        entity v2 = mgr.create({}, s2);
+        entity f4 = mgr.create({}, s1);
+        float x = 0.0f;
+        for (entity e : { f1, v1, f2, f3, v2, f4 })
+            mgr.add_component<Transform>(e, Transform{x++, 0.0f, 0.0f});
+
+        mgr.set_scene_frozen(s1, true);
+        auto view = mgr.extract<Transform>();
+
+        auto it = view.begin();
+        {
+            auto [e, t] = *it;
+            EXPECT_EQ(e, v1);
+            EXPECT_EQ(t.x, 1.0f);
+        }
+
+        auto &ref = ++it;
+        EXPECT_EQ(&ref, &it);
+        {
+            auto [e, t] = *it;
+            EXPECT_EQ(e, v2);
+            EXPECT_EQ(t.x, 4.0f);
+        }
+        ++it;
+        EXPECT_EQ(it, view.end());
+
+        it = view.begin();
+        auto copy = it++;
+        EXPECT_EQ(std::get<0>(*copy), v1);
+        EXPECT_EQ(std::get<0>(*it), v2);
+
+        int count = 0;
+        for ([[maybe_unused]] auto [e, t] : view)
+            ++count;
+        EXPECT_EQ(count, 2);
+    }
+
+    // Test 5: with no scene_tag pool there is nothing to filter
+    {
+        mgr.clear();
+
+        entity a = mgr.create();
+        entity b = mgr.create();
+        for (entity e : { a, b })
+            mgr.add_component<Transform>(e, Transform{0.0f, 0.0f, 0.0f});
+        mgr.set_scene_frozen(s1, true);
+
+        EXPECT_EQ(sorted(entities_of(mgr.extract<Transform>())), sorted({ a, b }));
+        EXPECT_EQ(sorted(entities_of(mgr.extract_with_frozen<Transform>())), sorted({ a, b }));
+    }
+
+    // Test 6: scenes frozen during the loop apply to the entities that come after
+    {
+        mgr.clear();
+
+        entity g0 = mgr.create();
+        entity a1 = mgr.create({}, s1);
+        entity a2 = mgr.create({}, s1);
+        entity b1 = mgr.create({}, s2);
+        entity b2 = mgr.create({}, s2);
+        entity c1 = mgr.create({}, s3);
+        entity c2 = mgr.create({}, s3);
+        entity g1 = mgr.create();
+        for (entity e : { g0, a1, a2, b1, b2, c1, c2, g1 })
+            mgr.add_component<Transform>(e, Transform{0.0f, 0.0f, 0.0f});
+
+        // The extraction holds the frozen vector itself, not its buffer, so the list can grow
+        // while the loop runs.
+        auto view = mgr.extract<Transform>();
+
+        std::vector<entity> delivered;
+        for ([[maybe_unused]] auto [e, t] : view)
+        {
+            delivered.push_back(e);
+            if (e == g0) mgr.set_scene_frozen(s1, true);
+            else if (e == b1) mgr.set_scene_frozen(s2, true);
+            else if (e == c1) mgr.set_scene_frozen(s3, true);
+        }
+        EXPECT_EQ(delivered, (std::vector<entity>{ g0, b1, c1, g1 }));
+
+        EXPECT_EQ(sorted(entities_of(view)), sorted({ g0, g1 }));
+
+        // Unfreezing from the loop works the same way
+        mgr.clear();
+        g0 = mgr.create();
+        a1 = mgr.create({}, s1);
+        a2 = mgr.create({}, s1);
+        for (entity e : { g0, a1, a2 })
+            mgr.add_component<Transform>(e, Transform{0.0f, 0.0f, 0.0f});
+        mgr.set_scene_frozen(s1, true);
+
+        delivered.clear();
+        for ([[maybe_unused]] auto [e, t] : mgr.extract<Transform>())
+        {
+            delivered.push_back(e);
+            if (e == g0) mgr.set_scene_frozen(s1, false);
+        }
+        EXPECT_EQ(delivered, (std::vector<entity>{ g0, a1, a2 }));
+    }
+
+    // Test 7: an extraction kept across freeze changes follows them
+    {
+        mgr.clear();
+
+        entity g = mgr.create();
+        entity a = mgr.create({}, s1);
+        for (entity e : { g, a })
+            mgr.add_component<Transform>(e, Transform{0.0f, 0.0f, 0.0f});
+
+        auto view = mgr.extract<Transform>();
+        EXPECT_EQ(sorted(entities_of(view)), sorted({ g, a }));
+
+        mgr.set_scene_frozen(s1, true);
+        EXPECT_EQ(entities_of(view), std::vector<entity>{ g });
+
+        mgr.set_scene_frozen(s1, false);
+        EXPECT_EQ(sorted(entities_of(view)), sorted({ g, a }));
     }
 }
 

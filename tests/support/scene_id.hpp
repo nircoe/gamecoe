@@ -10,6 +10,7 @@ namespace gamecoe
     {
         TestScene1 = 1,
         TestScene2 = 2,
+        TestScene3 = 3,
     };
 
     std::string to_string(scene_id id);
