@@ -6,6 +6,7 @@
 #include <inputcoe.hpp>
 #include <timecoe.hpp>
 #include <algorithm>
+#include <format>
 #include <limits>
 #include <utility>
 #include <string>
@@ -52,8 +53,8 @@ namespace gamecoe
     game::game(game&& other) noexcept
         : m_entities(std::move(other.m_entities)), m_window(std::move(other.m_window)),
           m_scenes(std::move(other.m_scenes)), m_active_scenes(std::move(other.m_active_scenes)),
-          m_pending_scene_ops(std::move(other.m_pending_scene_ops)), m_background_color(other.m_background_color),
-          m_playing(other.m_playing)
+          m_pending_scene_ops(std::move(other.m_pending_scene_ops)), m_systems(std::move(other.m_systems)),
+          m_background_color(other.m_background_color), m_playing(other.m_playing)
     {
         other.m_window.reset();
     }
@@ -500,6 +501,22 @@ namespace gamecoe
         m_pending_scene_ops.clear();
     }
 
+    void game::add_system(system_entry &&entry)
+    {
+        GAMECOE_ASSERT_GUARD(!m_playing, "game::register_system(): system cannot be registered during game::play()");
+        GAMECOE_ASSERT_GUARD(static_cast<bool>(entry.func), "game::register_system(): system function is null");
+
+        m_systems.push_back(std::move(entry));
+        logcoe::debug(std::format("game::register_system(): registered system #{} ({} reads, {} writes)",
+            m_systems.size(), m_systems.back().reads.size(), m_systems.back().writes.size()));
+    }
+
+    void game::run_systems()
+    {
+        for (system_entry &entry : m_systems)
+            entry.func(*this);
+    }
+
     void game::play()
     {
         GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::play(): called on a moved-from game");
@@ -514,7 +531,8 @@ namespace gamecoe
 #if GAMECOE_USE_OPENGL
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 #endif
-            // System execution, rendering and collision wire in here via later tickets.
+            run_systems();
+            // Rendering and collision wire in here via later tickets.
 
             soundcoe::update();
         }
