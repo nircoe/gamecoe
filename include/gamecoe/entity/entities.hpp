@@ -48,14 +48,6 @@ namespace gamecoe
 
         std::uint32_t m_current_entity_id{0};
 
-        // Returns static and unique id for component T
-        template <typename T>
-        static std::uint32_t component_id()
-        {
-            static std::uint32_t s_componentT_id = s_component_id++;
-            return s_componentT_id;
-        }
-
         // Creates a new pool if not exists (lazy auto-registration).
         template <typename T>
         component_pool<T>* get_pool()
@@ -131,6 +123,14 @@ namespace gamecoe
         void retag_subtree_scene(component_pool<components::scene_tag>& scene_tag_pool, entity root, const std::optional<components::scene_tag>& target_tag);
 
     public:
+        // Returns static and unique id for component T
+        template <typename T>
+        static std::uint32_t component_id()
+        {
+            static std::uint32_t s_componentT_id = s_component_id++;
+            return s_componentT_id;
+        }
+
         entities() = default;
         entities(const entities&) = delete;
         entities(entities&& other) noexcept

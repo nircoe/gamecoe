@@ -20,6 +20,7 @@ add_executable(gamecoe_tests
     component/scene_tag_tests.cpp
     component/shape_renderer_tests.cpp
     component/shape_collider_tests.cpp
+    system/system_tests.cpp
 )
 
 target_link_libraries(gamecoe_tests
