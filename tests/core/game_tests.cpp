@@ -17,7 +17,11 @@ using namespace gamecoe;
 namespace gamecoe
 {
     void test_prepare_to_play(game& g) { g.prepare_to_play(); }
-    void test_run_systems(game& g) { g.run_systems(); }
+    void test_run_systems(game& g)
+    {
+        g.m_playing = true;
+        g.run_systems();
+    }
 } // namespace gamecoe
 
 #define SKIP_IF_NO_GAME(result) \
@@ -1095,6 +1099,10 @@ TEST_F(GameTests, RegisteredSystemsRunInRegistrationOrder)
 
 TEST_F(GameTests, RegisterSystemGuarded)
 {
+#ifdef NDEBUG
+    int calls = 0;
+#endif
+
     // Test 1: registering a null function
     {
         void (*null_system)(game&) = nullptr;
@@ -1102,7 +1110,6 @@ TEST_F(GameTests, RegisterSystemGuarded)
 #ifndef NDEBUG
         EXPECT_DEATH(g->register_system(null_system), "system function is null");
 #else
-        int calls = 0;
         g->register_system(null_system);
         g->register_system([&calls](game&) { ++calls; });
         test_run_systems(*g);

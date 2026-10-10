@@ -532,7 +532,7 @@ namespace gamecoe
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 #endif
             run_systems();
-            // Rendering and collision wire in here via later tickets.
+            // Rendering and collision wire in here later.
 
             soundcoe::update();
         }

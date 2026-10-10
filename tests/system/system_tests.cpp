@@ -21,7 +21,11 @@ namespace
 //                SystemTests - system_entry and make_system tests
 //==============================================================================
 
-TEST(SystemTests, MakeSystemSplitsReadsAndWrites)
+class SystemTests : public ::testing::Test
+{
+};
+
+TEST_F(SystemTests, MakeSystemSplitsReadsAndWrites)
 {
     const std::uint32_t transform_id = entities::component_id<components::transform>();
     const std::uint32_t marker_id = entities::component_id<marker>();
@@ -64,13 +68,11 @@ TEST(SystemTests, MakeSystemSplitsReadsAndWrites)
         EXPECT_EQ(entry.reads, std::vector<std::uint32_t>{transform_id});
         EXPECT_EQ(entry.writes, std::vector<std::uint32_t>{marker_id});
     }
-}
 
-TEST(SystemTests, ConstAndNonConstShareOneId)
-{
-    const std::uint32_t marker_id = entities::component_id<marker>();
-
-    EXPECT_EQ(make_system<const marker>(noop_system).reads.front(), marker_id);
-    EXPECT_EQ(make_system<marker>(noop_system).writes.front(), marker_id);
-    EXPECT_NE(marker_id, entities::component_id<components::transform>());
+    // Test 6: const and non-const forms share one id
+    {
+        EXPECT_EQ(make_system<const marker>(noop_system).reads.front(), marker_id);
+        EXPECT_EQ(make_system<marker>(noop_system).writes.front(), marker_id);
+        EXPECT_NE(marker_id, transform_id);
+    }
 }
