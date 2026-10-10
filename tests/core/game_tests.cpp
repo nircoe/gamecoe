@@ -1143,7 +1143,11 @@ TEST_F(GameTests, SecondCreateFailsWhileFirstAlive)
 #endif
 }
 
-TEST(GameMoveTests, MoveConstructorNoDoubleDestroy)
+class GameMoveTests : public ::testing::Test
+{
+};
+
+TEST_F(GameMoveTests, MoveConstructorNoDoubleDestroy)
 {
     test_utils::init_headless_gl();
     auto result = game::create("GameMoveTests.MoveConstructorNoDoubleDestroy", 320, 240, colorcoe::red());
@@ -1157,7 +1161,7 @@ TEST(GameMoveTests, MoveConstructorNoDoubleDestroy)
     EXPECT_EQ(moved.background_color(), colorcoe::red());
 }
 
-TEST(GameMoveTests, MovedFromGameGuardsAgainstUse)
+TEST_F(GameMoveTests, MovedFromGameGuardsAgainstUse)
 {
     test_utils::init_headless_gl();
     auto result = game::create("GameMoveTests.MovedFromGameGuardsAgainstUse");
@@ -1177,7 +1181,7 @@ TEST(GameMoveTests, MovedFromGameGuardsAgainstUse)
 #endif
 }
 
-TEST(GameMoveTests, RegisterSystemOnMovedFromGameGuarded)
+TEST_F(GameMoveTests, RegisterSystemOnMovedFromGameGuarded)
 {
     test_utils::init_headless_gl();
     auto result = game::create("GameMoveTests.RegisterSystemOnMovedFromGameGuarded");
@@ -1195,7 +1199,73 @@ TEST(GameMoveTests, RegisterSystemOnMovedFromGameGuarded)
 #endif
 }
 
-TEST(GameMoveTests, SystemsSurviveGameMove)
+TEST_F(GameMoveTests, MovedFromGameGuardsEveryPublicMethod)
+{
+    test_utils::init_headless_gl();
+    auto result = game::create("GameMoveTests.MovedFromGameGuardsEveryPublicMethod");
+    SKIP_IF_NO_GAME(result);
+
+    result->create_scene(scene_a, build_scene_a);
+
+    game moved(std::move(*result));
+    game &source = *result;
+    const game &const_source = source;
+
+#ifndef NDEBUG
+    EXPECT_DEATH((void)source.entities(), "called on a moved-from game");
+    EXPECT_DEATH((void)const_source.entities(), "called on a moved-from game");
+    EXPECT_DEATH((void)const_source.background_color(), "called on a moved-from game");
+    EXPECT_DEATH(source.set_log_level(logcoe::LogLevel::DEBUG), "called on a moved-from game");
+    EXPECT_DEATH(source.create_scene(scene_c, build_scene_c), "called on a moved-from game");
+    EXPECT_DEATH(source.load_scene(scene_a), "called on a moved-from game");
+    EXPECT_DEATH(source.activate_scene(scene_a), "called on a moved-from game");
+    EXPECT_DEATH(source.deactivate_scene(scene_a), "called on a moved-from game");
+    EXPECT_DEATH(source.unload_scene(scene_a), "called on a moved-from game");
+    EXPECT_DEATH(source.freeze_scene(scene_a), "called on a moved-from game");
+    EXPECT_DEATH(source.unfreeze_scene(scene_a), "called on a moved-from game");
+    EXPECT_DEATH(source.freeze_scenes({scene_a}), "called on a moved-from game");
+    EXPECT_DEATH(source.unfreeze_scenes({scene_a}), "called on a moved-from game");
+    EXPECT_DEATH(source.freeze_all_except(scene_a), "called on a moved-from game");
+    EXPECT_DEATH(source.freeze_all_except({scene_a}), "called on a moved-from game");
+    EXPECT_DEATH(source.unfreeze_all(), "called on a moved-from game");
+    EXPECT_DEATH(source.set_scene_layer(scene_a, 1), "called on a moved-from game");
+    EXPECT_DEATH((void)const_source.has_scene(scene_a), "called on a moved-from game");
+    EXPECT_DEATH((void)const_source.is_scene_frozen(scene_a), "called on a moved-from game");
+    EXPECT_DEATH((void)const_source.status(scene_a), "called on a moved-from game");
+    EXPECT_DEATH((void)const_source.scene_layer(scene_a), "called on a moved-from game");
+    EXPECT_DEATH((void)const_source.scene_entities(scene_a), "called on a moved-from game");
+    EXPECT_DEATH((void)source.create_entity(scene_a), "called on a moved-from game");
+#else
+    (void)source.entities();
+    (void)const_source.entities();
+    EXPECT_EQ(const_source.background_color(), colorcoe::darkSlateGray());
+
+    source.set_log_level(logcoe::LogLevel::DEBUG);
+    source.create_scene(scene_c, build_scene_c);
+    EXPECT_FALSE(const_source.has_scene(scene_c));
+    source.load_scene(scene_a);
+    source.activate_scene(scene_a);
+    source.deactivate_scene(scene_a);
+    source.unload_scene(scene_a);
+    source.freeze_scene(scene_a);
+    source.unfreeze_scene(scene_a);
+    source.freeze_scenes({scene_a});
+    source.unfreeze_scenes({scene_a});
+    source.freeze_all_except(scene_a);
+    source.freeze_all_except({scene_a});
+    source.unfreeze_all();
+    source.set_scene_layer(scene_a, 1);
+
+    EXPECT_FALSE(const_source.has_scene(scene_a));
+    EXPECT_FALSE(const_source.is_scene_frozen(scene_a));
+    EXPECT_EQ(const_source.status(scene_a), scene_status::unloaded);
+    EXPECT_EQ(const_source.scene_layer(scene_a), 0);
+    EXPECT_TRUE(const_source.scene_entities(scene_a).empty());
+    EXPECT_EQ(source.create_entity(scene_a), entity::invalid());
+#endif
+}
+
+TEST_F(GameMoveTests, SystemsSurviveGameMove)
 {
     test_utils::init_headless_gl();
     auto result = game::create("GameMoveTests.SystemsSurviveGameMove");
@@ -1213,7 +1283,7 @@ TEST(GameMoveTests, SystemsSurviveGameMove)
     EXPECT_EQ(calls, 1);
 }
 
-TEST(GameMoveTests, FrozenStateSurvivesGameMove)
+TEST_F(GameMoveTests, FrozenStateSurvivesGameMove)
 {
     test_utils::init_headless_gl();
     auto result = game::create("GameMoveTests.FrozenStateSurvivesGameMove");
