@@ -17,6 +17,11 @@ using namespace gamecoe;
 namespace gamecoe
 {
     void test_prepare_to_play(game& g) { g.prepare_to_play(); }
+    void test_run_systems(game& g)
+    {
+        g.m_playing = true;
+        g.run_systems();
+    }
 } // namespace gamecoe
 
 #define SKIP_IF_NO_GAME(result) \
@@ -35,6 +40,9 @@ namespace
     void build_scene_c(command_buffer &buf) { buf.spawn(); buf.spawn(); }
 
     struct marker { int value; };
+
+    std::vector<int> g_system_order;
+    void free_function_system(game&) { g_system_order.push_back(2); }
 
     void build_scene_hierarchy(command_buffer &buf)
     {
@@ -1072,6 +1080,58 @@ TEST_F(GameTests, FreezeCoexistsWithOtherSceneApis)
     }
 }
 
+TEST_F(GameTests, RegisteredSystemsRunInRegistrationOrder)
+{
+    g_system_order.clear();
+
+    g->register_system([](game&) { g_system_order.push_back(1); });
+    g->register_system(free_function_system);
+    g->register_system<const components::transform, marker>([](game&) { g_system_order.push_back(3); });
+
+    EXPECT_TRUE(g_system_order.empty());
+
+    test_run_systems(*g);
+    EXPECT_EQ(g_system_order, (std::vector<int>{1, 2, 3}));
+
+    test_run_systems(*g);
+    EXPECT_EQ(g_system_order, (std::vector<int>{1, 2, 3, 1, 2, 3}));
+}
+
+TEST_F(GameTests, RegisterSystemGuarded)
+{
+#ifdef NDEBUG
+    int calls = 0;
+#endif
+
+    // Test 1: registering a null function
+    {
+        void (*null_system)(game&) = nullptr;
+
+#ifndef NDEBUG
+        EXPECT_DEATH(g->register_system(null_system), "system function is null");
+#else
+        g->register_system(null_system);
+        g->register_system([&calls](game&) { ++calls; });
+        test_run_systems(*g);
+        EXPECT_EQ(calls, 1);
+#endif
+    }
+
+    // Test 2: registering after play started
+    {
+        test_prepare_to_play(*g);
+
+#ifndef NDEBUG
+        EXPECT_DEATH(g->register_system([](game&) {}), "cannot be registered during game::play");
+#else
+        g_system_order.clear();
+        g->register_system([](game&) { g_system_order.push_back(1); });
+        test_run_systems(*g);
+        EXPECT_TRUE(g_system_order.empty());
+#endif
+    }
+}
+
 TEST_F(GameTests, SecondCreateFailsWhileFirstAlive)
 {
 #ifndef NDEBUG
@@ -1115,6 +1175,42 @@ TEST(GameMoveTests, MovedFromGameGuardsAgainstUse)
     source.set_background_color(colorcoe::blue());
     source.play();
 #endif
+}
+
+TEST(GameMoveTests, RegisterSystemOnMovedFromGameGuarded)
+{
+    test_utils::init_headless_gl();
+    auto result = game::create("GameMoveTests.RegisterSystemOnMovedFromGameGuarded");
+    SKIP_IF_NO_GAME(result);
+
+    game moved(std::move(*result));
+    int calls = 0;
+
+#ifndef NDEBUG
+    EXPECT_DEATH(result->register_system([&calls](game&) { ++calls; }), "called on a moved-from game");
+#else
+    result->register_system([&calls](game&) { ++calls; });
+    test_run_systems(*result);
+    EXPECT_EQ(calls, 0);
+#endif
+}
+
+TEST(GameMoveTests, SystemsSurviveGameMove)
+{
+    test_utils::init_headless_gl();
+    auto result = game::create("GameMoveTests.SystemsSurviveGameMove");
+    SKIP_IF_NO_GAME(result);
+
+    int calls = 0;
+    result->register_system([&calls](game&) { ++calls; });
+
+    game moved(std::move(*result));
+
+    test_run_systems(moved);
+    EXPECT_EQ(calls, 1);
+
+    test_run_systems(*result);
+    EXPECT_EQ(calls, 1);
 }
 
 TEST(GameMoveTests, FrozenStateSurvivesGameMove)
