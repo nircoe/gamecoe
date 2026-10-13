@@ -166,6 +166,9 @@ namespace gamecoe
         static_assert((!hierarchy_component<std::decay_t<Comps>> && ...),
             "game::create_entity(): hierarchy components are managed - use entities::set_parent() instead");
 
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::create_entity(): called on a moved-from game",
+                             entity::invalid());
+
         const scene_metadata* meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::create_entity(): scene is not registered", entity::invalid());
         // entities can only be created into an active scene.

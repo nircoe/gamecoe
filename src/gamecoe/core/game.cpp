@@ -146,11 +146,15 @@ namespace gamecoe
 
     gamecoe::entities& game::entities()
     {
+        GAMECOE_ASSERT_LOG(m_window.has_value(), "game::entities(): called on a moved-from game");
+
         return m_entities;
     }
 
     const gamecoe::entities& game::entities() const
     {
+        GAMECOE_ASSERT_LOG(m_window.has_value(), "game::entities(): called on a moved-from game");
+
         return m_entities;
     }
 
@@ -161,6 +165,8 @@ namespace gamecoe
 
     const Color& game::background_color() const
     {
+        GAMECOE_ASSERT_LOG(m_window.has_value(), "game::background_color(): called on a moved-from game");
+
         return m_background_color;
     }
 
@@ -177,6 +183,8 @@ namespace gamecoe
 
     void game::set_log_level(logcoe::LogLevel level)
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::set_log_level(): called on a moved-from game");
+
         logcoe::setLogLevel(level);
     }
 
@@ -201,11 +209,16 @@ namespace gamecoe
 
     bool game::has_scene(scene_id id) const
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::has_scene(): called on a moved-from game", false);
+
         return m_scenes.contains(id);
     }
 
     scene_status game::status(scene_id id) const
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::status(): called on a moved-from game",
+                             scene_status::unloaded);
+
         const scene_metadata* meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::status(): scene is not registered", scene_status::unloaded);
         return meta->status;
@@ -213,6 +226,8 @@ namespace gamecoe
 
     std::int8_t game::scene_layer(scene_id id) const
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::scene_layer(): called on a moved-from game", 0);
+
         const scene_metadata* meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::scene_layer(): scene is not registered", 0);
         return meta->layer;
@@ -220,6 +235,8 @@ namespace gamecoe
 
     void game::set_scene_layer(scene_id id, int layer)
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::set_scene_layer(): called on a moved-from game");
+
         scene_metadata* meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::set_scene_layer(): scene is not registered");
 
@@ -242,6 +259,8 @@ namespace gamecoe
 
     std::vector<entity> game::scene_entities(scene_id id) const
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::scene_entities(): called on a moved-from game",
+                             std::vector<entity>{});
         GAMECOE_ASSERT_GUARD(has_scene(id), "game::scene_entities(): scene is not registered", std::vector<entity>{});
 
         return m_entities.scene_entities(id);
@@ -249,6 +268,7 @@ namespace gamecoe
 
     void game::create_scene(scene_id id, scene_builder builder, int layer)
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::create_scene(): called on a moved-from game");
         GAMECOE_ASSERT_GUARD(!m_playing, "game::create_scene(): scene cannot be created during game::play()");
         GAMECOE_ASSERT_GUARD(!m_scenes.contains(id), "game::create_scene(): scene is already registered");
         GAMECOE_ASSERT_GUARD(builder != nullptr, "game::create_scene(): scene builder is null");
@@ -259,6 +279,8 @@ namespace gamecoe
 
     void game::load_scene(scene_id id)
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::load_scene(): called on a moved-from game");
+
         scene_metadata* meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::load_scene(): scene is not registered");
 
@@ -286,6 +308,8 @@ namespace gamecoe
 
     void game::activate_scene(scene_id id)
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::activate_scene(): called on a moved-from game");
+
         scene_metadata* meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::activate_scene(): scene is not registered");
 
@@ -327,6 +351,8 @@ namespace gamecoe
 
     void game::deactivate_scene(scene_id id)
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::deactivate_scene(): called on a moved-from game");
+
         scene_metadata* meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::deactivate_scene(): scene is not registered");
 
@@ -355,6 +381,8 @@ namespace gamecoe
 
     void game::unload_scene(scene_id id)
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::unload_scene(): called on a moved-from game");
+
         scene_metadata* meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::unload_scene(): scene is not registered");
 
@@ -404,6 +432,8 @@ namespace gamecoe
 
     void game::freeze_scene(scene_id id)
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::freeze_scene(): called on a moved-from game");
+
         const scene_metadata* meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::freeze_scene(): scene is not registered");
         GAMECOE_ASSERT_GUARD(meta->status == scene_status::active, "game::freeze_scene(): scene is not active");
@@ -422,6 +452,8 @@ namespace gamecoe
 
     void game::unfreeze_scene(scene_id id)
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::unfreeze_scene(): called on a moved-from game");
+
         const scene_metadata* meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::unfreeze_scene(): scene is not registered");
         GAMECOE_ASSERT_GUARD(meta->status == scene_status::active, "game::unfreeze_scene(): scene is not active");
@@ -437,23 +469,31 @@ namespace gamecoe
 
     void game::freeze_scenes(std::initializer_list<scene_id> ids)
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::freeze_scenes(): called on a moved-from game");
+
         for (scene_id id : ids)
             freeze_scene(id);
     }
 
     void game::unfreeze_scenes(std::initializer_list<scene_id> ids)
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::unfreeze_scenes(): called on a moved-from game");
+
         for (scene_id id : ids)
             unfreeze_scene(id);
     }
 
     void game::freeze_all_except(scene_id keep)
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::freeze_all_except(): called on a moved-from game");
+
         freeze_all_except(std::initializer_list<scene_id>{ keep });
     }
 
     void game::freeze_all_except(std::initializer_list<scene_id> keep)
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::freeze_all_except(): called on a moved-from game");
+
         std::size_t frozen_count = 0;
         for (scene_id id : m_active_scenes)
         {
@@ -470,6 +510,8 @@ namespace gamecoe
 
     void game::unfreeze_all()
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::unfreeze_all(): called on a moved-from game");
+
         std::size_t unfrozen_count = 0;
         for (const auto &entry : m_scenes)
             if (m_entities.set_scene_frozen(entry.first, false)) ++unfrozen_count;
@@ -479,6 +521,8 @@ namespace gamecoe
 
     bool game::is_scene_frozen(scene_id id) const
     {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::is_scene_frozen(): called on a moved-from game", false);
+
         GAMECOE_ASSERT_GUARD(has_scene(id), "game::is_scene_frozen(): scene is not registered", false);
         return m_entities.is_scene_frozen(id);
     }
