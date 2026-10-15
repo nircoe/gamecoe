@@ -545,19 +545,24 @@ namespace gamecoe
         m_pending_scene_ops.clear();
     }
 
-    void game::add_system(system_entry &&entry)
+    void game::add_system(systems::entry &&entry_)
     {
         GAMECOE_ASSERT_GUARD(!m_playing, "game::register_system(): system cannot be registered during game::play()");
-        GAMECOE_ASSERT_GUARD(static_cast<bool>(entry.func), "game::register_system(): system function is null");
+        GAMECOE_ASSERT_GUARD(static_cast<bool>(entry_.func), "game::register_system(): system function is null");
+        GAMECOE_ASSERT_GUARD(!entry_.name.empty(), "game::register_system(): system name is empty");
 
-        m_systems.push_back(std::move(entry));
-        logcoe::debug(std::format("game::register_system(): registered system #{} ({} reads, {} writes)",
-            m_systems.size(), m_systems.back().reads.size(), m_systems.back().writes.size()));
+        const bool duplicate = std::ranges::any_of(m_systems,
+            [&entry_](const systems::entry &existing) { return existing.name == entry_.name; });
+        GAMECOE_ASSERT_GUARD(!duplicate, "game::register_system(): system name is already registered");
+
+        m_systems.push_back(std::move(entry_));
+        logcoe::debug(std::format("game::register_system(): registered system \"{}\" (#{}, {} reads, {} writes)",
+            m_systems.back().name, m_systems.size(), m_systems.back().reads.size(), m_systems.back().writes.size()));
     }
 
     void game::run_systems()
     {
-        for (system_entry &entry : m_systems)
+        for (systems::entry &entry : m_systems)
             entry.func(*this);
     }
 

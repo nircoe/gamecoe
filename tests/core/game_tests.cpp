@@ -1084,9 +1084,9 @@ TEST_F(GameTests, RegisteredSystemsRunInRegistrationOrder)
 {
     g_system_order.clear();
 
-    g->register_system([](game&) { g_system_order.push_back(1); });
-    g->register_system(free_function_system);
-    g->register_system<const components::transform, marker>([](game&) { g_system_order.push_back(3); });
+    g->register_system("first", [](game&) { g_system_order.push_back(1); });
+    g->register_system("second", free_function_system);
+    g->register_system<const components::transform, marker>("third", [](game&) { g_system_order.push_back(3); });
 
     EXPECT_TRUE(g_system_order.empty());
 
@@ -1108,10 +1108,10 @@ TEST_F(GameTests, RegisterSystemGuarded)
         void (*null_system)(game&) = nullptr;
 
 #ifndef NDEBUG
-        EXPECT_DEATH(g->register_system(null_system), "system function is null");
+        EXPECT_DEATH(g->register_system("null", null_system), "system function is null");
 #else
-        g->register_system(null_system);
-        g->register_system([&calls](game&) { ++calls; });
+        g->register_system("null", null_system);
+        g->register_system("counter", [&calls](game&) { ++calls; });
         test_run_systems(*g);
         EXPECT_EQ(calls, 1);
 #endif
@@ -1122,14 +1122,42 @@ TEST_F(GameTests, RegisterSystemGuarded)
         test_prepare_to_play(*g);
 
 #ifndef NDEBUG
-        EXPECT_DEATH(g->register_system([](game&) {}), "cannot be registered during game::play");
+        EXPECT_DEATH(g->register_system("late", [](game&) {}), "cannot be registered during game::play");
 #else
         g_system_order.clear();
-        g->register_system([](game&) { g_system_order.push_back(1); });
+        g->register_system("late", [](game&) { g_system_order.push_back(1); });
         test_run_systems(*g);
         EXPECT_TRUE(g_system_order.empty());
 #endif
     }
+}
+
+TEST_F(GameTests, RegisterSystemRejectsDuplicateNames)
+{
+#ifndef NDEBUG
+    g->register_system("dup", [](game&) {});
+    EXPECT_DEATH(g->register_system("dup", [](game&) {}), "already registered");
+#else
+    g_system_order.clear();
+    g->register_system("dup", [](game&) { g_system_order.push_back(1); });
+    g->register_system("dup", [](game&) { g_system_order.push_back(2); });
+    g->register_system("other", [](game&) { g_system_order.push_back(3); });
+    test_run_systems(*g);
+    EXPECT_EQ(g_system_order, (std::vector<int>{1, 3}));
+#endif
+}
+
+TEST_F(GameTests, RegisterSystemRejectsEmptyName)
+{
+#ifndef NDEBUG
+    EXPECT_DEATH(g->register_system("", [](game&) {}), "system name is empty");
+#else
+    g_system_order.clear();
+    g->register_system("", [](game&) { g_system_order.push_back(1); });
+    g->register_system("ok", [](game&) { g_system_order.push_back(2); });
+    test_run_systems(*g);
+    EXPECT_EQ(g_system_order, (std::vector<int>{2}));
+#endif
 }
 
 TEST_F(GameTests, SecondCreateFailsWhileFirstAlive)
@@ -1191,9 +1219,9 @@ TEST_F(GameMoveTests, RegisterSystemOnMovedFromGameGuarded)
     int calls = 0;
 
 #ifndef NDEBUG
-    EXPECT_DEATH(result->register_system([&calls](game&) { ++calls; }), "called on a moved-from game");
+    EXPECT_DEATH(result->register_system("moved", [&calls](game&) { ++calls; }), "called on a moved-from game");
 #else
-    result->register_system([&calls](game&) { ++calls; });
+    result->register_system("counter", [&calls](game&) { ++calls; });
     test_run_systems(*result);
     EXPECT_EQ(calls, 0);
 #endif
@@ -1272,7 +1300,7 @@ TEST_F(GameMoveTests, SystemsSurviveGameMove)
     SKIP_IF_NO_GAME(result);
 
     int calls = 0;
-    result->register_system([&calls](game&) { ++calls; });
+    result->register_system("counter", [&calls](game&) { ++calls; });
 
     game moved(std::move(*result));
 

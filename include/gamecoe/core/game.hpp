@@ -70,7 +70,7 @@ namespace gamecoe
         std::flat_map<scene_id, scene_metadata> m_scenes;
         std::vector<scene_id> m_active_scenes;   // sorted by layer
         std::vector<pending_scene_op> m_pending_scene_ops;
-        std::vector<system_entry> m_systems;
+        std::vector<systems::entry> m_systems;
         Color m_background_color;
         bool m_playing = false;
 
@@ -80,7 +80,7 @@ namespace gamecoe
         void insert_active_scene_sorted(scene_id id, std::int8_t layer);
         void prepare_to_play();
         void run_systems();
-        void add_system(system_entry &&entry);
+        void add_system(systems::entry &&entry_);
 
 #if GAMECOE_USE_TESTCOE
         friend void test_prepare_to_play(game&);
@@ -143,17 +143,18 @@ namespace gamecoe
         entity create_entity(scene_id id, components::transform initial_transform = components::transform{}, Comps&&... comps);
 
         // Systems run once per frame, in registration order. Must be registered before play() starts.
+        // Names must be unique.
         template <typename... Components, typename Func>
-        void register_system(Func&& func);
+        void register_system(std::string name, Func&& func);
 
         void play();
     };
 
     template <typename... Components, typename Func>
-    void game::register_system(Func&& func)
+    void game::register_system(std::string name, Func&& func)
     {
         GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::register_system(): called on a moved-from game");
-        add_system(make_system<Components...>(std::forward<Func>(func)));
+        add_system(systems::create<Components...>(std::move(name), std::forward<Func>(func)));
     }
 
     template <typename... Comps>

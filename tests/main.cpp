@@ -52,7 +52,7 @@ int main(int argc, char **argv)
     std::cout << "Testing Graphics Module: buffer, vertex_array, shader, texture" << std::endl;
     std::cout << "Testing Entity Module: entity, sparse_set, component_pool, entities, extraction, command_buffer" << std::endl;
     std::cout << "Testing Component Module: transform, parent, children, scene_tag, shape_renderer, shape_collider" << std::endl;
-    std::cout << "Testing System Module: system_entry, make_system" << std::endl;
+    std::cout << "Testing System Module: systems::entry, systems::create" << std::endl;
     std::cout << std::endl;
 
     bool askForAll = false;
