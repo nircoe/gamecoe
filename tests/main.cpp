@@ -34,6 +34,7 @@ int printHelp()
     std::cout << "  ShapeRendererTests       - Shape renderer component tests" << std::endl;
     std::cout << "  ShapeColliderTests       - Shape collider component tests" << std::endl;
     std::cout << "  SystemTests              - System entry and access set tests" << std::endl;
+    std::cout << "  SchedulerTests           - System scheduler ordering tests" << std::endl;
     std::cout << std::endl;
     std::cout << "Example usage:" << std::endl;
     std::cout << "  ./gamecoe_tests --suite=EntityTests" << std::endl;
@@ -52,7 +53,7 @@ int main(int argc, char **argv)
     std::cout << "Testing Graphics Module: buffer, vertex_array, shader, texture" << std::endl;
     std::cout << "Testing Entity Module: entity, sparse_set, component_pool, entities, extraction, command_buffer" << std::endl;
     std::cout << "Testing Component Module: transform, parent, children, scene_tag, shape_renderer, shape_collider" << std::endl;
-    std::cout << "Testing System Module: systems::entry, systems::create" << std::endl;
+    std::cout << "Testing System Module: systems::entry, systems::create, systems::scheduler" << std::endl;
     std::cout << std::endl;
 
     bool askForAll = false;
