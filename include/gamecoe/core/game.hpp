@@ -6,6 +6,7 @@
 #include <gamecoe/entity/entities.hpp>
 #include <gamecoe/entity/command_buffer.hpp>
 #include <gamecoe/system/system.hpp>
+#include <gamecoe/system/scheduler.hpp>
 #include <gamecoe/component/scene_tag.hpp>
 #include <gamecoe/utils/error.hpp>
 #include <gamecoe/utils/error_handler.hpp>
@@ -71,6 +72,7 @@ namespace gamecoe
         std::vector<scene_id> m_active_scenes;   // sorted by layer
         std::vector<pending_scene_op> m_pending_scene_ops;
         std::vector<systems::entry> m_systems;
+        std::vector<systems::scheduler::hint> m_system_hints;
         Color m_background_color;
         bool m_playing = false;
 
@@ -142,10 +144,14 @@ namespace gamecoe
         template <typename... Comps>
         entity create_entity(scene_id id, components::transform initial_transform = components::transform{}, Comps&&... comps);
 
-        // Systems run once per frame, in registration order. Must be registered before play() starts.
-        // Names must be unique.
+        // Systems run once per frame, ordered by what they read and write (writers before readers).
+        // Ties keep registration order. Must be registered before play() starts. Names must be unique.
         template <typename... Components, typename Func>
         void register_system(std::string name, Func&& func);
+
+        // Forces `first` to run before `second`, overriding the order derived from component access.
+        // Names are checked when play() starts. Unknown names and contradictory hints are logged and skipped.
+        void run_before(std::string first, std::string second);
 
         void play();
     };
