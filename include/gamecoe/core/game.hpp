@@ -145,7 +145,8 @@ namespace gamecoe
         entity create_entity(scene_id id, components::transform initial_transform = components::transform{}, Comps&&... comps);
 
         // Systems run once per frame, ordered by what they read and write (writers before readers).
-        // Ties keep registration order. Must be registered before play() starts. Names must be unique.
+        // Two writers of the same component keep registration order. Unrelated systems have no promised order.
+        // Must be registered before play() starts. Names must be unique.
         template <typename... Components, typename Func>
         void register_system(std::string name, Func&& func);
 

@@ -1149,11 +1149,11 @@ TEST_F(GameTests, BadRunBeforeHintsAreSkipped)
     g->register_system("b", push_order(2));
     g->run_before("ghost", "a");
     g->run_before("a", "a");
-    g->run_before("a", "b");
     g->run_before("b", "a");
+    g->run_before("a", "b");
 
     test_run_systems(*g);
-    EXPECT_EQ(g_system_order, (std::vector<int>{1, 2}));
+    EXPECT_EQ(g_system_order, (std::vector<int>{2, 1}));
 }
 
 TEST_F(GameTests, RunBeforeGuarded)

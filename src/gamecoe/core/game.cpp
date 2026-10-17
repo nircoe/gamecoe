@@ -80,7 +80,7 @@ namespace gamecoe
                         // TODO: log component names instead of ids.
                         std::string message = std::format(
                             "game::prepare_to_play(): systems {} depend on each other through their component access. "
-                            "\"{}\" runs first, chosen by registration order. "
+                            "\"{}\" runs first. "
                             "Use game::run_before() to choose the order.",
                             join_names(d.systems, ", "), d.systems.front());
                         if (!d.components.empty())
@@ -613,6 +613,8 @@ namespace gamecoe
 
         m_pending_scene_ops.clear();
 
+        std::vector<systems::scheduler::hint> hints = std::move(m_system_hints);
+
         if (m_systems.empty())
         {
             logcoe::warning("game::prepare_to_play(): no systems registered, nothing will run each frame");
@@ -624,7 +626,7 @@ namespace gamecoe
         for (const systems::entry &entry_ : m_systems)
             nodes.push_back({entry_.name, entry_.reads, entry_.writes});
 
-        systems::scheduler::result schedule = systems::scheduler::build_order(nodes, m_system_hints);
+        systems::scheduler::result schedule = systems::scheduler::build_order(nodes, hints);
         log_schedule_diagnostics(schedule.diagnostics);
 
         std::vector<systems::entry> ordered;
@@ -637,9 +639,6 @@ namespace gamecoe
             ordered.push_back(std::move(m_systems[index]));
         }
         m_systems = std::move(ordered);
-
-        m_system_hints.clear();
-        m_system_hints.shrink_to_fit();
 
         logcoe::debug(std::format("game::prepare_to_play(): system order: {}", join_names(ordered_names, ", ")));
     }

@@ -52,6 +52,8 @@ namespace gamecoe
                 "(T, const T, T& and const T& count as the same component)");
             static_assert(std::is_invocable_v<std::decay_t<Func>&, game&>,
                 "systems::create(): func must be callable as func(game&)");
+            static_assert(std::is_copy_constructible_v<std::decay_t<Func>>,
+                "systems::create(): func must be copy-constructible");
 
             entry made{std::move(name), std::function<void(game&)>(std::forward<Func>(func)), {}, {}};
             (detail::add_access<Components>(made), ...);

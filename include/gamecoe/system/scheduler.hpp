@@ -34,8 +34,14 @@ namespace gamecoe
                 hint_contradiction,
             };
 
-            // What systems holds depends on the kind. For cycle_forced it is the forced system first, then the
-            // rest of its cycle. For hint_contradiction it is the path from the skipped hint's second to its first.
+            // What systems holds depends on the kind:
+            //
+            // * cycle_forced: the forced system first, then the rest of its cycle.
+            // * hint_overrides_edge: the hint's first and second system.
+            // * hint_unknown_system: the hint's names that match no system.
+            // * hint_self_reference: the one system named on both sides.
+            // * hint_contradiction: the path from the skipped hint's second to its first.
+            // * components is only used by cycle_forced and hint_overrides_edge.
             struct diagnostic
             {
                 std::vector<std::string> systems;

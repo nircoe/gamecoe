@@ -71,8 +71,8 @@ namespace gamecoe
                     return static_cast<std::size_t>(std::distance(nodes.begin(), it));
                 }
 
-                std::optional<std::vector<std::size_t>> find_hint_path(const std::vector<edge> &edges,
-                    std::size_t n, std::size_t from, std::size_t to)
+                std::optional<std::vector<std::size_t>> find_path(const std::vector<edge> &edges, std::size_t n,
+                    std::size_t from, std::size_t to, bool edge::*follow)
                 {
                     std::vector<std::size_t> predecessor(n, n);
                     std::vector<bool> visited(n, false);
@@ -84,7 +84,7 @@ namespace gamecoe
                         const std::size_t current = queue[head];
                         for (std::size_t next = 0; next < n; ++next)
                         {
-                            if (visited[next] || !edges[current * n + next].hinted)
+                            if (visited[next] || !(edges[current * n + next].*follow))
                                 continue;
                             visited[next] = true;
                             predecessor[next] = current;
@@ -136,7 +136,7 @@ namespace gamecoe
                             continue;
 
                         // A path from `second` back to `first` means this hint would make a loop of hints.
-                        if (const auto path = find_hint_path(edges, n, s, f))
+                        if (const auto path = find_path(edges, n, s, f, &edge::hinted))
                         {
                             diagnostic contradiction{{}, {}, diagnostic_kind::hint_contradiction};
                             for (std::size_t index : *path)
@@ -145,11 +145,24 @@ namespace gamecoe
                             continue;
                         }
 
-                        if (edges[s * n + f].present)
-                            diagnostics.push_back({{nodes[f].name, nodes[s].name}, edges[s * n + f].components,
-                                diagnostic_kind::hint_overrides_edge});
+                        if (const auto path = find_path(edges, n, s, f, &edge::present))
+                        {
+                            diagnostic overrides{
+                                {nodes[f].name, nodes[s].name}, {}, diagnostic_kind::hint_overrides_edge};
+                            for (std::size_t i = 1; i < path->size(); ++i)
+                            {
+                                const std::vector<std::uint32_t> &ids =
+                                    edges[(*path)[i - 1] * n + (*path)[i]].components;
+                                overrides.components.insert(overrides.components.end(), ids.begin(), ids.end());
+                            }
+                            std::ranges::sort(overrides.components);
+                            const auto duplicates = std::ranges::unique(overrides.components);
+                            overrides.components.erase(duplicates.begin(), duplicates.end());
+                            diagnostics.push_back(std::move(overrides));
+                        }
                         edges[s * n + f] = {};
-                        edges[f * n + s] = {{}, true, true};
+                        edges[f * n + s].present = true;
+                        edges[f * n + s].hinted = true;
                     }
                 }
 

@@ -268,6 +268,30 @@ TEST_F(SchedulerTests, ForcingKeepsEdgesAmongRemainingGroupMembers)
     }
 }
 
+TEST_F(SchedulerTests, CycleDiagnosticListsOnlyEdgesInsideTheCycle)
+{
+    const std::vector<scheduler::node> nodes{
+        make_node("a", {comp_x}, {comp_y, comp_z}), make_node("b", {comp_y}, {comp_x}), make_node("c", {comp_z})};
+    const scheduler::result result = scheduler::build_order(nodes);
+    EXPECT_EQ(result.order, (std::vector<std::size_t>{0, 1, 2}));
+    ASSERT_EQ(result.diagnostics.size(), 1u);
+    expect_diagnostic(result, 0, scheduler::diagnostic_kind::cycle_forced, {"a", "b"});
+    EXPECT_EQ(result.diagnostics[0].components, (std::vector<std::uint32_t>{comp_x, comp_y}));
+}
+
+TEST_F(SchedulerTests, PlacedSystemsDoNotLinkLaterCycles)
+{
+    const std::vector<scheduler::node> nodes{
+        make_node("a", {1, 3}, {0}), make_node("b", {1}, {0}), make_node("c", {0, 1}, {3}),
+        make_node("d", {0}, {1, 2})};
+    const scheduler::result result = scheduler::build_order(nodes);
+    EXPECT_EQ(ordered_names(nodes, result), (std::vector<std::string>{"a", "b", "d", "c"}));
+    ASSERT_EQ(result.diagnostics.size(), 2u);
+    expect_diagnostic(result, 0, scheduler::diagnostic_kind::cycle_forced, {"a", "b", "c", "d"});
+    expect_diagnostic(result, 1, scheduler::diagnostic_kind::cycle_forced, {"b", "d"});
+    EXPECT_EQ(result.diagnostics[1].components, (std::vector<std::uint32_t>{0, 1}));
+}
+
 TEST_F(SchedulerTests, EmptyAndSingleInput)
 {
     // Test 1: empty input
@@ -465,9 +489,38 @@ TEST_F(SchedulerTests, HintAndDerivedEdgesCanStillCycle)
     const std::vector<scheduler::hint> hints{{"a", "b"}};
     const scheduler::result result = scheduler::build_order(nodes, hints);
     EXPECT_EQ(result.order, (std::vector<std::size_t>{0, 1, 2}));
-    ASSERT_EQ(result.diagnostics.size(), 1u);
-    expect_diagnostic(result, 0, scheduler::diagnostic_kind::cycle_forced, {"a", "b", "c"});
+    ASSERT_EQ(result.diagnostics.size(), 2u);
+    expect_diagnostic(result, 0, scheduler::diagnostic_kind::hint_overrides_edge, {"a", "b"});
+    expect_diagnostic(result, 1, scheduler::diagnostic_kind::cycle_forced, {"a", "b", "c"});
+    EXPECT_EQ(result.diagnostics[1].components, (std::vector<std::uint32_t>{comp_x, comp_y}));
+}
+
+TEST_F(SchedulerTests, AgreeingHintKeepsTheDerivedEdgeComponents)
+{
+    const std::vector<scheduler::node> nodes{
+        make_node("a", {2}, {0}), make_node("b", {0}, {1}), make_node("c", {1}, {2})};
+    const std::vector<scheduler::hint> hints{{"a", "b"}};
+    const scheduler::result result = scheduler::build_order(nodes, hints);
+    EXPECT_EQ(result.order, (std::vector<std::size_t>{0, 1, 2}));
+    ASSERT_EQ(result.diagnostics.size(), 2u);
+    expect_diagnostic(result, 0, scheduler::diagnostic_kind::hint_overrides_edge, {"a", "b"});
+    EXPECT_EQ(result.diagnostics[0].components, (std::vector<std::uint32_t>{1, 2}));
+    expect_diagnostic(result, 1, scheduler::diagnostic_kind::cycle_forced, {"a", "b", "c"});
+    EXPECT_EQ(result.diagnostics[1].components, (std::vector<std::uint32_t>{0, 1, 2}));
+}
+
+TEST_F(SchedulerTests, HintOverDerivedPathIsReported)
+{
+    const std::vector<scheduler::node> nodes{
+        make_node("A", {}, {comp_x}), make_node("B", {comp_x}, {comp_y}), make_node("C", {comp_y})};
+    const std::vector<scheduler::hint> hints{{"C", "A"}};
+    const scheduler::result result = scheduler::build_order(nodes, hints);
+    EXPECT_EQ(ordered_names(nodes, result), (std::vector<std::string>{"B", "C", "A"}));
+    ASSERT_EQ(result.diagnostics.size(), 2u);
+    expect_diagnostic(result, 0, scheduler::diagnostic_kind::hint_overrides_edge, {"C", "A"});
     EXPECT_EQ(result.diagnostics[0].components, (std::vector<std::uint32_t>{comp_x, comp_y}));
+    expect_diagnostic(result, 1, scheduler::diagnostic_kind::cycle_forced, {"B", "A", "C"});
+    EXPECT_EQ(result.diagnostics[1].components, (std::vector<std::uint32_t>{comp_x, comp_y}));
 }
 
 TEST_F(SchedulerTests, ForcingNeverBreaksAnAcceptedHint)
@@ -477,7 +530,20 @@ TEST_F(SchedulerTests, ForcingNeverBreaksAnAcceptedHint)
     const std::vector<scheduler::hint> hints{{"b", "a"}};
     const scheduler::result result = scheduler::build_order(nodes, hints);
     EXPECT_EQ(result.order, (std::vector<std::size_t>{1, 0, 2}));
+    ASSERT_EQ(result.diagnostics.size(), 2u);
+    EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::hint_overrides_edge);
+    EXPECT_EQ(result.diagnostics[1].kind, scheduler::diagnostic_kind::cycle_forced);
+    EXPECT_EQ(result.diagnostics[1].systems.front(), "b");
+}
+
+TEST_F(SchedulerTests, ForcingIgnoresHintedPredecessorsAlreadyPlaced)
+{
+    const std::vector<scheduler::node> nodes{
+        make_node("a", {comp_x}, {comp_y}), make_node("c", {comp_y}, {comp_x}), make_node("p")};
+    const std::vector<scheduler::hint> hints{{"p", "a"}};
+    const scheduler::result result = scheduler::build_order(nodes, hints);
+    EXPECT_EQ(result.order, (std::vector<std::size_t>{2, 0, 1}));
     ASSERT_EQ(result.diagnostics.size(), 1u);
-    EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::cycle_forced);
-    EXPECT_EQ(result.diagnostics[0].systems.front(), "b");
+    expect_diagnostic(result, 0, scheduler::diagnostic_kind::cycle_forced, {"a", "c"});
+    EXPECT_EQ(result.diagnostics[0].components, (std::vector<std::uint32_t>{comp_x, comp_y}));
 }
