@@ -38,9 +38,9 @@ namespace gamecoe
             // rest of its cycle. For hint_contradiction it is the path from the skipped hint's second to its first.
             struct diagnostic
             {
-                diagnostic_kind kind;
                 std::vector<std::string> systems;
                 std::vector<std::uint32_t> components;
+                diagnostic_kind kind;
             };
 
             struct result

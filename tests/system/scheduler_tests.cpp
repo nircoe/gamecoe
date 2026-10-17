@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <numeric>
+#include <source_location>
 #include <string>
 #include <utility>
 #include <vector>
@@ -26,6 +28,15 @@ namespace
         for (std::size_t index : result.order)
             names.push_back(nodes[index].name);
         return names;
+    }
+
+    void expect_diagnostic(const scheduler::result &result, std::size_t index, scheduler::diagnostic_kind kind,
+        const std::vector<std::string> &systems, std::source_location where = std::source_location::current())
+    {
+        SCOPED_TRACE(std::format("called from line {}", where.line()));
+        ASSERT_LT(index, result.diagnostics.size());
+        EXPECT_EQ(result.diagnostics[index].kind, kind);
+        EXPECT_EQ(result.diagnostics[index].systems, systems);
     }
 } // namespace
 
@@ -170,8 +181,7 @@ TEST_F(SchedulerTests, AccessCycleFallsBackToRegistrationOrder)
         const scheduler::result result = scheduler::build_order(nodes);
         EXPECT_EQ(result.order, (std::vector<std::size_t>{0, 1}));
         ASSERT_EQ(result.diagnostics.size(), 1u);
-        EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::cycle_forced);
-        EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"a", "b"}));
+        expect_diagnostic(result, 0, scheduler::diagnostic_kind::cycle_forced, {"a", "b"});
         EXPECT_EQ(result.diagnostics[0].components, (std::vector<std::uint32_t>{comp_x, comp_y}));
     }
 
@@ -182,8 +192,7 @@ TEST_F(SchedulerTests, AccessCycleFallsBackToRegistrationOrder)
         const scheduler::result result = scheduler::build_order(nodes);
         EXPECT_EQ(result.order, (std::vector<std::size_t>{0, 1}));
         ASSERT_EQ(result.diagnostics.size(), 1u);
-        EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::cycle_forced);
-        EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"b", "a"}));
+        expect_diagnostic(result, 0, scheduler::diagnostic_kind::cycle_forced, {"b", "a"});
     }
 
     // Test 3: three-system cycle is one group
@@ -193,8 +202,7 @@ TEST_F(SchedulerTests, AccessCycleFallsBackToRegistrationOrder)
         const scheduler::result result = scheduler::build_order(nodes);
         EXPECT_EQ(result.order, (std::vector<std::size_t>{0, 1, 2}));
         ASSERT_EQ(result.diagnostics.size(), 1u);
-        EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::cycle_forced);
-        EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"a", "b", "c"}));
+        expect_diagnostic(result, 0, scheduler::diagnostic_kind::cycle_forced, {"a", "b", "c"});
     }
 
     // Test 4: a ready system registered after the cycle runs before any forcing
@@ -204,8 +212,7 @@ TEST_F(SchedulerTests, AccessCycleFallsBackToRegistrationOrder)
         const scheduler::result result = scheduler::build_order(nodes);
         EXPECT_EQ(result.order, (std::vector<std::size_t>{2, 0, 1}));
         ASSERT_EQ(result.diagnostics.size(), 1u);
-        EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::cycle_forced);
-        EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"a", "b"}));
+        expect_diagnostic(result, 0, scheduler::diagnostic_kind::cycle_forced, {"a", "b"});
     }
 }
 
@@ -218,8 +225,7 @@ TEST_F(SchedulerTests, ForcingNeverBreaksAcyclicEdges)
     const scheduler::result result = scheduler::build_order(nodes);
     EXPECT_EQ(result.order, (std::vector<std::size_t>{3, 1, 0, 2}));
     ASSERT_EQ(result.diagnostics.size(), 1u);
-    EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::cycle_forced);
-    EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"a", "b"}));
+    expect_diagnostic(result, 0, scheduler::diagnostic_kind::cycle_forced, {"a", "b"});
 }
 
 TEST_F(SchedulerTests, ChainedCyclesForceTheUpstreamGroupFirst)
@@ -231,10 +237,8 @@ TEST_F(SchedulerTests, ChainedCyclesForceTheUpstreamGroupFirst)
     const scheduler::result result = scheduler::build_order(nodes);
     EXPECT_EQ(result.order, (std::vector<std::size_t>{2, 3, 0, 1}));
     ASSERT_EQ(result.diagnostics.size(), 2u);
-    EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::cycle_forced);
-    EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"a", "b"}));
-    EXPECT_EQ(result.diagnostics[1].kind, scheduler::diagnostic_kind::cycle_forced);
-    EXPECT_EQ(result.diagnostics[1].systems, (std::vector<std::string>{"c", "d"}));
+    expect_diagnostic(result, 0, scheduler::diagnostic_kind::cycle_forced, {"a", "b"});
+    expect_diagnostic(result, 1, scheduler::diagnostic_kind::cycle_forced, {"c", "d"});
 }
 
 TEST_F(SchedulerTests, ForcingKeepsEdgesAmongRemainingGroupMembers)
@@ -246,8 +250,7 @@ TEST_F(SchedulerTests, ForcingKeepsEdgesAmongRemainingGroupMembers)
         const scheduler::result result = scheduler::build_order(nodes);
         EXPECT_EQ(result.order, (std::vector<std::size_t>{0, 2, 1}));
         ASSERT_EQ(result.diagnostics.size(), 1u);
-        EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::cycle_forced);
-        EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"a", "c", "b"}));
+        expect_diagnostic(result, 0, scheduler::diagnostic_kind::cycle_forced, {"a", "c", "b"});
     }
 
     // Test 2: every pair cyclic forces twice
@@ -258,11 +261,9 @@ TEST_F(SchedulerTests, ForcingKeepsEdgesAmongRemainingGroupMembers)
         const scheduler::result result = scheduler::build_order(nodes);
         EXPECT_EQ(result.order, (std::vector<std::size_t>{0, 1, 2}));
         ASSERT_EQ(result.diagnostics.size(), 2u);
-        EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::cycle_forced);
-        EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"a", "b", "c"}));
+        expect_diagnostic(result, 0, scheduler::diagnostic_kind::cycle_forced, {"a", "b", "c"});
         EXPECT_EQ(result.diagnostics[0].components, (std::vector<std::uint32_t>{comp_x, comp_y, comp_z}));
-        EXPECT_EQ(result.diagnostics[1].kind, scheduler::diagnostic_kind::cycle_forced);
-        EXPECT_EQ(result.diagnostics[1].systems, (std::vector<std::string>{"b", "c"}));
+        expect_diagnostic(result, 1, scheduler::diagnostic_kind::cycle_forced, {"b", "c"});
         EXPECT_EQ(result.diagnostics[1].components, (std::vector<std::uint32_t>{comp_y, comp_z}));
     }
 }
@@ -306,8 +307,7 @@ TEST_F(SchedulerTests, HintOverridesDerivedEdge)
         const scheduler::result result = scheduler::build_order(nodes, hints);
         EXPECT_EQ(ordered_names(nodes, result), (std::vector<std::string>{"reader", "writer"}));
         ASSERT_EQ(result.diagnostics.size(), 1u);
-        EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::hint_overrides_edge);
-        EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"reader", "writer"}));
+        expect_diagnostic(result, 0, scheduler::diagnostic_kind::hint_overrides_edge, {"reader", "writer"});
         EXPECT_EQ(result.diagnostics[0].components, (std::vector<std::uint32_t>{comp_x}));
     }
 
@@ -372,8 +372,7 @@ TEST_F(SchedulerTests, UnknownHintNamesAreReportedAndSkipped)
         const scheduler::result result = scheduler::build_order(nodes, hints);
         EXPECT_EQ(result.order, expected_order);
         ASSERT_EQ(result.diagnostics.size(), 1u);
-        EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::hint_unknown_system);
-        EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"ghost"}));
+        expect_diagnostic(result, 0, scheduler::diagnostic_kind::hint_unknown_system, {"ghost"});
         EXPECT_TRUE(result.diagnostics[0].components.empty());
     }
 
@@ -383,8 +382,7 @@ TEST_F(SchedulerTests, UnknownHintNamesAreReportedAndSkipped)
         const scheduler::result result = scheduler::build_order(nodes, hints);
         EXPECT_EQ(result.order, expected_order);
         ASSERT_EQ(result.diagnostics.size(), 1u);
-        EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::hint_unknown_system);
-        EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"ghost"}));
+        expect_diagnostic(result, 0, scheduler::diagnostic_kind::hint_unknown_system, {"ghost"});
     }
 
     // Test 3: both unknown give one diagnostic
@@ -393,8 +391,7 @@ TEST_F(SchedulerTests, UnknownHintNamesAreReportedAndSkipped)
         const scheduler::result result = scheduler::build_order(nodes, hints);
         EXPECT_EQ(result.order, expected_order);
         ASSERT_EQ(result.diagnostics.size(), 1u);
-        EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::hint_unknown_system);
-        EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"ghost", "phantom"}));
+        expect_diagnostic(result, 0, scheduler::diagnostic_kind::hint_unknown_system, {"ghost", "phantom"});
     }
 }
 
@@ -405,8 +402,7 @@ TEST_F(SchedulerTests, SelfHintIsReportedAndSkipped)
     const scheduler::result result = scheduler::build_order(nodes, hints);
     EXPECT_EQ(result.order, (std::vector<std::size_t>{0, 1}));
     ASSERT_EQ(result.diagnostics.size(), 1u);
-    EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::hint_self_reference);
-    EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"a"}));
+    expect_diagnostic(result, 0, scheduler::diagnostic_kind::hint_self_reference, {"a"});
     EXPECT_TRUE(result.diagnostics[0].components.empty());
 }
 
@@ -420,8 +416,7 @@ TEST_F(SchedulerTests, ContradictoryHintsAreReported)
         const scheduler::result result = scheduler::build_order(nodes, hints);
         EXPECT_EQ(ordered_names(nodes, result), (std::vector<std::string>{"a", "b", "c"}));
         ASSERT_EQ(result.diagnostics.size(), 1u);
-        EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::hint_contradiction);
-        EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"a", "b"}));
+        expect_diagnostic(result, 0, scheduler::diagnostic_kind::hint_contradiction, {"a", "b"});
         EXPECT_TRUE(result.diagnostics[0].components.empty());
     }
 
@@ -431,8 +426,7 @@ TEST_F(SchedulerTests, ContradictoryHintsAreReported)
         const scheduler::result result = scheduler::build_order(nodes, hints);
         EXPECT_EQ(ordered_names(nodes, result), (std::vector<std::string>{"b", "a", "c"}));
         ASSERT_EQ(result.diagnostics.size(), 1u);
-        EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::hint_contradiction);
-        EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"b", "a"}));
+        expect_diagnostic(result, 0, scheduler::diagnostic_kind::hint_contradiction, {"b", "a"});
     }
 
     // Test 3: the hint closing a three-hint cycle is skipped
@@ -441,8 +435,7 @@ TEST_F(SchedulerTests, ContradictoryHintsAreReported)
         const scheduler::result result = scheduler::build_order(nodes, hints);
         EXPECT_EQ(ordered_names(nodes, result), (std::vector<std::string>{"a", "b", "c"}));
         ASSERT_EQ(result.diagnostics.size(), 1u);
-        EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::hint_contradiction);
-        EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"a", "b", "c"}));
+        expect_diagnostic(result, 0, scheduler::diagnostic_kind::hint_contradiction, {"a", "b", "c"});
     }
 }
 
@@ -473,8 +466,7 @@ TEST_F(SchedulerTests, HintAndDerivedEdgesCanStillCycle)
     const scheduler::result result = scheduler::build_order(nodes, hints);
     EXPECT_EQ(result.order, (std::vector<std::size_t>{0, 1, 2}));
     ASSERT_EQ(result.diagnostics.size(), 1u);
-    EXPECT_EQ(result.diagnostics[0].kind, scheduler::diagnostic_kind::cycle_forced);
-    EXPECT_EQ(result.diagnostics[0].systems, (std::vector<std::string>{"a", "b", "c"}));
+    expect_diagnostic(result, 0, scheduler::diagnostic_kind::cycle_forced, {"a", "b", "c"});
     EXPECT_EQ(result.diagnostics[0].components, (std::vector<std::uint32_t>{comp_x, comp_y}));
 }
 

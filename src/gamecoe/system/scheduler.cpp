@@ -14,8 +14,9 @@ namespace gamecoe
             {
                 struct edge
                 {
-                    bool present = false;
                     std::vector<std::uint32_t> components;
+                    bool present = false;
+                    bool hinted = false;
                 };
 
                 std::vector<std::uint32_t> intersect(const std::vector<std::uint32_t> &a,
@@ -47,20 +48,15 @@ namespace gamecoe
                             std::vector<std::uint32_t> forward = intersect(nodes[i].writes, nodes[j].reads);
                             std::vector<std::uint32_t> backward = intersect(nodes[j].writes, nodes[i].reads);
 
+                            // No dependency between the pair, but both write the same thing.
+                            // Keep registration order.
                             if (forward.empty() && backward.empty())
-                            {
-                                // No dependency between `from` and `to`, but both write the same thing.
-                                // Keep registration order.
-                                std::vector<std::uint32_t> ww = intersect(nodes[i].writes, nodes[j].writes);
-                                if (!ww.empty())
-                                    edges[i * n + j] = {true, std::move(ww)};
-                                continue;
-                            }
+                                forward = intersect(nodes[i].writes, nodes[j].writes);
 
                             if (!forward.empty())
-                                edges[i * n + j] = {true, std::move(forward)};
+                                edges[i * n + j] = {std::move(forward), true};
                             if (!backward.empty())
-                                edges[j * n + i] = {true, std::move(backward)};
+                                edges[j * n + i] = {std::move(backward), true};
                         }
                     }
 
@@ -75,7 +71,7 @@ namespace gamecoe
                     return static_cast<std::size_t>(std::distance(nodes.begin(), it));
                 }
 
-                std::optional<std::vector<std::size_t>> find_hint_path(const std::vector<bool> &hint_edge,
+                std::optional<std::vector<std::size_t>> find_hint_path(const std::vector<edge> &edges,
                     std::size_t n, std::size_t from, std::size_t to)
                 {
                     std::vector<std::size_t> predecessor(n, n);
@@ -88,7 +84,7 @@ namespace gamecoe
                         const std::size_t current = queue[head];
                         for (std::size_t next = 0; next < n; ++next)
                         {
-                            if (visited[next] || !hint_edge[current * n + next])
+                            if (visited[next] || !edges[current * n + next].hinted)
                                 continue;
                             visited[next] = true;
                             predecessor[next] = current;
@@ -106,11 +102,10 @@ namespace gamecoe
                     return path;
                 }
 
-                std::vector<bool> apply_hints(std::span<const node> nodes, std::span<const hint> hints,
-                    std::vector<edge> &edges, std::vector<diagnostic> &diagnostics)
+                void apply_hints(std::span<const node> nodes, std::span<const hint> hints, std::vector<edge> &edges,
+                    std::vector<diagnostic> &diagnostics)
                 {
                     const std::size_t n = nodes.size();
-                    std::vector<bool> hint_edge(n * n, false);
 
                     for (const hint &h : hints)
                     {
@@ -119,7 +114,7 @@ namespace gamecoe
 
                         if (!first || !second)
                         {
-                            diagnostic unknown{diagnostic_kind::hint_unknown_system, {}, {}};
+                            diagnostic unknown{{}, {}, diagnostic_kind::hint_unknown_system};
                             if (!first)
                                 unknown.systems.push_back(h.first);
                             if (!second)
@@ -133,32 +128,29 @@ namespace gamecoe
 
                         if (f == s)
                         {
-                            diagnostics.push_back({diagnostic_kind::hint_self_reference, {nodes[f].name}, {}});
+                            diagnostics.push_back({{nodes[f].name}, {}, diagnostic_kind::hint_self_reference});
                             continue;
                         }
 
-                        if (hint_edge[f * n + s])
+                        if (edges[f * n + s].hinted)
                             continue;
 
                         // A path from `second` back to `first` means this hint would make a loop of hints.
-                        if (const auto path = find_hint_path(hint_edge, n, s, f))
+                        if (const auto path = find_hint_path(edges, n, s, f))
                         {
-                            diagnostic contradiction{diagnostic_kind::hint_contradiction, {}, {}};
+                            diagnostic contradiction{{}, {}, diagnostic_kind::hint_contradiction};
                             for (std::size_t index : *path)
                                 contradiction.systems.push_back(nodes[index].name);
                             diagnostics.push_back(std::move(contradiction));
                             continue;
                         }
 
-                        hint_edge[f * n + s] = true;
                         if (edges[s * n + f].present)
-                            diagnostics.push_back({diagnostic_kind::hint_overrides_edge,
-                                {nodes[f].name, nodes[s].name}, edges[s * n + f].components});
+                            diagnostics.push_back({{nodes[f].name, nodes[s].name}, edges[s * n + f].components,
+                                diagnostic_kind::hint_overrides_edge});
                         edges[s * n + f] = {};
-                        edges[f * n + s] = {true, {}};
+                        edges[f * n + s] = {{}, true, true};
                     }
-
-                    return hint_edge;
                 }
 
                 // reach[i * n + j] is true when `j` can be reached from `i` through systems not placed yet.
@@ -173,8 +165,6 @@ namespace gamecoe
 
                     for (std::size_t k = 0; k < n; ++k)
                     {
-                        if (placed[k])
-                            continue;
                         for (std::size_t i = 0; i < n; ++i)
                         {
                             if (!reach[i * n + k])
@@ -190,7 +180,7 @@ namespace gamecoe
 
                 // Only a system that nothing outside its cycle feeds into can be forced.
                 // Never one that is waiting on a hint.
-                bool is_candidate(std::size_t f, const std::vector<bool> &reach, const std::vector<bool> &hint_edge,
+                bool is_candidate(std::size_t f, const std::vector<bool> &reach, const std::vector<edge> &edges,
                     const std::vector<bool> &placed)
                 {
                     const std::size_t n = placed.size();
@@ -200,21 +190,20 @@ namespace gamecoe
                             continue;
                         if (reach[p * n + f] && !reach[f * n + p])
                             return false;
-                        if (hint_edge[p * n + f])
+                        if (edges[p * n + f].hinted)
                             return false;
                     }
                     return true;
                 }
 
                 std::size_t force_cycle(std::span<const node> nodes, const std::vector<edge> &edges,
-                    const std::vector<bool> &hint_edge, const std::vector<bool> &placed,
-                    std::vector<diagnostic> &diagnostics)
+                    const std::vector<bool> &placed, std::vector<diagnostic> &diagnostics)
                 {
                     const std::size_t n = nodes.size();
                     const std::vector<bool> reach = reachability(edges, placed);
 
                     std::size_t f = 0;
-                    while (placed[f] || !is_candidate(f, reach, hint_edge, placed))
+                    while (placed[f] || !is_candidate(f, reach, edges, placed))
                         ++f;
 
                     std::vector<std::size_t> group{f};
@@ -222,7 +211,7 @@ namespace gamecoe
                         if (p != f && !placed[p] && reach[f * n + p] && reach[p * n + f])
                             group.push_back(p);
 
-                    diagnostic forced{diagnostic_kind::cycle_forced, {}, {}};
+                    diagnostic forced{{}, {}, diagnostic_kind::cycle_forced};
                     for (std::size_t from : group)
                     {
                         forced.systems.push_back(nodes[from].name);
@@ -244,7 +233,7 @@ namespace gamecoe
                 {
                     const std::size_t n = placed.size();
                     for (std::size_t p = 0; p < n; ++p)
-                        if (p != i && !placed[p] && edges[p * n + i].present)
+                        if (!placed[p] && edges[p * n + i].present)
                             return true;
                     return false;
                 }
@@ -255,7 +244,7 @@ namespace gamecoe
                 const std::size_t n = nodes.size();
                 result out;
                 std::vector<edge> edges = derive_edges(nodes);
-                const std::vector<bool> hint_edge = apply_hints(nodes, hints, edges, out.diagnostics);
+                apply_hints(nodes, hints, edges, out.diagnostics);
 
                 std::vector<bool> placed(n, false);
                 out.order.reserve(n);
@@ -268,7 +257,7 @@ namespace gamecoe
 
                     // Nothing is ready, so what is left is stuck on a cycle. Force one system to break it.
                     if (next == n)
-                        next = force_cycle(nodes, edges, hint_edge, placed, out.diagnostics);
+                        next = force_cycle(nodes, edges, placed, out.diagnostics);
 
                     placed[next] = true;
                     out.order.push_back(next);

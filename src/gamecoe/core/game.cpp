@@ -628,18 +628,19 @@ namespace gamecoe
         log_schedule_diagnostics(schedule.diagnostics);
 
         std::vector<systems::entry> ordered;
+        std::vector<std::string> ordered_names;
         ordered.reserve(m_systems.size());
+        ordered_names.reserve(m_systems.size());
         for (std::size_t index : schedule.order)
+        {
+            ordered_names.push_back(m_systems[index].name);
             ordered.push_back(std::move(m_systems[index]));
+        }
         m_systems = std::move(ordered);
 
         m_system_hints.clear();
         m_system_hints.shrink_to_fit();
 
-        std::vector<std::string> ordered_names;
-        ordered_names.reserve(m_systems.size());
-        for (const systems::entry &entry_ : m_systems)
-            ordered_names.push_back(entry_.name);
         logcoe::debug(std::format("game::prepare_to_play(): system order: {}", join_names(ordered_names, ", ")));
     }
 
@@ -651,7 +652,7 @@ namespace gamecoe
 
         const bool duplicate = std::ranges::any_of(m_systems,
             [&entry_](const systems::entry &existing) { return existing.name == entry_.name; });
-        
+
         if (duplicate)
         {
             logcoe::error(std::format("game::register_system(): system \"{}\" is already registered", entry_.name));
