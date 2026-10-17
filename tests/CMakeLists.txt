@@ -21,6 +21,7 @@ add_executable(gamecoe_tests
     component/shape_renderer_tests.cpp
     component/shape_collider_tests.cpp
     system/system_tests.cpp
+    system/scheduler_tests.cpp
 )
 
 target_link_libraries(gamecoe_tests

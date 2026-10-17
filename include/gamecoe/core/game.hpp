@@ -6,6 +6,7 @@
 #include <gamecoe/entity/entities.hpp>
 #include <gamecoe/entity/command_buffer.hpp>
 #include <gamecoe/system/system.hpp>
+#include <gamecoe/system/scheduler.hpp>
 #include <gamecoe/component/scene_tag.hpp>
 #include <gamecoe/utils/error.hpp>
 #include <gamecoe/utils/error_handler.hpp>
@@ -70,7 +71,8 @@ namespace gamecoe
         std::flat_map<scene_id, scene_metadata> m_scenes;
         std::vector<scene_id> m_active_scenes;   // sorted by layer
         std::vector<pending_scene_op> m_pending_scene_ops;
-        std::vector<system_entry> m_systems;
+        std::vector<systems::entry> m_systems;
+        std::vector<systems::scheduler::hint> m_system_hints;
         Color m_background_color;
         bool m_playing = false;
 
@@ -80,7 +82,7 @@ namespace gamecoe
         void insert_active_scene_sorted(scene_id id, std::int8_t layer);
         void prepare_to_play();
         void run_systems();
-        void add_system(system_entry &&entry);
+        void add_system(systems::entry &&entry_);
 
 #if GAMECOE_USE_TESTCOE
         friend void test_prepare_to_play(game&);
@@ -142,18 +144,24 @@ namespace gamecoe
         template <typename... Comps>
         entity create_entity(scene_id id, components::transform initial_transform = components::transform{}, Comps&&... comps);
 
-        // Systems run once per frame, in registration order. Must be registered before play() starts.
+        // Systems run once per frame, ordered by what they read and write (writers before readers).
+        // Two writers of the same component keep registration order. Unrelated systems have no promised order.
+        // Must be registered before play() starts. Names must be unique.
         template <typename... Components, typename Func>
-        void register_system(Func&& func);
+        void register_system(std::string name, Func&& func);
+
+        // Forces `first` to run before `second`, overriding the order derived from component access.
+        // Names are checked when play() starts. Unknown names and contradictory hints are logged and skipped.
+        void run_before(std::string first, std::string second);
 
         void play();
     };
 
     template <typename... Components, typename Func>
-    void game::register_system(Func&& func)
+    void game::register_system(std::string name, Func&& func)
     {
         GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::register_system(): called on a moved-from game");
-        add_system(make_system<Components...>(std::forward<Func>(func)));
+        add_system(systems::create<Components...>(std::move(name), std::forward<Func>(func)));
     }
 
     template <typename... Comps>

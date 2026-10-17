@@ -19,7 +19,7 @@ namespace gamecoe
     void test_prepare_to_play(game& g) { g.prepare_to_play(); }
     void test_run_systems(game& g)
     {
-        g.m_playing = true;
+        if (!g.m_playing) g.prepare_to_play();
         g.run_systems();
     }
 } // namespace gamecoe
@@ -40,9 +40,12 @@ namespace
     void build_scene_c(command_buffer &buf) { buf.spawn(); buf.spawn(); }
 
     struct marker { int value; };
+    struct world_transform_marker { int value; };
+    struct camera_matrices_marker { int value; };
 
     std::vector<int> g_system_order;
     void free_function_system(game&) { g_system_order.push_back(2); }
+    auto push_order(int value) { return [value](game &) { g_system_order.push_back(value); }; }
 
     void build_scene_hierarchy(command_buffer &buf)
     {
@@ -1084,9 +1087,9 @@ TEST_F(GameTests, RegisteredSystemsRunInRegistrationOrder)
 {
     g_system_order.clear();
 
-    g->register_system([](game&) { g_system_order.push_back(1); });
-    g->register_system(free_function_system);
-    g->register_system<const components::transform, marker>([](game&) { g_system_order.push_back(3); });
+    g->register_system("first", push_order(1));
+    g->register_system("second", free_function_system);
+    g->register_system<const components::transform, marker>("third", push_order(3));
 
     EXPECT_TRUE(g_system_order.empty());
 
@@ -1095,6 +1098,97 @@ TEST_F(GameTests, RegisteredSystemsRunInRegistrationOrder)
 
     test_run_systems(*g);
     EXPECT_EQ(g_system_order, (std::vector<int>{1, 2, 3, 1, 2, 3}));
+}
+
+TEST_F(GameTests, SystemsRunInScheduledOrder)
+{
+    g_system_order.clear();
+
+    g->register_system<const world_transform_marker, const camera_matrices_marker>(
+        "render_system", push_order(3));
+    g->register_system<const world_transform_marker, camera_matrices_marker>(
+        "camera_system", push_order(2));
+    g->register_system<world_transform_marker>("transform_system", push_order(1));
+
+    test_run_systems(*g);
+    EXPECT_EQ(g_system_order, (std::vector<int>{1, 2, 3}));
+
+    test_run_systems(*g);
+    EXPECT_EQ(g_system_order, (std::vector<int>{1, 2, 3, 1, 2, 3}));
+}
+
+TEST_F(GameTests, RunBeforeOverridesDerivedOrder)
+{
+    g_system_order.clear();
+
+    g->register_system<marker>("w", push_order(1));
+    g->register_system<const marker>("r", push_order(2));
+    g->run_before("r", "w");
+
+    test_run_systems(*g);
+    EXPECT_EQ(g_system_order, (std::vector<int>{2, 1}));
+}
+
+TEST_F(GameTests, RunBeforeResolvesForwardReferences)
+{
+    g_system_order.clear();
+
+    g->run_before("late", "early");
+    g->register_system("early", push_order(1));
+    g->register_system("late", push_order(2));
+
+    test_run_systems(*g);
+    EXPECT_EQ(g_system_order, (std::vector<int>{2, 1}));
+}
+
+TEST_F(GameTests, BadRunBeforeHintsAreSkipped)
+{
+    g_system_order.clear();
+
+    g->register_system("a", push_order(1));
+    g->register_system("b", push_order(2));
+    g->run_before("ghost", "a");
+    g->run_before("a", "a");
+    g->run_before("b", "a");
+    g->run_before("a", "b");
+
+    test_run_systems(*g);
+    EXPECT_EQ(g_system_order, (std::vector<int>{2, 1}));
+}
+
+TEST_F(GameTests, RunBeforeGuarded)
+{
+    g_system_order.clear();
+
+    g->register_system("a", push_order(1));
+    g->register_system("b", push_order(2));
+    test_prepare_to_play(*g);
+
+#ifndef NDEBUG
+    EXPECT_DEATH(g->run_before("b", "a"), "cannot be added during game::play");
+#else
+    g->run_before("b", "a");
+    test_run_systems(*g);
+    EXPECT_EQ(g_system_order, (std::vector<int>{1, 2}));
+#endif
+}
+
+TEST_F(GameTests, PrepareToPlayRunsOnce)
+{
+    g_system_order.clear();
+
+    g->register_system<marker>("w", push_order(1));
+    g->register_system<const marker>("r", push_order(2));
+    g->run_before("r", "w");
+    test_prepare_to_play(*g);
+
+#ifndef NDEBUG
+    EXPECT_DEATH(test_prepare_to_play(*g), "already playing");
+#else
+    test_prepare_to_play(*g);
+    test_run_systems(*g);
+    EXPECT_EQ(g_system_order, (std::vector<int>{2, 1}));
+#endif
 }
 
 TEST_F(GameTests, RegisterSystemGuarded)
@@ -1108,10 +1202,10 @@ TEST_F(GameTests, RegisterSystemGuarded)
         void (*null_system)(game&) = nullptr;
 
 #ifndef NDEBUG
-        EXPECT_DEATH(g->register_system(null_system), "system function is null");
+        EXPECT_DEATH(g->register_system("null", null_system), "system function is null");
 #else
-        g->register_system(null_system);
-        g->register_system([&calls](game&) { ++calls; });
+        g->register_system("null", null_system);
+        g->register_system("counter", [&calls](game&) { ++calls; });
         test_run_systems(*g);
         EXPECT_EQ(calls, 1);
 #endif
@@ -1122,14 +1216,42 @@ TEST_F(GameTests, RegisterSystemGuarded)
         test_prepare_to_play(*g);
 
 #ifndef NDEBUG
-        EXPECT_DEATH(g->register_system([](game&) {}), "cannot be registered during game::play");
+        EXPECT_DEATH(g->register_system("late", [](game&) {}), "cannot be registered during game::play");
 #else
         g_system_order.clear();
-        g->register_system([](game&) { g_system_order.push_back(1); });
+        g->register_system("late", push_order(1));
         test_run_systems(*g);
         EXPECT_TRUE(g_system_order.empty());
 #endif
     }
+}
+
+TEST_F(GameTests, RegisterSystemRejectsDuplicateNames)
+{
+#ifndef NDEBUG
+    g->register_system("dup", [](game&) {});
+    EXPECT_DEATH(g->register_system("dup", [](game&) {}), "already registered");
+#else
+    g_system_order.clear();
+    g->register_system("dup", push_order(1));
+    g->register_system("dup", push_order(2));
+    g->register_system("other", push_order(3));
+    test_run_systems(*g);
+    EXPECT_EQ(g_system_order, (std::vector<int>{1, 3}));
+#endif
+}
+
+TEST_F(GameTests, RegisterSystemRejectsEmptyName)
+{
+#ifndef NDEBUG
+    EXPECT_DEATH(g->register_system("", [](game&) {}), "system name is empty");
+#else
+    g_system_order.clear();
+    g->register_system("", push_order(1));
+    g->register_system("ok", push_order(2));
+    test_run_systems(*g);
+    EXPECT_EQ(g_system_order, (std::vector<int>{2}));
+#endif
 }
 
 TEST_F(GameTests, SecondCreateFailsWhileFirstAlive)
@@ -1191,11 +1313,35 @@ TEST_F(GameMoveTests, RegisterSystemOnMovedFromGameGuarded)
     int calls = 0;
 
 #ifndef NDEBUG
-    EXPECT_DEATH(result->register_system([&calls](game&) { ++calls; }), "called on a moved-from game");
+    EXPECT_DEATH(result->register_system("moved", [&calls](game&) { ++calls; }), "called on a moved-from game");
 #else
-    result->register_system([&calls](game&) { ++calls; });
+    result->register_system("counter", [&calls](game&) { ++calls; });
     test_run_systems(*result);
     EXPECT_EQ(calls, 0);
+#endif
+}
+
+TEST_F(GameMoveTests, RunBeforeOnMovedFromGameGuarded)
+{
+    test_utils::init_headless_gl();
+    auto result = game::create("GameMoveTests.RunBeforeOnMovedFromGameGuarded");
+    SKIP_IF_NO_GAME(result);
+
+    g_system_order.clear();
+    result->register_system("a", push_order(1));
+    result->register_system("b", push_order(2));
+
+    game moved(std::move(*result));
+
+#ifndef NDEBUG
+    EXPECT_DEATH(result->run_before("a", "b"), "called on a moved-from game");
+#else
+    result->run_before("b", "a");
+    test_run_systems(*result);
+    EXPECT_TRUE(g_system_order.empty());
+
+    test_run_systems(moved);
+    EXPECT_EQ(g_system_order, (std::vector<int>{1, 2}));
 #endif
 }
 
@@ -1271,16 +1417,21 @@ TEST_F(GameMoveTests, SystemsSurviveGameMove)
     auto result = game::create("GameMoveTests.SystemsSurviveGameMove");
     SKIP_IF_NO_GAME(result);
 
+    g_system_order.clear();
     int calls = 0;
-    result->register_system([&calls](game&) { ++calls; });
+    result->register_system("counter", [&calls](game&) { ++calls; g_system_order.push_back(1); });
+    result->register_system("second", push_order(2));
+    result->run_before("second", "counter");
 
     game moved(std::move(*result));
 
     test_run_systems(moved);
     EXPECT_EQ(calls, 1);
+    EXPECT_EQ(g_system_order, (std::vector<int>{2, 1}));
 
     test_run_systems(*result);
     EXPECT_EQ(calls, 1);
+    EXPECT_EQ(g_system_order, (std::vector<int>{2, 1}));
 }
 
 TEST_F(GameMoveTests, FrozenStateSurvivesGameMove)

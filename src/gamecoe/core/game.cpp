@@ -6,10 +6,12 @@
 #include <inputcoe.hpp>
 #include <timecoe.hpp>
 #include <algorithm>
+#include <cassert>
 #include <format>
 #include <limits>
 #include <utility>
 #include <string>
+#include <string_view>
 
 #if GAMECOE_USE_OPENGL
     #include <glad/gl.h>
@@ -42,6 +44,71 @@ namespace gamecoe
             }
             return static_cast<std::int8_t>(layer);
         }
+
+        std::string join_names(const std::vector<std::string> &names, std::string_view separator)
+        {
+            std::string joined;
+            for (std::size_t i = 0; i < names.size(); ++i)
+            {
+                if (i > 0) joined += separator;
+                joined += std::format("\"{}\"", names[i]);
+            }
+            return joined;
+        }
+
+        std::string join_ids(const std::vector<std::uint32_t> &ids)
+        {
+            std::string joined;
+            for (std::size_t i = 0; i < ids.size(); ++i)
+            {
+                if (i > 0) joined += ", ";
+                joined += std::to_string(ids[i]);
+            }
+            return joined;
+        }
+
+        void log_schedule_diagnostics(const std::vector<systems::scheduler::diagnostic> &diagnostics)
+        {
+            using enum systems::scheduler::diagnostic_kind;
+
+            for (const systems::scheduler::diagnostic &d : diagnostics)
+            {
+                switch (d.kind)
+                {
+                    case cycle_forced:
+                    {
+                        // TODO: log component names instead of ids.
+                        std::string message = std::format(
+                            "game::prepare_to_play(): systems {} depend on each other through their component access. "
+                            "\"{}\" runs first. "
+                            "Use game::run_before() to choose the order.",
+                            join_names(d.systems, ", "), d.systems.front());
+                        if (!d.components.empty())
+                            message += std::format(" Conflicting component ids: {}", join_ids(d.components));
+                        logcoe::warning(message);
+                        break;
+                    }
+                    case hint_overrides_edge:
+                        // TODO: log component names instead of ids.
+                        logcoe::debug(std::format("game::prepare_to_play(): run_before(\"{}\", \"{}\") "
+                            "changes the order derived from component access (component ids: {})",
+                            d.systems[0], d.systems[1], join_ids(d.components)));
+                        break;
+                    case hint_unknown_system:
+                        logcoe::warning(std::format("game::run_before(): unknown system {}, hint skipped",
+                            join_names(d.systems, ", ")));
+                        break;
+                    case hint_self_reference:
+                        logcoe::warning(std::format("game::run_before(): \"{}\" cannot run before itself, hint skipped",
+                            d.systems.front()));
+                        break;
+                    case hint_contradiction:
+                        logcoe::warning(std::format("game::run_before(\"{}\", \"{}\") contradicts earlier hints ({}), "
+                            "hint skipped", d.systems.back(), d.systems.front(), join_names(d.systems, " -> ")));
+                        break;
+                }
+            }
+        }
     }
 
     game::game(gamecoe::window &&main_window, const Color &background_color)
@@ -54,6 +121,7 @@ namespace gamecoe
         : m_entities(std::move(other.m_entities)), m_window(std::move(other.m_window)),
           m_scenes(std::move(other.m_scenes)), m_active_scenes(std::move(other.m_active_scenes)),
           m_pending_scene_ops(std::move(other.m_pending_scene_ops)), m_systems(std::move(other.m_systems)),
+          m_system_hints(std::move(other.m_system_hints)),
           m_background_color(other.m_background_color), m_playing(other.m_playing)
     {
         other.m_window.reset();
@@ -529,6 +597,7 @@ namespace gamecoe
 
     void game::prepare_to_play()
     {
+        GAMECOE_ASSERT_GUARD(!m_playing, "game::play(): game is already playing");
         m_playing = true;
 
         for (const pending_scene_op &op : m_pending_scene_ops)
@@ -543,21 +612,69 @@ namespace gamecoe
         }
 
         m_pending_scene_ops.clear();
+
+        std::vector<systems::scheduler::hint> hints = std::move(m_system_hints);
+
+        if (m_systems.empty())
+        {
+            logcoe::warning("game::prepare_to_play(): no systems registered, nothing will run each frame");
+            return;
+        }
+
+        std::vector<systems::scheduler::node> nodes;
+        nodes.reserve(m_systems.size());
+        for (const systems::entry &entry_ : m_systems)
+            nodes.push_back({entry_.name, entry_.reads, entry_.writes});
+
+        systems::scheduler::result schedule = systems::scheduler::build_order(nodes, hints);
+        log_schedule_diagnostics(schedule.diagnostics);
+
+        std::vector<systems::entry> ordered;
+        std::vector<std::string> ordered_names;
+        ordered.reserve(m_systems.size());
+        ordered_names.reserve(m_systems.size());
+        for (std::size_t index : schedule.order)
+        {
+            ordered_names.push_back(m_systems[index].name);
+            ordered.push_back(std::move(m_systems[index]));
+        }
+        m_systems = std::move(ordered);
+
+        logcoe::debug(std::format("game::prepare_to_play(): system order: {}", join_names(ordered_names, ", ")));
     }
 
-    void game::add_system(system_entry &&entry)
+    void game::add_system(systems::entry &&entry_)
     {
         GAMECOE_ASSERT_GUARD(!m_playing, "game::register_system(): system cannot be registered during game::play()");
-        GAMECOE_ASSERT_GUARD(static_cast<bool>(entry.func), "game::register_system(): system function is null");
+        GAMECOE_ASSERT_GUARD(static_cast<bool>(entry_.func), "game::register_system(): system function is null");
+        GAMECOE_ASSERT_GUARD(!entry_.name.empty(), "game::register_system(): system name is empty");
 
-        m_systems.push_back(std::move(entry));
-        logcoe::debug(std::format("game::register_system(): registered system #{} ({} reads, {} writes)",
-            m_systems.size(), m_systems.back().reads.size(), m_systems.back().writes.size()));
+        const bool duplicate = std::ranges::any_of(m_systems,
+            [&entry_](const systems::entry &existing) { return existing.name == entry_.name; });
+
+        if (duplicate)
+        {
+            logcoe::error(std::format("game::register_system(): system \"{}\" is already registered", entry_.name));
+            assert(false && "game::register_system(): system name is already registered");
+            return;
+        }
+
+        m_systems.push_back(std::move(entry_));
+        logcoe::debug(std::format("game::register_system(): registered system \"{}\" (#{}, {} reads, {} writes)",
+            m_systems.back().name, m_systems.size(), m_systems.back().reads.size(), m_systems.back().writes.size()));
+    }
+
+    void game::run_before(std::string first, std::string second)
+    {
+        GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::run_before(): called on a moved-from game");
+        GAMECOE_ASSERT_GUARD(!m_playing, "game::run_before(): hint cannot be added during game::play()");
+
+        m_system_hints.push_back({std::move(first), std::move(second)});
     }
 
     void game::run_systems()
     {
-        for (system_entry &entry : m_systems)
+        for (systems::entry &entry : m_systems)
             entry.func(*this);
     }
 
