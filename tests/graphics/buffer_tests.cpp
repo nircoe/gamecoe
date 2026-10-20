@@ -3,6 +3,8 @@
 #include <gamecoe/graphics/buffer.hpp>
 #include <gamecoe_config.hpp>
 #include <glad/gl.h>
+#include <cstdint>
+#include <utility>
 
 using namespace gamecoe;
 using namespace gamecoe::graphics;

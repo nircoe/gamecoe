@@ -6,6 +6,7 @@
 #include <GLFW/glfw3.h>
 #include <support/test_utils.hpp>
 #include <optional>
+#include <utility>
 
 #define SKIP_IF_NO_GL() SKIP_IF_NOT(s_gl_ready, "no display/GL context available")
 

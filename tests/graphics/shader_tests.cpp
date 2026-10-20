@@ -5,6 +5,9 @@
 #include <glad/gl.h>
 #include <filesystem>
 #include <fstream>
+#include <cstdint>
+#include <string>
+#include <utility>
 
 using namespace gamecoe;
 using namespace gamecoe::graphics;

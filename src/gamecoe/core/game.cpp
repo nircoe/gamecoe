@@ -7,6 +7,7 @@
 #include <timecoe.hpp>
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <format>
 #include <limits>
 #include <utility>

@@ -3,6 +3,9 @@
 #include <set>
 #include <map>
 #include <unordered_set>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 
 using namespace gamecoe;
 

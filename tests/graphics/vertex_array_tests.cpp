@@ -1,6 +1,9 @@
 #include <gtest/gtest.h>
 #include <support/gl_context.hpp>
 #include <gamecoe/graphics/vertex_array.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <utility>
 
 using namespace gamecoe;
 using namespace gamecoe::graphics;

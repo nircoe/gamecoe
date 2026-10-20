@@ -129,8 +129,8 @@ namespace gamecoe
 
         void erase(entity e) { if (auto i = index(e)) erase_at(i.value()); }
 
-        std::size_t active_size() const noexcept { return m_active_count; }
-        bool is_active(std::uint32_t dense_index) const noexcept { return dense_index < m_active_count; }
+        [[nodiscard]] std::size_t active_size() const noexcept { return m_active_count; }
+        [[nodiscard]] bool is_active(std::uint32_t dense_index) const noexcept { return dense_index < m_active_count; }
 
         void deactivate(entity e) { if (auto i = index(e)) deactivate_at(i.value()); }
         void activate(entity e)   { if (auto i = index(e)) activate_at(i.value()); }
@@ -155,14 +155,14 @@ namespace gamecoe
             return partner;
         }
 
-        std::optional<std::uint32_t> index(entity e) const
+        [[nodiscard]] std::optional<std::uint32_t> index(entity e) const
         {
             if (!contains(e)) return std::nullopt;
 
             return unpack_dense_index((*m_sparse[page_index(e)])[index_in_page(e)]);
         }
 
-        bool contains(entity e) const noexcept
+        [[nodiscard]] bool contains(entity e) const noexcept
         {
             auto page_i = page_index(e);
 
@@ -170,15 +170,15 @@ namespace gamecoe
                    unpack_generation((*m_sparse[page_i])[index_in_page(e)]) == e.generation();
         }
 
-        entity get_entity_at_index(std::size_t index) const noexcept
+        [[nodiscard]] entity get_entity_at_index(std::size_t index) const noexcept
         {
             GAMECOE_ASSERT_GUARD(index < m_dense.size(), "sparse_set::get_entity_at_index(): index out of bounds", entity::invalid());
             return m_dense[index];
         }
 
         void clear() { m_sparse.clear(); m_dense.clear(); m_active_count = 0; }
-        std::size_t size() const noexcept { return m_dense.size(); }
-        bool empty() const noexcept { return m_dense.empty(); }
+        [[nodiscard]] std::size_t size() const noexcept { return m_dense.size(); }
+        [[nodiscard]] bool empty() const noexcept { return m_dense.empty(); }
 
         // Iterators invalidated by insert/erase (dense array reallocation)
         entity *begin() noexcept { return m_dense.data(); }

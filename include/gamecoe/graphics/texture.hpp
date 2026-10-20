@@ -34,8 +34,8 @@ namespace gamecoe
 
             void bind() const;
             void unbind() const;
-            std::uint32_t id() const;
-            std::int32_t dimension() const;
+            [[nodiscard]] std::uint32_t id() const noexcept;
+            [[nodiscard]] std::int32_t dimension() const noexcept;
 
             [[nodiscard]] std::expected<void, error> set_parameters(
                 texture_wrap wrap_s, texture_wrap wrap_t, texture_filter min_filter, texture_filter mag_filter);

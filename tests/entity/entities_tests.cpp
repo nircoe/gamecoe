@@ -8,6 +8,8 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include <cstddef>
+#include <cstdint>
 #include <support/test_utils.hpp>
 #include <support/scene_id.hpp>
 
@@ -1291,7 +1293,7 @@ TEST_F(EntitiesTests, SceneGetterInvalidEntityIsGuarded)
     entity e = mgr.create({}, scene_id::test_scene1);
     mgr.destroy(e);
 
-    EXPECT_DEATH(mgr.scene(e), "entities::scene\\(\\): entity is not valid");
+    EXPECT_DEATH((void)mgr.scene(e), "entities::scene\\(\\): entity is not valid");
 }
 #else
 TEST_F(EntitiesTests, SceneGetterInvalidEntityReturnsNull)

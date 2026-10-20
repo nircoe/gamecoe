@@ -7,5 +7,5 @@ namespace timecoe
         void update();
     } // namespace detail
 
-    float delta_time() noexcept;
+    [[nodiscard]] float delta_time() noexcept;
 } // namespace timecoe

@@ -8,6 +8,7 @@
 #include <gamecoe/system/system.hpp>
 #include <gamecoe/system/scheduler.hpp>
 #include <gamecoe/component/scene_tag.hpp>
+#include <gamecoe/component/transform.hpp>
 #include <gamecoe/utils/error.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 #include <gamecoe_config.hpp>
@@ -105,11 +106,11 @@ namespace gamecoe
 #endif
             );
 
-        gamecoe::entities& entities();
-        const gamecoe::entities& entities() const;
-        const gamecoe::window* window() const;
+        [[nodiscard]] gamecoe::entities& entities();
+        [[nodiscard]] const gamecoe::entities& entities() const;
+        [[nodiscard]] const gamecoe::window* window() const;
 
-        const color& background_color() const;
+        [[nodiscard]] const color& background_color() const;
         void set_background_color(const color &background_color);
 
         void set_log_level(logcoe::LogLevel level);
@@ -132,14 +133,14 @@ namespace gamecoe
         void freeze_all_except(std::initializer_list<scene_id> keep);
 
         void unfreeze_all();
-        bool is_scene_frozen(scene_id id) const;
+        [[nodiscard]] bool is_scene_frozen(scene_id id) const;
 
-        bool has_scene(scene_id id) const;
-        scene_status status(scene_id id) const;
+        [[nodiscard]] bool has_scene(scene_id id) const;
+        [[nodiscard]] scene_status status(scene_id id) const;
         void set_scene_layer(scene_id id, int layer);
-        std::int8_t scene_layer(scene_id id) const;
+        [[nodiscard]] std::int8_t scene_layer(scene_id id) const;
         // Returns a snapshot of the scene's entities (active + inactive)
-        std::vector<entity> scene_entities(scene_id id) const;
+        [[nodiscard]] std::vector<entity> scene_entities(scene_id id) const;
 
         template <typename... Comps>
         entity create_entity(scene_id id, components::transform initial_transform = components::transform{}, Comps&&... comps);

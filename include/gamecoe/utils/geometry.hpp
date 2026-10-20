@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <glm/glm.hpp>
 
@@ -10,7 +11,7 @@ namespace gamecoe
     {
         namespace triangle
         {
-            constexpr std::array<glm::vec3, 3> vertices()
+            [[nodiscard]] constexpr std::array<glm::vec3, 3> vertices() noexcept
             {
                 return
                 {
@@ -20,7 +21,7 @@ namespace gamecoe
                 };
             }
 
-            constexpr std::array<float, 9> vertices_flat()
+            [[nodiscard]] constexpr std::array<float, 9> vertices_flat() noexcept
             {
                 constexpr auto verts = vertices();
                 return
@@ -31,7 +32,7 @@ namespace gamecoe
                 };
             }
 
-            constexpr std::array<std::uint32_t, 3> indices()
+            [[nodiscard]] constexpr std::array<std::uint32_t, 3> indices() noexcept
             {
                 return
                 {
@@ -43,7 +44,7 @@ namespace gamecoe
 
         namespace rectangle
         {
-            constexpr std::array<glm::vec3, 4> vertices()
+            [[nodiscard]] constexpr std::array<glm::vec3, 4> vertices() noexcept
             {
                 return
                 {
@@ -54,7 +55,7 @@ namespace gamecoe
                 };
             }
 
-            constexpr std::array<float, 12> vertices_flat()
+            [[nodiscard]] constexpr std::array<float, 12> vertices_flat() noexcept
             {
                 constexpr auto verts = vertices();
                 return
@@ -66,7 +67,7 @@ namespace gamecoe
                 };
             }
 
-            constexpr std::array<std::uint32_t, 6> indices()
+            [[nodiscard]] constexpr std::array<std::uint32_t, 6> indices() noexcept
             {
                 return
                 {
@@ -78,7 +79,7 @@ namespace gamecoe
 
         namespace box
         {
-            constexpr std::array<glm::vec3, 8> vertices()
+            [[nodiscard]] constexpr std::array<glm::vec3, 8> vertices() noexcept
             {
                 return
                 {
@@ -93,7 +94,7 @@ namespace gamecoe
                 };
             }
 
-            constexpr std::array<float, 24> vertices_flat()
+            [[nodiscard]] constexpr std::array<float, 24> vertices_flat() noexcept
             {
                 constexpr auto verts = vertices();
                 return
@@ -109,7 +110,7 @@ namespace gamecoe
                 };
             }
 
-            constexpr std::array<std::uint32_t, 36> indices()
+            [[nodiscard]] constexpr std::array<std::uint32_t, 36> indices() noexcept
             {
                 return
                 {
@@ -125,16 +126,16 @@ namespace gamecoe
 
         namespace circle
         {
-            const std::array<glm::vec3, 16>& vertices();
+            [[nodiscard]] const std::array<glm::vec3, 16>& vertices();
         } // namespace circle
 
         namespace sphere
         {
-            const std::array<glm::vec3, 42>& vertices();
+            [[nodiscard]] const std::array<glm::vec3, 42>& vertices();
         } // namespace sphere
 
         template<std::size_t N>
-        std::array<glm::vec3, N> transform_vertices(const std::array<glm::vec3, N> &vertices, const glm::mat4 &matrix)
+        [[nodiscard]] std::array<glm::vec3, N> transform_vertices(const std::array<glm::vec3, N> &vertices, const glm::mat4 &matrix)
         {
             std::array<glm::vec3, N> transformed;
             for (std::size_t i = 0; i < N; ++i)

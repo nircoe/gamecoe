@@ -11,6 +11,7 @@
 #include <optional>
 #include <utility>
 #include <vector>
+#include <cstddef>
 
 using namespace gamecoe;
 
@@ -620,7 +621,7 @@ TEST_F(GameTests, UnregisteredSceneGuarded)
     // Test 5: status on an unregistered scene id
     {
 #ifndef NDEBUG
-        EXPECT_SCENE_UNREGISTERED_DEATH(g->status(scene_a));
+        EXPECT_SCENE_UNREGISTERED_DEATH((void)g->status(scene_a));
 #else
         // Release: guard-return, unregistered id is a well-defined unloaded rather than UB.
         EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
@@ -631,7 +632,7 @@ TEST_F(GameTests, UnregisteredSceneGuarded)
 #ifndef NDEBUG
 TEST_F(GameTests, SceneEntitiesUnregisteredSceneIsGuarded)
 {
-    EXPECT_DEATH(g->scene_entities(scene_a), "game::scene_entities\\(\\): scene is not registered");
+    EXPECT_DEATH((void)g->scene_entities(scene_a), "game::scene_entities\\(\\): scene is not registered");
 }
 #else
 TEST_F(GameTests, SceneEntitiesUnregisteredSceneReturnsEmpty)
@@ -1012,7 +1013,7 @@ TEST_F(GameTests, FreezeGuarded)
     // Test 5: is_scene_frozen on an unregistered scene
     {
 #ifndef NDEBUG
-        EXPECT_SCENE_UNREGISTERED_DEATH(g->is_scene_frozen(unregistered));
+        EXPECT_SCENE_UNREGISTERED_DEATH((void)g->is_scene_frozen(unregistered));
 #else
         // Release: guard-return, an unregistered scene is not frozen.
         EXPECT_FALSE(g->is_scene_frozen(unregistered));

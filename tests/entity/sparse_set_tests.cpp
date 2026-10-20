@@ -2,6 +2,9 @@
 #include <gamecoe/entity/sparse_set.hpp>
 #include <algorithm>
 #include <vector>
+#include <cstddef>
+#include <cstdint>
+#include <utility>
 
 using namespace gamecoe;
 

@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <gamecoe/entity/entity.hpp>
 #include <gamecoe/entity/sparse_set.hpp>
+#include <utility>
 #include <vector>
 #include <gamecoe/utils/error_handler.hpp>
 
@@ -26,14 +28,14 @@ namespace gamecoe
         virtual void remove(entity e) = 0;
         virtual void clear() = 0;
 
-        bool contains(entity e) const noexcept { return m_entities.contains(e); }
-        std::size_t size() const noexcept { return m_entities.size(); }
-        bool empty() const noexcept { return m_entities.empty(); }
+        [[nodiscard]] bool contains(entity e) const noexcept { return m_entities.contains(e); }
+        [[nodiscard]] std::size_t size() const noexcept { return m_entities.size(); }
+        [[nodiscard]] bool empty() const noexcept { return m_entities.empty(); }
         void reserve(std::size_t capacity) { m_entities.reserve(capacity); do_reserve(capacity); }
 
-        std::size_t active_size() const noexcept { return m_entities.active_size(); }
+        [[nodiscard]] std::size_t active_size() const noexcept { return m_entities.active_size(); }
 
-        bool is_active(entity e) const noexcept
+        [[nodiscard]] bool is_active(entity e) const noexcept
         {
             auto index = m_entities.index(e);
             return index && m_entities.is_active(index.value());
@@ -61,7 +63,7 @@ namespace gamecoe
                 swap_components(i, partner.value());
         }
 
-        entity get_entity_at_index(std::size_t index) const noexcept { return m_entities.get_entity_at_index(index); }
+        [[nodiscard]] entity get_entity_at_index(std::size_t index) const noexcept { return m_entities.get_entity_at_index(index); }
     };
 
     template <typename T>
@@ -133,13 +135,13 @@ namespace gamecoe
             return &m_components[target_index];
         }
 
-        T* try_get(entity e)
+        [[nodiscard]] T* try_get(entity e)
         {
             auto index = m_entities.index(e);
             return index ? &m_components[index.value()] : nullptr;
         }
 
-        const T* try_get(entity e) const
+        [[nodiscard]] const T* try_get(entity e) const
         {
             auto index = m_entities.index(e);
             return index ? &m_components[index.value()] : nullptr;

@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 #include <gamecoe/system/scheduler.hpp>
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <format>

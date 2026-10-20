@@ -3,6 +3,10 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
+#include <cstddef>
+#include <cstdint>
+#include <type_traits>
+#include <utility>
 
 using namespace gamecoe;
 

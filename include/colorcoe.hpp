@@ -24,24 +24,24 @@ namespace gamecoe
         color &operator=(const color &color_) = default;
         ~color() = default;
 
-        bool operator==(const color &other) const;
-        bool operator!=(const color &other) const;
+        [[nodiscard]] bool operator==(const color &other) const noexcept;
+        [[nodiscard]] bool operator!=(const color &other) const noexcept;
 
-        std::uint8_t red() const;
-        std::uint8_t green() const;
-        std::uint8_t blue() const;
-        std::uint8_t alpha() const;
+        [[nodiscard]] std::uint8_t red() const noexcept;
+        [[nodiscard]] std::uint8_t green() const noexcept;
+        [[nodiscard]] std::uint8_t blue() const noexcept;
+        [[nodiscard]] std::uint8_t alpha() const noexcept;
 
-        glm::vec4 normalized() const;
+        [[nodiscard]] glm::vec4 normalized() const noexcept;
 
-        std::uint32_t rgba() const;
+        [[nodiscard]] std::uint32_t rgba() const noexcept;
 
         // Clamps values to [0.0f, 1.0f]
-        static color from_normalized(float red, float green, float blue, float alpha = 1.0f);
+        [[nodiscard]] static color from_normalized(float red, float green, float blue, float alpha = 1.0f);
         // color::from_hex("#RRGGBBAA") or color::from_hex("#RRGGBB")
         [[nodiscard]] static std::expected<color, error> from_hex(const std::string &hex);
         // Lerps between color a and color b by t
-        static color lerp(const color &a, const color &b, float t);
+        [[nodiscard]] static color lerp(const color &a, const color &b, float t);
     };
 
 } // namespace gamecoe

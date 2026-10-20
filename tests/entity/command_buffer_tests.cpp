@@ -5,6 +5,7 @@
 #include <gamecoe/component/scene_tag.hpp>
 #include <gamecoe/component/parent_child.hpp>
 #include <support/test_utils.hpp>
+#include <vector>
 
 using namespace gamecoe;
 using namespace test_utils;

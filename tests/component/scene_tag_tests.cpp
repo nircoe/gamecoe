@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <gamecoe/component/scene_tag.hpp>
 #include <support/scene_id.hpp>
+#include <cstdint>
 
 using namespace gamecoe;
 

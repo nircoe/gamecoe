@@ -33,8 +33,8 @@ namespace gamecoe
 
             [[nodiscard]] std::expected<void, error> upload_data(const void *data, std::size_t size);
 
-            std::uint32_t id() const;
-            std::uint32_t target() const;
+            [[nodiscard]] std::uint32_t id() const noexcept;
+            [[nodiscard]] std::uint32_t target() const noexcept;
 
             [[nodiscard]] static std::expected<buffer, error> create_vertex_buffer();
             [[nodiscard]] static std::expected<buffer, error> create_index_buffer();

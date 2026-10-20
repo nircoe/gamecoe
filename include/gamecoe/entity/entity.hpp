@@ -22,13 +22,13 @@ namespace gamecoe
         static constexpr std::uint16_t MAX_GENERATIONS = GEN_MASK - 1;  // 4,094
 
         // All-1s bit pattern, this sentinel is why MAX_ENTITIES and MAX_GENERATIONS reserve the top value.
-        static constexpr entity invalid() noexcept { return entity{std::numeric_limits<std::uint32_t>::max()}; }
+        [[nodiscard]] static constexpr entity invalid() noexcept { return entity{std::numeric_limits<std::uint32_t>::max()}; }
 
         auto operator<=>(const entity &other) const noexcept = default;
         bool operator==(const entity &other) const noexcept = default;
 
-        std::uint32_t id() const noexcept { return m_handle >> GEN_BITS; }
-        std::uint16_t generation() const noexcept { return m_handle & GEN_MASK; }
+        [[nodiscard]] std::uint32_t id() const noexcept { return m_handle >> GEN_BITS; }
+        [[nodiscard]] std::uint16_t generation() const noexcept { return m_handle & GEN_MASK; }
 
         static entity create(std::uint32_t id, std::uint16_t generation)
         {

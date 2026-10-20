@@ -15,12 +15,12 @@ namespace gamecoe
             glm::quat rotation{1.0f, 0.0f, 0.0f, 0.0f};
             glm::vec3 scale{1.0f};
 
-            glm::mat4 translation_matrix() const { return glm::translate(glm::mat4(1.0f), position); }
-            glm::mat4 rotation_matrix() const { return glm::mat4_cast(rotation); }
-            glm::mat4 scale_matrix() const { return glm::scale(glm::mat4(1.0f), scale); }
+            [[nodiscard]] glm::mat4 translation_matrix() const noexcept { return glm::translate(glm::mat4(1.0f), position); }
+            [[nodiscard]] glm::mat4 rotation_matrix() const noexcept { return glm::mat4_cast(rotation); }
+            [[nodiscard]] glm::mat4 scale_matrix() const noexcept { return glm::scale(glm::mat4(1.0f), scale); }
             // Built by hand instead of translation_matrix() * rotation_matrix() * scale_matrix()
             // to avoid two extra mat4 multiplications - this runs per-entity, per-frame.
-            glm::mat4 local_matrix() const
+            [[nodiscard]] glm::mat4 local_matrix() const noexcept
             {
                 glm::mat4 m = glm::mat4_cast(rotation);
                 m[0] *= scale.x;
@@ -30,11 +30,11 @@ namespace gamecoe
                 return m;
             }
 
-            glm::vec3 forward() const { return glm::normalize(rotation * glm::vec3(0.0f, 0.0f, -1.0f)); }
-            glm::vec3 right() const { return glm::normalize(rotation * glm::vec3(1.0f, 0.0f, 0.0f)); }
-            glm::vec3 up() const { return glm::normalize(rotation * glm::vec3(0.0f, 1.0f, 0.0f)); }
+            [[nodiscard]] glm::vec3 forward() const noexcept { return glm::normalize(rotation * glm::vec3(0.0f, 0.0f, -1.0f)); }
+            [[nodiscard]] glm::vec3 right() const noexcept { return glm::normalize(rotation * glm::vec3(1.0f, 0.0f, 0.0f)); }
+            [[nodiscard]] glm::vec3 up() const noexcept { return glm::normalize(rotation * glm::vec3(0.0f, 1.0f, 0.0f)); }
 
-            glm::vec3 euler_rotation() const { return glm::eulerAngles(rotation); }
+            [[nodiscard]] glm::vec3 euler_rotation() const noexcept { return glm::eulerAngles(rotation); }
 
             void translate(glm::vec3 offset) { position += offset; }
             void rotate(glm::vec3 euler_offset) { rotation = glm::quat(euler_offset) * rotation; }

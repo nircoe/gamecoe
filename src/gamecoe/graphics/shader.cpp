@@ -2,7 +2,8 @@
 #include <gamecoe/utils/error_handler.hpp>
 #include <gamecoe_config.hpp>
 #include <fstream>
-#include <sstream>
+#include <iterator>
+#include <utility>
 #include <glm/gtc/type_ptr.hpp>
 
 #if GAMECOE_USE_LOGCOE
@@ -72,36 +73,33 @@ namespace gamecoe
                 const std::string &vertex_path, const std::string &fragment_path,
                 const std::vector<std::string> &macros)
             {
-                std::stringstream vertex_stream;
-                std::stringstream fragment_stream;
-
-                try
+                const auto read_file = [](const std::string &path) -> std::expected<std::string, error>
                 {
-                    std::ifstream vertex_shader_file;
-                    std::ifstream fragment_shader_file;
+                    std::ifstream file(path);
+                    std::string content;
+                    if (file)
+                        content.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+                    if (!file || file.bad() || content.empty())
+                        return std::unexpected(
+                                detail::make_error(
+                                    error_code::file_read_failure,
+                                    "shader::create(): Failed to read shader file: " + path));
+                    return content;
+                };
 
-                    vertex_shader_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-                    fragment_shader_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+                auto vertex_source = read_file(vertex_path);
+                if (!vertex_source)
+                    return std::unexpected(vertex_source.error());
 
-                    vertex_shader_file.open(vertex_path);
-                    fragment_shader_file.open(fragment_path);
+                auto fragment_source = read_file(fragment_path);
+                if (!fragment_source)
+                    return std::unexpected(fragment_source.error());
 
-                    vertex_stream << vertex_shader_file.rdbuf();
-                    fragment_stream << fragment_shader_file.rdbuf();
-                }
-                catch (const std::ifstream::failure &f)
-                {
-                    return std::unexpected(
-                            detail::make_error(
-                                error_code::file_read_failure,
-                                "shader::create(): Failed to read shader file: " + std::string(f.what())));
-                }
-
-                auto vertex_result = prepare_for_preprocessor(vertex_stream.str(), macros);
+                auto vertex_result = prepare_for_preprocessor(*vertex_source, macros);
                 if (!vertex_result)
                     return std::unexpected(vertex_result.error());
 
-                auto fragment_result = prepare_for_preprocessor(fragment_stream.str(), macros);
+                auto fragment_result = prepare_for_preprocessor(*fragment_source, macros);
                 if (!fragment_result)
                     return std::unexpected(fragment_result.error());
 
@@ -255,7 +253,7 @@ namespace gamecoe
 #endif
         }
 
-        std::uint32_t shader::id() const
+        std::uint32_t shader::id() const noexcept
         {
             return m_id;
         }

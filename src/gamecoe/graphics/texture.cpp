@@ -207,12 +207,12 @@ namespace gamecoe
 #endif
         }
 
-        std::uint32_t texture::id() const
+        std::uint32_t texture::id() const noexcept
         {
             return m_id;
         }
 
-        std::int32_t texture::dimension() const
+        std::int32_t texture::dimension() const noexcept
         {
             return m_dimension;
         }

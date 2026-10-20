@@ -34,17 +34,17 @@ namespace gamecoe
             void bind() const;
             void unbind() const;
 
-            std::size_t vertex_count() const;
-            std::size_t index_count() const;
-            bool has_indices() const;
+            [[nodiscard]] std::size_t vertex_count() const noexcept;
+            [[nodiscard]] std::size_t index_count() const noexcept;
+            [[nodiscard]] bool has_indices() const noexcept;
 
             [[nodiscard]] static std::expected<vertex_array, error> create(
                 const float *vertices, std::size_t vertex_count, std::size_t vertex_size,
                 const std::uint32_t *indices = nullptr, std::size_t index_count = 0);
 
-            static const vertex_array *triangle();
-            static const vertex_array *rectangle();
-            static const vertex_array *box();
+            [[nodiscard]] static const vertex_array *triangle();
+            [[nodiscard]] static const vertex_array *rectangle();
+            [[nodiscard]] static const vertex_array *box();
             static void destroy_shape_vertex_arrays();
         };
     } // namespace graphics

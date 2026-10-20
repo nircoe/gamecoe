@@ -1,27 +1,28 @@
 #include <colorcoe.hpp>
 #include <gamecoe/utils/error_handler.hpp>
+#include <cstddef>
 
 namespace gamecoe
 {
-    bool color::operator==(const color &other) const
+    bool color::operator==(const color &other) const noexcept
     {
         return m_red == other.m_red && m_green == other.m_green && m_blue == other.m_blue && m_alpha == other.m_alpha;
     }
 
-    bool color::operator!=(const color &other) const
+    bool color::operator!=(const color &other) const noexcept
     {
         return !(*this == other);
     }
 
-    std::uint8_t color::red() const { return m_red; }
+    std::uint8_t color::red() const noexcept { return m_red; }
 
-    std::uint8_t color::green() const { return m_green; }
+    std::uint8_t color::green() const noexcept { return m_green; }
 
-    std::uint8_t color::blue() const { return m_blue; }
+    std::uint8_t color::blue() const noexcept { return m_blue; }
 
-    std::uint8_t color::alpha() const { return m_alpha; }
+    std::uint8_t color::alpha() const noexcept { return m_alpha; }
 
-    glm::vec4 color::normalized() const
+    glm::vec4 color::normalized() const noexcept
     {
         return { static_cast<float>(m_red) / 255.0f,
                  static_cast<float>(m_green) / 255.0f,
@@ -29,7 +30,7 @@ namespace gamecoe
                  static_cast<float>(m_alpha) / 255.0f };
     }
 
-    std::uint32_t color::rgba() const
+    std::uint32_t color::rgba() const noexcept
     {
         return (static_cast<std::uint32_t>(m_red) << 24) |
                (static_cast<std::uint32_t>(m_green) << 16) |

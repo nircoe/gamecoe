@@ -5,7 +5,7 @@ namespace
 {
     float g_last_frame_time = -1.0f;
     float g_delta_time = 0.0f;
-}
+} // namespace
 
 namespace timecoe
 {

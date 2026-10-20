@@ -20,7 +20,7 @@ namespace gamecoe
             std::filesystem::path exe;
 #if _WIN32
             char path[MAX_PATH];
-            DWORD result = GetModuleFileNameA(NULL, path, MAX_PATH);
+            DWORD result = GetModuleFileNameA(nullptr, path, MAX_PATH);
             if (result == 0 || result == MAX_PATH)
                 return std::unexpected(
                         detail::make_error(
@@ -37,14 +37,13 @@ namespace gamecoe
                             "[gamecoe] Could not get the executable path on MacOS"));
             exe = std::filesystem::path(path);
 #elif __linux__
-            try { exe = std::filesystem::canonical("/proc/self/exe"); }
-            catch(const std::filesystem::filesystem_error &e)
-            {
+            std::error_code ec;
+            exe = std::filesystem::canonical("/proc/self/exe", ec);
+            if (ec)
                 return std::unexpected(
-                            detail::make_error(
-                                error_code::path_resolution_failure,
-                                "[gamecoe] Could not get the executable path on Linux: " + std::string(e.what())));
-            }
+                        detail::make_error(
+                            error_code::path_resolution_failure,
+                            "[gamecoe] Could not get the executable path on Linux: " + ec.message()));
 #else
             return std::unexpected(
                     detail::make_error(
@@ -54,7 +53,7 @@ namespace gamecoe
 
             return exe;
         }
-    }
+    } // namespace
 
     std::expected<std::string, error> executable_directory()
     {

@@ -34,7 +34,7 @@ namespace gamecoe
                 const std::string &vertex_path, const std::string &fragment_path,
                 const std::vector<std::string> &macros = {});
 
-            std::uint32_t id() const;
+            [[nodiscard]] std::uint32_t id() const noexcept;
             void use() const;
 
             void set(const std::string &name, bool value) const;

@@ -34,6 +34,6 @@ namespace gamecoe
 
         bool active();
 
-        float aspect_ratio() const;
+        [[nodiscard]] float aspect_ratio() const noexcept;
     };
 } // namespace gamecoe

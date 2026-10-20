@@ -2,6 +2,7 @@
 #include <gamecoe/core/window.hpp>
 #include <GLFW/glfw3.h>
 #include <support/test_utils.hpp>
+#include <utility>
 
 using namespace gamecoe;
 

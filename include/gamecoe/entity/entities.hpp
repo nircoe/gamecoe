@@ -13,7 +13,6 @@
 #include <vector>
 #include <memory>
 #include <cstdint>
-#include <cassert>
 #include <gamecoe/utils/error_handler.hpp>
 
 namespace gamecoe
@@ -160,7 +159,7 @@ namespace gamecoe
         // that extract() and for_each() iterate over.
         void activate(entity e);
         void deactivate(entity e);
-        bool is_active(entity e) const;
+        [[nodiscard]] bool is_active(entity e) const;
 
         // Scene-level pause, driven by game::deactivate_scene()/activate_scene(). Separate from
         // activate()/deactivate(), so resuming a scene never overrides an entity's own state.
@@ -172,19 +171,19 @@ namespace gamecoe
         // Returns true if the state changed, false if the scene was already in that state.
         bool set_scene_frozen(scene_id id, bool frozen);
 
-        bool is_scene_frozen(scene_id id) const;
+        [[nodiscard]] bool is_scene_frozen(scene_id id) const;
 
         // True if e carries a scene_tag whose scene is frozen. Says nothing about whether e is active.
-        bool is_frozen(entity e) const;
+        [[nodiscard]] bool is_frozen(entity e) const;
 
         void clear();
 
-        bool valid(entity e) const;
+        [[nodiscard]] bool valid(entity e) const;
 
         // Also reserves capacity in every existing component pool, not just entity bookkeeping.
         void reserve(std::size_t capacity);
 
-        std::size_t size() const;
+        [[nodiscard]] std::size_t size() const;
 
         // Entity must already be valid, asserted. Returns nullptr in Release if e is invalid.
         template <typename T, typename... Args>
@@ -205,7 +204,7 @@ namespace gamecoe
 
         // Safe on an invalid entity, returns false rather than asserting.
         template <typename T>
-        bool has_component(entity e) const
+        [[nodiscard]] bool has_component(entity e) const
         {
             if (!valid(e)) return false;
 
@@ -233,7 +232,7 @@ namespace gamecoe
 
         // Pointer may be invalidated by any add_component call (pool reallocation).
         template <typename T>
-        T* get_component(entity e)
+        [[nodiscard]] T* get_component(entity e)
         {
             if (!has_component<T>(e)) return nullptr;
 
@@ -243,7 +242,7 @@ namespace gamecoe
 
         // Pointer may be invalidated by any add_component call (pool reallocation).
         template <typename T>
-        const T* get_component(entity e) const
+        [[nodiscard]] const T* get_component(entity e) const
         {
             if (!has_component<T>(e)) return nullptr;
 
@@ -267,18 +266,18 @@ namespace gamecoe
         }
 
         // Transform always exists for a valid entity. Returns nullptr in Release if e is invalid.
-        components::transform* transform(entity e);
+        [[nodiscard]] components::transform* transform(entity e);
 
         // Transform always exists for a valid entity. Returns nullptr in Release if e is invalid.
-        const components::transform* transform(entity e) const;
+        [[nodiscard]] const components::transform* transform(entity e) const;
 
         // nullptr if e is global (no scene_tag). Returns nullptr in Release if e is invalid.
         // Pointer may be invalidated by any add_component call, create() with a scene, or set_parent()
         // (pool reallocation).
-        const components::scene_tag* scene(entity e) const;
+        [[nodiscard]] const components::scene_tag* scene(entity e) const;
 
         // Snapshot of every entity tagged with the scene (active + inactive).
-        std::vector<entity> scene_entities(scene_id id) const;
+        [[nodiscard]] std::vector<entity> scene_entities(scene_id id) const;
 
         // Updates both sides. Parenting implies scene ownership: also re-tags child's whole subtree into
         // parent's scene (or clears it if parent is global), so the subtree follows that scene's pause.

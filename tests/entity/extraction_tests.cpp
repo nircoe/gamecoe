@@ -1,7 +1,6 @@
 #include <gtest/gtest.h>
 #include <gamecoe/entity/entities.hpp>
 #include <vector>
-#include <algorithm>
 #include <tuple>
 #include <type_traits>
 #include <support/test_utils.hpp>

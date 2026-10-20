@@ -43,59 +43,59 @@ namespace inputcoe
 
     /// @brief Returns the mouse position
     /// @return glm::vec2 (x,y) in pixels
-    glm::vec2 mouse_position();
+    [[nodiscard]] glm::vec2 mouse_position();
     /// @brief Returns the mouse position normalized
     /// @return glm::vec2 (x,y) normalized [0.0f, 1.0f]
-    glm::vec2 mouse_position_normalized();
+    [[nodiscard]] glm::vec2 mouse_position_normalized();
 
     /// @brief Returns the mouse delta,
     ///        the difference between previous and current mouse position
     /// @return glm::vec2 (x,y) in pixels
-    glm::vec2 mouse_delta();
+    [[nodiscard]] glm::vec2 mouse_delta();
     /// @brief Returns the mouse delta normalized,
     ///        the difference between previous and current mouse position
     /// @return glm::vec2 (x,y) normalized [0.0f, 1.0f]
-    glm::vec2 mouse_delta_normalized();
+    [[nodiscard]] glm::vec2 mouse_delta_normalized();
 
 
     /// @brief Checks if this key was pressed in this frame
     /// @param key_ The keyboard key you want to check
     /// @return true if the key was pressed, otherwise false
-    bool pressed(key key_);
+    [[nodiscard]] bool pressed(key key_);
 
     /// @brief Checks if this mouse button was pressed in this frame
     /// @param button The mouse button you want to check
     /// @return true if the mouse button was pressed, otherwise false
-    bool pressed(mouse_button button);
+    [[nodiscard]] bool pressed(mouse_button button);
 
     /// @brief Checks if this key was released in this frame
     /// @param key_ The keyboard key you want to check
     /// @return true if the key was released, otherwise false
-    bool released(key key_);
+    [[nodiscard]] bool released(key key_);
 
     /// @brief Checks if this mouse button was released in this frame
     /// @param button The mouse button you want to check
     /// @return true if the mouse button was released, otherwise false
-    bool released(mouse_button button);
+    [[nodiscard]] bool released(mouse_button button);
 
     /// @brief Checks if this key is being held now
     /// @param key_ The keyboard key you want to check
     /// @return true if the key is being held, otherwise false
-    bool down(key key_);
+    [[nodiscard]] bool down(key key_);
 
     /// @brief Checks if this mouse button is being held now
     /// @param button The mouse button you want to check
     /// @return true if the mouse button is being held, otherwise false
-    bool down(mouse_button button);
+    [[nodiscard]] bool down(mouse_button button);
 
     /// @brief Checks if this key is not being held now
     /// @param key_ The keyboard key you want to check
     /// @return true if the key is not being held, otherwise false
-    bool up(key key_);
+    [[nodiscard]] bool up(key key_);
 
     /// @brief Checks if this mouse button is not being held now
     /// @param button The mouse button you want to check
     /// @return true if the mouse button is not being held, otherwise false
-    bool up(mouse_button button);
+    [[nodiscard]] bool up(mouse_button button);
 
 } // namespace inputcoe

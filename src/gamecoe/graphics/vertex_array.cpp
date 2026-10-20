@@ -1,6 +1,7 @@
 #include <gamecoe/graphics/vertex_array.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 #include <gamecoe/utils/geometry.hpp>
+#include <utility>
 #include <gamecoe_config.hpp>
 
 #if GAMECOE_USE_OPENGL
@@ -34,7 +35,7 @@ namespace gamecoe
                 if (index_buffer_id)
                     glVertexArrayElementBuffer(vao_id, *index_buffer_id);
 #else
-                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, static_cast<GLsizei>(vertex_size * sizeof(float)), (void*)0);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, static_cast<GLsizei>(vertex_size * sizeof(float)), nullptr);
                 glEnableVertexAttribArray(0);
 #endif
             }
@@ -114,17 +115,17 @@ namespace gamecoe
             glBindVertexArray(0);
         }
 
-        std::size_t vertex_array::vertex_count() const
+        std::size_t vertex_array::vertex_count() const noexcept
         {
             return m_vertex_count;
         }
 
-        std::size_t vertex_array::index_count() const
+        std::size_t vertex_array::index_count() const noexcept
         {
             return m_index_count;
         }
 
-        bool vertex_array::has_indices() const
+        bool vertex_array::has_indices() const noexcept
         {
             return m_index_buffer.has_value();
         }

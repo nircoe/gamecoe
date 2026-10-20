@@ -3,7 +3,6 @@
 #include <gamecoe/entity/entity.hpp>
 #include <gamecoe/entity/entities.hpp>
 #include <gamecoe/component/transform.hpp>
-#include <gamecoe/component/parent_child.hpp>
 #include <gamecoe/core/scene_id.hpp>
 #include <concepts>
 #include <functional>
@@ -12,7 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
-#include <cassert>
+#include <utility>
 
 namespace gamecoe
 {
@@ -91,8 +90,8 @@ namespace gamecoe
         // Creates all queued entities, runs all queued commands, then clears. Stamps scene_tag on every created entity if `scene` is set.
         void flush(entities& ents, std::optional<scene_id> scene = std::nullopt);
 
-        std::size_t spawn_count() const noexcept { return m_spawn_transforms.size(); }
-        bool empty() const noexcept { return m_spawn_transforms.empty() && m_commands.empty(); }
+        [[nodiscard]] std::size_t spawn_count() const noexcept { return m_spawn_transforms.size(); }
+        [[nodiscard]] bool empty() const noexcept { return m_spawn_transforms.empty() && m_commands.empty(); }
         void clear();
         void reserve_from_last_build();
     };

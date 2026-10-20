@@ -95,7 +95,7 @@ namespace gamecoe
             }
 
         public:
-            iterator(const extraction* e, std::size_t index = 0) : m_extracted(e), m_index(index) { next(); }
+            explicit iterator(const extraction* e, std::size_t index = 0) : m_extracted(e), m_index(index) { next(); }
 
             std::tuple<entity, Components&...> operator*() const
             {

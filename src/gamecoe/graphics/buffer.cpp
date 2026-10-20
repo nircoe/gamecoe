@@ -146,12 +146,12 @@ namespace gamecoe
 #endif
         }
 
-        std::uint32_t buffer::id() const
+        std::uint32_t buffer::id() const noexcept
         {
             return m_id;
         }
 
-        std::uint32_t buffer::target() const
+        std::uint32_t buffer::target() const noexcept
         {
             return m_target;
         }

@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <gamecoe/utils/paths.hpp>
 #include <filesystem>
+#include <string>
 
 using namespace gamecoe;
 

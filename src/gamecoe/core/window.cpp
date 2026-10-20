@@ -22,7 +22,7 @@ namespace
     {
         std::fprintf(stderr, "GLFW error %d: %s\n", error_code, description);
     }
-}
+} // namespace
 
 namespace gamecoe
 {
@@ -158,6 +158,6 @@ namespace gamecoe
         return !glfwWindowShouldClose(m_window);
     }
 
-    float window::aspect_ratio() const { return (float)m_width / (float)m_height; }
+    float window::aspect_ratio() const noexcept { return static_cast<float>(m_width) / static_cast<float>(m_height); }
 
 } // namespace gamecoe

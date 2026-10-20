@@ -3,6 +3,9 @@
 #include <gamecoe/graphics/texture.hpp>
 #include <filesystem>
 #include <fstream>
+#include <cstdint>
+#include <string>
+#include <utility>
 #include <glad/gl.h>
 
 using namespace gamecoe;
