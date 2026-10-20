@@ -24,21 +24,21 @@ TEST_F(PathsTests, SuccessPaths)
     {
         auto result = executable_directory();
         ASSERT_TRUE(result.has_value());
-        std::string execDir = result.value();
-        EXPECT_TRUE(std::filesystem::exists(execDir));
-        EXPECT_TRUE(std::filesystem::is_directory(execDir));
+        std::string exec_dir = result.value();
+        EXPECT_TRUE(std::filesystem::exists(exec_dir));
+        EXPECT_TRUE(std::filesystem::is_directory(exec_dir));
     }
 
     // Test 2: resolve_path() returns the executable directory joined with the relative path
     {
-        std::string relativePath = "some_relative_file";
-        auto result = resolve_path(relativePath);
+        std::string relative_path = "some_relative_file";
+        auto result = resolve_path(relative_path);
         ASSERT_TRUE(result.has_value());
 
-        auto execDirResult = executable_directory();
-        ASSERT_TRUE(execDirResult.has_value());
+        auto exec_dir_result = executable_directory();
+        ASSERT_TRUE(exec_dir_result.has_value());
 
-        std::string expected = (std::filesystem::path(execDirResult.value()) / relativePath).string();
+        std::string expected = (std::filesystem::path(exec_dir_result.value()) / relative_path).string();
         EXPECT_EQ(result.value(), expected);
     }
 }

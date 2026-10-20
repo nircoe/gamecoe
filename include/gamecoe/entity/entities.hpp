@@ -127,8 +127,8 @@ namespace gamecoe
         template <typename T>
         static std::uint32_t component_id()
         {
-            static std::uint32_t s_componentT_id = s_component_id++;
-            return s_componentT_id;
+            static std::uint32_t s_component_t_id = s_component_id++;
+            return s_component_t_id;
         }
 
         entities() = default;

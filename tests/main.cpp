@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 
-int printHelp()
+int print_help()
 {
     std::cout << "Usage: ./gamecoe_tests [options]" << std::endl;
     std::cout << "Options:" << std::endl;
@@ -56,38 +56,38 @@ int main(int argc, char **argv)
     std::cout << "Testing System Module: systems::entry, systems::create, systems::scheduler" << std::endl;
     std::cout << std::endl;
 
-    bool askForAll = false;
-    std::string suiteName;
-    std::string testName;
+    bool ask_for_all = false;
+    std::string suite_name;
+    std::string test_name;
 
     for (int i = 1; i < argc; ++i)
     {
         std::string arg = argv[i];
 
         if (arg == "--help")
-            return printHelp();
+            return print_help();
         else if (arg == "--all")
-            askForAll = true;
-        else if (!askForAll && arg.substr(0, 8) == "--suite=")
+            ask_for_all = true;
+        else if (!ask_for_all && arg.substr(0, 8) == "--suite=")
         {
-            suiteName = arg.substr(8);
-            if (suiteName.empty())
+            suite_name = arg.substr(8);
+            if (suite_name.empty())
             {
                 std::cerr << "Error: --suite= requires a suite name" << std::endl;
                 return 1;
             }
         }
-        else if (!askForAll && arg.substr(0, 7) == "--test=")
+        else if (!ask_for_all && arg.substr(0, 7) == "--test=")
         {
-            std::string fullTest = arg.substr(7);
-            size_t dotPos = fullTest.find('.');
-            if (dotPos == std::string::npos)
+            std::string full_test = arg.substr(7);
+            size_t dot_pos = full_test.find('.');
+            if (dot_pos == std::string::npos)
             {
                 std::cerr << "Error: --test= requires SUITE.TEST" << std::endl;
                 return 1;
             }
-            suiteName = fullTest.substr(0, dotPos);
-            testName = fullTest.substr(dotPos + 1);
+            suite_name = full_test.substr(0, dot_pos);
+            test_name = full_test.substr(dot_pos + 1);
         }
     }
 
@@ -98,22 +98,22 @@ int main(int argc, char **argv)
     // threadsafe re-execs fresh instead, so it's set globally rather than per-test.
     GTEST_FLAG_SET(death_test_style, "threadsafe");
 
-    if (askForAll || (testName.empty() && suiteName.empty()))
+    if (ask_for_all || (test_name.empty() && suite_name.empty()))
     {
         std::cout << "Running all gamecoe tests..." << std::endl;
         return testcoe::run();
     }
 
-    if (!testName.empty())
+    if (!test_name.empty())
     {
-        std::cout << "Running test: " << suiteName << "." << testName << std::endl;
-        return testcoe::run_test(suiteName, testName);
+        std::cout << "Running test: " << suite_name << "." << test_name << std::endl;
+        return testcoe::run_test(suite_name, test_name);
     }
 
-    if (!suiteName.empty())
+    if (!suite_name.empty())
     {
-        std::cout << "Running suite: " << suiteName << std::endl;
-        return testcoe::run_suite(suiteName);
+        std::cout << "Running suite: " << suite_name << std::endl;
+        return testcoe::run_suite(suite_name);
     }
 
     return 0;

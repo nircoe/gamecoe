@@ -31,9 +31,9 @@ namespace gamecoe
 
 namespace
 {
-    constexpr scene_id scene_a = scene_id::TestScene1;
-    constexpr scene_id scene_b = scene_id::TestScene2;
-    constexpr scene_id scene_c = scene_id::TestScene3;
+    constexpr scene_id scene_a = scene_id::test_scene1;
+    constexpr scene_id scene_b = scene_id::test_scene2;
+    constexpr scene_id scene_c = scene_id::test_scene3;
 
     void build_scene_a(command_buffer &buf) { buf.spawn(); buf.spawn(); buf.spawn(); }
     void build_scene_b(command_buffer &buf) { buf.spawn(); }
@@ -1384,7 +1384,7 @@ TEST_F(GameMoveTests, MovedFromGameGuardsEveryPublicMethod)
 #else
     (void)source.entities();
     (void)const_source.entities();
-    EXPECT_EQ(const_source.background_color(), colorcoe::darkSlateGray());
+    EXPECT_EQ(const_source.background_color(), colorcoe::dark_slate_gray());
 
     source.set_log_level(logcoe::LogLevel::DEBUG);
     source.create_scene(scene_c, build_scene_c);

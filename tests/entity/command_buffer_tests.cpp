@@ -13,7 +13,7 @@ using namespace test_utils;
 //                    Test Component Types
 //==============================================================================
 
-struct Tag
+struct tag
 {
     int value;
 };
@@ -83,14 +83,14 @@ TEST_F(CommandBufferTests, SpawnAndFlush)
     {
         mgr.clear();
         command_buffer::placeholder p = buf.spawn();
-        buf.add<Tag>(p, Tag{42});
+        buf.add<tag>(p, tag{42});
         buf.flush(mgr);
 
         entity e = entity::invalid();
         ASSERT_NO_FATAL_FAILURE(sole_entity(mgr, e));
 
-        ASSERT_TRUE(mgr.has_component<Tag>(e));
-        EXPECT_EQ(mgr.get_component<Tag>(e)->value, 42);
+        ASSERT_TRUE(mgr.has_component<tag>(e));
+        EXPECT_EQ(mgr.get_component<tag>(e)->value, 42);
     }
 
     // Test 5: buffer is empty after flush; a second flush creates nothing new
@@ -118,16 +118,16 @@ TEST_F(CommandBufferTests, FlushReentrantCommandAppendIsSafe)
     command_buffer::placeholder p = buf.spawn();
     buf.add(p, [this, p](const command_buffer::resolver&)
     {
-        buf.add(p, Tag{2});
-        return Tag{1};
+        buf.add(p, tag{2});
+        return tag{1};
     });
 
     buf.flush(mgr);
 
     entity e = entity::invalid();
     ASSERT_NO_FATAL_FAILURE(sole_entity(mgr, e));
-    ASSERT_TRUE(mgr.has_component<Tag>(e));
-    EXPECT_EQ(mgr.get_component<Tag>(e)->value, 2);
+    ASSERT_TRUE(mgr.has_component<tag>(e));
+    EXPECT_EQ(mgr.get_component<tag>(e)->value, 2);
 }
 
 //==============================================================================
@@ -181,20 +181,20 @@ TEST_F(CommandBufferTests, SceneTagging)
         mgr.set_scene_paused(scene_id{1}, true);
         command_buffer::placeholder p_child = buf.spawn();
         command_buffer::placeholder p_parent = buf.spawn();
-        buf.add<Tag>(p_child, Tag{1});
+        buf.add<tag>(p_child, tag{1});
         buf.set_parent(p_child, p_parent);
         buf.flush(mgr, scene_id{1});
 
         ASSERT_EQ(mgr.size(), 2);
         entity child = entity::invalid();
-        mgr.for_each_all<Tag>([&child](entity ent, const Tag &) { child = ent; });
+        mgr.for_each_all<tag>([&child](entity ent, const tag &) { child = ent; });
         ASSERT_NE(child, entity::invalid());
         entity parent = mgr.get_component<components::parent>(child)->handle;
 
         EXPECT_FALSE(mgr.is_active(child));
         EXPECT_FALSE(mgr.is_active(parent));
         bool found = false;
-        for ([[maybe_unused]] auto [ent, tag] : mgr.extract<Tag>())
+        for ([[maybe_unused]] auto [ent, tag] : mgr.extract<tag>())
             found = true;
         EXPECT_FALSE(found);
 
@@ -202,7 +202,7 @@ TEST_F(CommandBufferTests, SceneTagging)
 
         EXPECT_TRUE(mgr.is_active(child));
         EXPECT_TRUE(mgr.is_active(parent));
-        for (auto [ent, tag] : mgr.extract<Tag>())
+        for (auto [ent, tag] : mgr.extract<tag>())
         {
             EXPECT_EQ(ent, child);
             EXPECT_EQ(tag.value, 1);
@@ -263,8 +263,8 @@ TEST_F(CommandBufferTests, BufferedSetParent)
         mgr.clear();
         command_buffer::placeholder p_child = buf.spawn();
         command_buffer::placeholder p_parent = buf.spawn();
-        buf.add<Tag>(p_child, Tag{1});
-        buf.add<Tag>(p_parent, Tag{2});
+        buf.add<tag>(p_child, tag{1});
+        buf.add<tag>(p_parent, tag{2});
         buf.set_parent(p_child, p_parent);
         buf.flush(mgr);
 
@@ -272,7 +272,7 @@ TEST_F(CommandBufferTests, BufferedSetParent)
 
         entity real_child = entity::invalid();
         entity real_parent = entity::invalid();
-        mgr.for_each<Tag>([&real_child, &real_parent](entity ent, const Tag &tag)
+        mgr.for_each<tag>([&real_child, &real_parent](entity ent, const tag &tag)
         {
             if (tag.value == 1) real_child = ent;
             else if (tag.value == 2) real_parent = ent;
@@ -299,13 +299,13 @@ TEST_F(CommandBufferTests, BufferedSetParent)
         command_buffer::placeholder p_child3 = buf.spawn();
         command_buffer::placeholder p_other = buf.spawn();
 
-        buf.add<Tag>(p_parent, Tag{0});
-        buf.add<Tag>(p_child1, Tag{1});
-        buf.add<Tag>(p_child2, Tag{2});
-        buf.add<Tag>(p_child3, Tag{3});
+        buf.add<tag>(p_parent, tag{0});
+        buf.add<tag>(p_child1, tag{1});
+        buf.add<tag>(p_child2, tag{2});
+        buf.add<tag>(p_child3, tag{3});
 
         buf.set_parent(p_child1, p_parent);
-        buf.add<Tag>(p_other, Tag{99});
+        buf.add<tag>(p_other, tag{99});
         buf.set_parent(p_child2, p_parent);
         buf.set_parent(p_child3, p_parent);
 
@@ -317,7 +317,7 @@ TEST_F(CommandBufferTests, BufferedSetParent)
         entity real_child1 = entity::invalid();
         entity real_child2 = entity::invalid();
         entity real_child3 = entity::invalid();
-        mgr.for_each<Tag>([&real_parent, &real_child1, &real_child2, &real_child3](entity ent, const Tag &tag)
+        mgr.for_each<tag>([&real_parent, &real_child1, &real_child2, &real_child3](entity ent, const tag &tag)
         {
             if (tag.value == 0) real_parent = ent;
             else if (tag.value == 1) real_child1 = ent;

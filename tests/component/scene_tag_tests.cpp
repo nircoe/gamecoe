@@ -35,15 +35,15 @@ TEST_F(SceneTagTests, AssignSceneId)
 {
     // Test 1: Assigning TestScene1 and verifying the value
     {
-        tag.id = scene_id::TestScene1;
-        EXPECT_EQ(tag.id, scene_id::TestScene1);
+        tag.id = scene_id::test_scene1;
+        EXPECT_EQ(tag.id, scene_id::test_scene1);
         EXPECT_EQ(static_cast<std::uint16_t>(tag.id), 1);
     }
 
     // Test 2: Reassigning to TestScene2 and verifying the new value
     {
-        tag.id = scene_id::TestScene2;
-        EXPECT_EQ(tag.id, scene_id::TestScene2);
+        tag.id = scene_id::test_scene2;
+        EXPECT_EQ(tag.id, scene_id::test_scene2);
         EXPECT_EQ(static_cast<std::uint16_t>(tag.id), 2);
     }
 }

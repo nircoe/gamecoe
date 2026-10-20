@@ -11,47 +11,47 @@ using namespace gamecoe;
 //==============================================================================
 
 // Simple POD for basic tests
-struct Position
+struct position
 {
     float x, y, z;
 
-    bool operator==(const Position &other) const
+    bool operator==(const position &other) const
     {
         return x == other.x && y == other.y && z == other.z;
     }
 };
 
 // Move-only type for perfect forwarding test
-struct MoveOnlyComponent
+struct move_only_component
 {
     std::unique_ptr<int> data;
 
-    MoveOnlyComponent(int val) : data(std::make_unique<int>(val)) {}
+    move_only_component(int val) : data(std::make_unique<int>(val)) {}
 
-    MoveOnlyComponent(const MoveOnlyComponent &) = delete;
-    MoveOnlyComponent &operator=(const MoveOnlyComponent &) = delete;
-    MoveOnlyComponent(MoveOnlyComponent &&) noexcept = default;
-    MoveOnlyComponent &operator=(MoveOnlyComponent &&) noexcept = default;
+    move_only_component(const move_only_component &) = delete;
+    move_only_component &operator=(const move_only_component &) = delete;
+    move_only_component(move_only_component &&) noexcept = default;
+    move_only_component &operator=(move_only_component &&) noexcept = default;
 };
 
 // RAII type for lifecycle test
-struct LifetimeTracker
+struct lifetime_tracker
 {
     int *counter;
 
-    LifetimeTracker(int *c) : counter(c) { ++(*counter); }
-    ~LifetimeTracker()
+    lifetime_tracker(int *c) : counter(c) { ++(*counter); }
+    ~lifetime_tracker()
     {
         if (counter)
             --(*counter);
     }
 
-    LifetimeTracker(const LifetimeTracker &other) : counter(other.counter)
+    lifetime_tracker(const lifetime_tracker &other) : counter(other.counter)
     {
         if (counter)
             ++(*counter);
     }
-    LifetimeTracker &operator=(const LifetimeTracker &other)
+    lifetime_tracker &operator=(const lifetime_tracker &other)
     {
         if (this != &other)
         {
@@ -62,11 +62,11 @@ struct LifetimeTracker
         return *this;
     }
 
-    LifetimeTracker(LifetimeTracker &&other) noexcept : counter(other.counter)
+    lifetime_tracker(lifetime_tracker &&other) noexcept : counter(other.counter)
     {
         other.counter = nullptr;
     }
-    LifetimeTracker &operator=(LifetimeTracker &&other) noexcept
+    lifetime_tracker &operator=(lifetime_tracker &&other) noexcept
     {
         if (this != &other)
         {
@@ -85,7 +85,7 @@ struct LifetimeTracker
 class ComponentPoolTests : public ::testing::Test
 {
 protected:
-    component_pool<Position> pool;
+    component_pool<position> pool;
 };
 
 //==============================================================================
@@ -98,7 +98,7 @@ TEST_F(ComponentPoolTests, AddAndGetOperations)
     {
         auto e = entity::create(42, 0);
 
-        Position &pos = *pool.add(e, true, Position{1.0f, 2.0f, 3.0f});
+        position &pos = *pool.add(e, true, position{1.0f, 2.0f, 3.0f});
 
         EXPECT_TRUE(pool.contains(e));
         EXPECT_EQ(pool.size(), 1);
@@ -121,7 +121,7 @@ TEST_F(ComponentPoolTests, AddAndGetOperations)
         {
             auto e = entity::create(i, 0);
             entities.push_back(e);
-            pool.add(e, true, Position{static_cast<float>(i), 0.0f, 0.0f});
+            pool.add(e, true, position{static_cast<float>(i), 0.0f, 0.0f});
         }
 
         EXPECT_EQ(pool.size(), 50);
@@ -142,16 +142,16 @@ TEST_F(ComponentPoolTests, AddAndGetOperations)
 TEST_F(ComponentPoolTests, DuplicateAddIsNoOp)
 {
     auto e = entity::create(1, 0);
-    pool.add(e, true, Position{1.0f, 2.0f, 3.0f});
+    pool.add(e, true, position{1.0f, 2.0f, 3.0f});
 
 #ifndef NDEBUG
-    EXPECT_DEATH(pool.add(e, true, Position{9.0f, 9.0f, 9.0f}), "entity already has this component");
+    EXPECT_DEATH(pool.add(e, true, position{9.0f, 9.0f, 9.0f}), "entity already has this component");
 #else
     // Release: guard-return, the original value is untouched by the duplicate add.
-    pool.add(e, true, Position{9.0f, 9.0f, 9.0f});
+    pool.add(e, true, position{9.0f, 9.0f, 9.0f});
     auto* e_ptr = pool.try_get(e);
     ASSERT_NE(e_ptr, nullptr);
-    EXPECT_EQ(*e_ptr, (Position{1.0f, 2.0f, 3.0f}));
+    EXPECT_EQ(*e_ptr, (position{1.0f, 2.0f, 3.0f}));
     EXPECT_EQ(pool.size(), 1u);
 #endif
 }
@@ -166,9 +166,9 @@ TEST_F(ComponentPoolTests, RemoveSwapAndPop)
     auto e2 = entity::create(20, 0);
     auto e3 = entity::create(30, 0);
 
-    pool.add(e1, true, Position{1.0f, 0.0f, 0.0f});
-    pool.add(e2, true, Position{2.0f, 0.0f, 0.0f});
-    pool.add(e3, true, Position{3.0f, 0.0f, 0.0f});
+    pool.add(e1, true, position{1.0f, 0.0f, 0.0f});
+    pool.add(e2, true, position{2.0f, 0.0f, 0.0f});
+    pool.add(e3, true, position{3.0f, 0.0f, 0.0f});
 
     pool.remove(e2);
 
@@ -190,7 +190,7 @@ TEST_F(ComponentPoolTests, RemoveSwapAndPop)
 TEST_F(ComponentPoolTests, ActivePartition)
 {
     std::vector<entity> entities;
-    std::vector<Position> values;
+    std::vector<position> values;
 
     // Sweep: every entity still in the pool must still hold its originally-inserted value.
     // This is the real regression guard - active_size()/is_active() can look correct while
@@ -209,7 +209,7 @@ TEST_F(ComponentPoolTests, ActivePartition)
         for (std::uint32_t i = 0; i < 3; ++i)
         {
             auto e = entity::create(i, 0);
-            Position p{static_cast<float>(i), 0.0f, 0.0f};
+            position p{static_cast<float>(i), 0.0f, 0.0f};
             entities.push_back(e);
             values.push_back(p);
             pool.add(e, true, p);
@@ -282,7 +282,7 @@ TEST_F(ComponentPoolTests, ActivePartition)
         for (std::uint32_t i = 0; i < 6; ++i)
         {
             auto e = entity::create(i, 0);
-            Position p{static_cast<float>(i) * 10.0f, 1.0f, 2.0f};
+            position p{static_cast<float>(i) * 10.0f, 1.0f, 2.0f};
             entities.push_back(e);
             values.push_back(p);
             pool.add(e, true, p);
@@ -335,9 +335,9 @@ TEST_F(ComponentPoolTests, AddIntoPoolWithInactiveEntities)
         auto b = entity::create(2, 0);
         auto c = entity::create(3, 0);
 
-        Position pos_a{1.0f, 0.0f, 0.0f};
-        Position pos_b{2.0f, 0.0f, 0.0f};
-        Position pos_c{3.0f, 0.0f, 0.0f};
+        position pos_a{1.0f, 0.0f, 0.0f};
+        position pos_b{2.0f, 0.0f, 0.0f};
+        position pos_c{3.0f, 0.0f, 0.0f};
 
         pool.add(a, true, pos_a);
         pool.add(b, true, pos_b);
@@ -345,7 +345,7 @@ TEST_F(ComponentPoolTests, AddIntoPoolWithInactiveEntities)
         ASSERT_TRUE(pool.is_active(a));
         ASSERT_FALSE(pool.is_active(b));
 
-        Position &ref_c = *pool.add(c, true, pos_c);
+        position &ref_c = *pool.add(c, true, pos_c);
 
         EXPECT_EQ(ref_c, pos_c);
         auto* c_ptr = pool.try_get(c);
@@ -365,11 +365,11 @@ TEST_F(ComponentPoolTests, AddIntoPoolWithInactiveEntities)
         auto a = entity::create(1, 0);
         auto d = entity::create(4, 0);
 
-        Position pos_a{1.0f, 0.0f, 0.0f};
-        Position pos_d{4.0f, 0.0f, 0.0f};
+        position pos_a{1.0f, 0.0f, 0.0f};
+        position pos_d{4.0f, 0.0f, 0.0f};
 
         pool.add(a, true, pos_a);
-        Position &ref_d = *pool.add(d, false, pos_d);
+        position &ref_d = *pool.add(d, false, pos_d);
 
         EXPECT_EQ(ref_d, pos_d);
         auto* d_ptr = pool.try_get(d);
@@ -388,16 +388,16 @@ TEST_F(ComponentPoolTests, AddIntoPoolWithInactiveEntities)
         auto b = entity::create(2, 0);
         auto e = entity::create(5, 0);
 
-        Position pos_a{1.0f, 0.0f, 0.0f};
-        Position pos_b{2.0f, 0.0f, 0.0f};
-        Position pos_e{5.0f, 0.0f, 0.0f};
+        position pos_a{1.0f, 0.0f, 0.0f};
+        position pos_b{2.0f, 0.0f, 0.0f};
+        position pos_e{5.0f, 0.0f, 0.0f};
 
         pool.add(a, true, pos_a);
         pool.add(b, true, pos_b);
         pool.deactivate(b); // active=[a], inactive=[b]
         ASSERT_EQ(pool.active_size(), 1);
 
-        Position &ref_e = *pool.add(e, false, pos_e);
+        position &ref_e = *pool.add(e, false, pos_e);
 
         EXPECT_EQ(ref_e, pos_e);
         auto* e_ptr = pool.try_get(e);
@@ -429,7 +429,7 @@ TEST_F(ComponentPoolTests, RemoveAcrossActiveBoundary)
         auto c = entity::create(3, 0);
         auto d = entity::create(4, 0);
 
-        Position pos_a{1.0f, 0.0f, 0.0f}, pos_b{2.0f, 0.0f, 0.0f}, pos_c{3.0f, 0.0f, 0.0f}, pos_d{4.0f, 0.0f, 0.0f};
+        position pos_a{1.0f, 0.0f, 0.0f}, pos_b{2.0f, 0.0f, 0.0f}, pos_c{3.0f, 0.0f, 0.0f}, pos_d{4.0f, 0.0f, 0.0f};
 
         pool.add(a, true, pos_a);
         pool.add(b, true, pos_b);
@@ -462,7 +462,7 @@ TEST_F(ComponentPoolTests, RemoveAcrossActiveBoundary)
         auto b = entity::create(2, 0);
         auto c = entity::create(3, 0);
 
-        Position pos_a{1.0f, 0.0f, 0.0f}, pos_b{2.0f, 0.0f, 0.0f}, pos_c{3.0f, 0.0f, 0.0f};
+        position pos_a{1.0f, 0.0f, 0.0f}, pos_b{2.0f, 0.0f, 0.0f}, pos_c{3.0f, 0.0f, 0.0f};
 
         pool.add(a, true, pos_a);
         pool.add(b, true, pos_b);
@@ -493,7 +493,7 @@ TEST_F(ComponentPoolTests, RemoveAcrossActiveBoundary)
         auto c = entity::create(3, 0);
         auto d = entity::create(4, 0);
 
-        Position pos_a{1.0f, 0.0f, 0.0f}, pos_b{2.0f, 0.0f, 0.0f}, pos_c{3.0f, 0.0f, 0.0f}, pos_d{4.0f, 0.0f, 0.0f};
+        position pos_a{1.0f, 0.0f, 0.0f}, pos_b{2.0f, 0.0f, 0.0f}, pos_c{3.0f, 0.0f, 0.0f}, pos_d{4.0f, 0.0f, 0.0f};
 
         pool.add(a, true, pos_a);
         pool.add(b, true, pos_b);
@@ -521,7 +521,7 @@ TEST_F(ComponentPoolTests, RemoveAcrossActiveBoundary)
 
     // Tests 4-6: repeat the same three cases on a move-only component type, to exercise the
     // move/swap code paths (swap_components()/std::move) on a non-trivial type
-    component_pool<MoveOnlyComponent> move_pool;
+    component_pool<move_only_component> move_pool;
 
     // Test 4: remove an active entity (mid) from a mixed pool - move-only
     {
@@ -530,10 +530,10 @@ TEST_F(ComponentPoolTests, RemoveAcrossActiveBoundary)
         auto c = entity::create(3, 0);
         auto d = entity::create(4, 0);
 
-        move_pool.add(a, true, MoveOnlyComponent(1));
-        move_pool.add(b, true, MoveOnlyComponent(2));
-        move_pool.add(c, true, MoveOnlyComponent(3));
-        move_pool.add(d, true, MoveOnlyComponent(4));
+        move_pool.add(a, true, move_only_component(1));
+        move_pool.add(b, true, move_only_component(2));
+        move_pool.add(c, true, move_only_component(3));
+        move_pool.add(d, true, move_only_component(4));
         move_pool.deactivate(d);
 
         move_pool.remove(b);
@@ -561,9 +561,9 @@ TEST_F(ComponentPoolTests, RemoveAcrossActiveBoundary)
         auto b = entity::create(2, 0);
         auto c = entity::create(3, 0);
 
-        move_pool.add(a, true, MoveOnlyComponent(1));
-        move_pool.add(b, true, MoveOnlyComponent(2));
-        move_pool.add(c, true, MoveOnlyComponent(3));
+        move_pool.add(a, true, move_only_component(1));
+        move_pool.add(b, true, move_only_component(2));
+        move_pool.add(c, true, move_only_component(3));
         move_pool.deactivate(c);
 
         move_pool.remove(c);
@@ -587,10 +587,10 @@ TEST_F(ComponentPoolTests, RemoveAcrossActiveBoundary)
         auto c = entity::create(3, 0);
         auto d = entity::create(4, 0);
 
-        move_pool.add(a, true, MoveOnlyComponent(1));
-        move_pool.add(b, true, MoveOnlyComponent(2));
-        move_pool.add(c, true, MoveOnlyComponent(3));
-        move_pool.add(d, true, MoveOnlyComponent(4));
+        move_pool.add(a, true, move_only_component(1));
+        move_pool.add(b, true, move_only_component(2));
+        move_pool.add(c, true, move_only_component(3));
+        move_pool.add(d, true, move_only_component(4));
         move_pool.deactivate(d);
 
         move_pool.remove(c);
@@ -620,14 +620,14 @@ TEST_F(ComponentPoolTests, GetConst)
 {
     auto e = entity::create(42, 0);
 
-    pool.add(e, true, Position{1.0f, 2.0f, 3.0f});
+    pool.add(e, true, position{1.0f, 2.0f, 3.0f});
 
     const auto &const_pool = pool;
-    const Position *comp = const_pool.try_get(e);
+    const position *comp = const_pool.try_get(e);
 
     ASSERT_NE(comp, nullptr);
     EXPECT_EQ(comp->x, 1.0f);
-    static_assert(std::is_same_v<decltype(comp), const Position *>);
+    static_assert(std::is_same_v<decltype(comp), const position *>);
 }
 
 //==============================================================================
@@ -642,11 +642,11 @@ TEST_F(ComponentPoolTests, ForEachIteration)
     {
         auto e = entity::create(i, 0);
         entities.push_back(e);
-        pool.add(e, true, Position{static_cast<float>(i), 0.0f, 0.0f});
+        pool.add(e, true, position{static_cast<float>(i), 0.0f, 0.0f});
     }
 
     int count = 0;
-    pool.for_each([&count, &entities](entity e, Position &pos)
+    pool.for_each([&count, &entities](entity e, position &pos)
     {
         EXPECT_EQ(e, entities[count]);
         EXPECT_EQ(pos.x, static_cast<float>(count));
@@ -668,7 +668,7 @@ TEST_F(ComponentPoolTests, ForEachAll)
     {
         auto e = entity::create(i, 0);
         entities.push_back(e);
-        pool.add(e, true, Position{static_cast<float>(i), 0.0f, 0.0f});
+        pool.add(e, true, position{static_cast<float>(i), 0.0f, 0.0f});
     }
 
     // Deactivate a subset
@@ -687,7 +687,7 @@ TEST_F(ComponentPoolTests, ForEachAll)
     // Test 1: mutable for_each() visits exactly the active partition
     {
         std::vector<entity> visited;
-        pool.for_each([&visited](entity e, Position &)
+        pool.for_each([&visited](entity e, position &)
         {
             visited.push_back(e);
         });
@@ -698,7 +698,7 @@ TEST_F(ComponentPoolTests, ForEachAll)
     // Test 2: mutable for_each_all() visits every entity, active and inactive
     {
         std::vector<entity> visited;
-        pool.for_each_all([&visited](entity e, Position &)
+        pool.for_each_all([&visited](entity e, position &)
         {
             visited.push_back(e);
         });
@@ -706,12 +706,12 @@ TEST_F(ComponentPoolTests, ForEachAll)
         EXPECT_EQ(visited, expected_all);
     }
 
-    const component_pool<Position> &const_pool = pool;
+    const component_pool<position> &const_pool = pool;
 
     // Test 3: const for_each() visits exactly the active partition
     {
         std::vector<entity> visited;
-        const_pool.for_each([&visited](entity e, const Position &)
+        const_pool.for_each([&visited](entity e, const position &)
         {
             visited.push_back(e);
         });
@@ -722,7 +722,7 @@ TEST_F(ComponentPoolTests, ForEachAll)
     // Test 4: const for_each_all() visits every entity, active and inactive
     {
         std::vector<entity> visited;
-        const_pool.for_each_all([&visited](entity e, const Position &)
+        const_pool.for_each_all([&visited](entity e, const position &)
         {
             visited.push_back(e);
         });
@@ -737,10 +737,10 @@ TEST_F(ComponentPoolTests, ForEachAll)
 
 TEST_F(ComponentPoolTests, PerfectForwarding)
 {
-    component_pool<MoveOnlyComponent> move_pool;
+    component_pool<move_only_component> move_pool;
     auto e = entity::create(42, 0);
 
-    MoveOnlyComponent comp(123);
+    move_only_component comp(123);
     move_pool.add(e, true, std::move(comp));
 
     EXPECT_TRUE(move_pool.contains(e));
@@ -755,16 +755,16 @@ TEST_F(ComponentPoolTests, PerfectForwarding)
 
 TEST_F(ComponentPoolTests, ComponentLifecycle)
 {
-    component_pool<LifetimeTracker> trackers;
+    component_pool<lifetime_tracker> trackers;
     int counter = 0;
 
     auto e1 = entity::create(1, 0);
     auto e2 = entity::create(2, 0);
     auto e3 = entity::create(3, 0);
 
-    trackers.add(e1, true, LifetimeTracker{&counter});
-    trackers.add(e2, true, LifetimeTracker{&counter});
-    trackers.add(e3, true, LifetimeTracker{&counter});
+    trackers.add(e1, true, lifetime_tracker{&counter});
+    trackers.add(e2, true, lifetime_tracker{&counter});
+    trackers.add(e3, true, lifetime_tracker{&counter});
 
     EXPECT_EQ(counter, 3);
 
@@ -782,7 +782,7 @@ TEST_F(ComponentPoolTests, ComponentLifecycle)
 TEST_F(ComponentPoolTests, ClearPool)
 {
     for (std::uint32_t i = 0; i < 20; ++i)
-        pool.add(entity::create(i, 0), true, Position{0.0f, 0.0f, 0.0f});
+        pool.add(entity::create(i, 0), true, position{0.0f, 0.0f, 0.0f});
 
     EXPECT_EQ(pool.size(), 20);
 

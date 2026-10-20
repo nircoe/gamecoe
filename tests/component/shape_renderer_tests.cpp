@@ -23,7 +23,7 @@ TEST_F(ShapeRendererTests, DefaultState)
     // Test 1: Default-constructed shape_renderer has invalid kind and default (black) color
     {
         EXPECT_EQ(sr.kind, shape::invalid);
-        EXPECT_EQ(sr.color, Color());
+        EXPECT_EQ(sr.color, color());
     }
 }
 

@@ -18,7 +18,7 @@ namespace gamecoe
         std::uint32_t m_height;
         bool m_first_frame;
 
-        window(GLFWwindow *glfwWindow, const std::string &title, std::uint32_t width, std::uint32_t height);
+        window(GLFWwindow *glfw_window, const std::string &title, std::uint32_t width, std::uint32_t height);
         void framebuffer_size_callback(int width, int height);
 
     public:

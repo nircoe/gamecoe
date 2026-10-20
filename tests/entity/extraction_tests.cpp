@@ -13,31 +13,31 @@ using namespace gamecoe;
 //                    Test Component Types
 //==============================================================================
 
-struct Transform
+struct transform
 {
     float x, y, z;
 
-    bool operator==(const Transform &other) const
+    bool operator==(const transform &other) const
     {
         return x == other.x && y == other.y && z == other.z;
     }
 };
 
-struct Velocity
+struct velocity
 {
     float dx, dy, dz;
 
-    bool operator==(const Velocity &other) const
+    bool operator==(const velocity &other) const
     {
         return dx == other.dx && dy == other.dy && dz == other.dz;
     }
 };
 
-struct Health
+struct health
 {
     int value;
 
-    bool operator==(const Health &other) const
+    bool operator==(const health &other) const
     {
         return value == other.value;
     }
@@ -67,26 +67,26 @@ TEST_F(ExtractionTests, BasicExtractionAndFiltering)
 {
     // Setup: Create entities with different component combinations
     entity e1 = mgr.create();
-    mgr.add_component<Transform>(e1, Transform{1.0f, 0.0f, 0.0f});
+    mgr.add_component<transform>(e1, transform{1.0f, 0.0f, 0.0f});
 
     entity e2 = mgr.create();
-    mgr.add_component<Velocity>(e2, Velocity{0.1f, 0.0f, 0.0f});
+    mgr.add_component<velocity>(e2, velocity{0.1f, 0.0f, 0.0f});
 
     entity e3 = mgr.create();
-    mgr.add_component<Transform>(e3, Transform{3.0f, 0.0f, 0.0f});
-    mgr.add_component<Velocity>(e3, Velocity{0.3f, 0.0f, 0.0f});
+    mgr.add_component<transform>(e3, transform{3.0f, 0.0f, 0.0f});
+    mgr.add_component<velocity>(e3, velocity{0.3f, 0.0f, 0.0f});
 
     entity e4 = mgr.create();
-    mgr.add_component<Transform>(e4, Transform{4.0f, 0.0f, 0.0f});
-    mgr.add_component<Velocity>(e4, Velocity{0.4f, 0.0f, 0.0f});
+    mgr.add_component<transform>(e4, transform{4.0f, 0.0f, 0.0f});
+    mgr.add_component<velocity>(e4, velocity{0.4f, 0.0f, 0.0f});
 
     entity e5 = mgr.create();
-    mgr.add_component<Transform>(e5, Transform{5.0f, 0.0f, 0.0f});
+    mgr.add_component<transform>(e5, transform{5.0f, 0.0f, 0.0f});
 
-    // Test 1: Extract single component (Transform)
+    // Test 1: Extract single component (transform)
     {
         std::vector<entity> found_entities;
-        auto extracted = mgr.extract<Transform>();
+        auto extracted = mgr.extract<transform>();
 
         for (auto [e, t] : extracted)
         {
@@ -100,10 +100,10 @@ TEST_F(ExtractionTests, BasicExtractionAndFiltering)
         EXPECT_TRUE(test_utils::has(found_entities, e5));
     }
 
-    // Test 2: Extract single component (Velocity)
+    // Test 2: Extract single component (velocity)
     {
         std::vector<entity> found_entities;
-        auto extracted = mgr.extract<Velocity>();
+        auto extracted = mgr.extract<velocity>();
 
         for (auto [e, v] : extracted)
         {
@@ -116,17 +116,17 @@ TEST_F(ExtractionTests, BasicExtractionAndFiltering)
         EXPECT_TRUE(test_utils::has(found_entities, e4));
     }
 
-    // Test 3: Extract multiple components (Transform + Velocity)
+    // Test 3: Extract multiple components (transform + velocity)
     {
         std::vector<entity> found_entities;
-        auto extracted = mgr.extract<Transform, Velocity>();
+        auto extracted = mgr.extract<transform, velocity>();
 
         for (auto [e, t, v] : extracted)
         {
             found_entities.push_back(e);
             // Verify component values are correct
-            EXPECT_TRUE(mgr.has_component<Transform>(e));
-            EXPECT_TRUE(mgr.has_component<Velocity>(e));
+            EXPECT_TRUE(mgr.has_component<transform>(e));
+            EXPECT_TRUE(mgr.has_component<velocity>(e));
         }
 
         EXPECT_EQ(found_entities.size(), 2); // Only e3 and e4
@@ -136,7 +136,7 @@ TEST_F(ExtractionTests, BasicExtractionAndFiltering)
 
     // Test 4: Verify component values can be read correctly
     {
-        auto extracted = mgr.extract<Transform, Velocity>();
+        auto extracted = mgr.extract<transform, velocity>();
         for (auto [e, t, v] : extracted)
         {
             if (e == e3)
@@ -154,17 +154,17 @@ TEST_F(ExtractionTests, BasicExtractionAndFiltering)
 
     // Test 5: Verify component values can be modified
     {
-        auto extracted = mgr.extract<Transform>();
+        auto extracted = mgr.extract<transform>();
         for (auto [e, t] : extracted)
         {
             t.x += 100.0f;
         }
 
         // Verify modifications persisted
-        EXPECT_EQ(mgr.get_component<Transform>(e1)->x, 101.0f);
-        EXPECT_EQ(mgr.get_component<Transform>(e3)->x, 103.0f);
-        EXPECT_EQ(mgr.get_component<Transform>(e4)->x, 104.0f);
-        EXPECT_EQ(mgr.get_component<Transform>(e5)->x, 105.0f);
+        EXPECT_EQ(mgr.get_component<transform>(e1)->x, 101.0f);
+        EXPECT_EQ(mgr.get_component<transform>(e3)->x, 103.0f);
+        EXPECT_EQ(mgr.get_component<transform>(e4)->x, 104.0f);
+        EXPECT_EQ(mgr.get_component<transform>(e5)->x, 105.0f);
     }
 }
 
@@ -176,7 +176,7 @@ TEST_F(ExtractionTests, EmptyAndEdgeCases)
 {
     // Test 1: Empty entities manager
     {
-        auto extracted = mgr.extract<Transform>();
+        auto extracted = mgr.extract<transform>();
         EXPECT_EQ(extracted.begin(), extracted.end());
 
         int count = 0;
@@ -191,10 +191,10 @@ TEST_F(ExtractionTests, EmptyAndEdgeCases)
     {
         entity e1 = mgr.create();
         entity e2 = mgr.create();
-        mgr.add_component<Transform>(e1, Transform{1.0f, 0.0f, 0.0f});
-        mgr.add_component<Transform>(e2, Transform{2.0f, 0.0f, 0.0f});
+        mgr.add_component<transform>(e1, transform{1.0f, 0.0f, 0.0f});
+        mgr.add_component<transform>(e2, transform{2.0f, 0.0f, 0.0f});
 
-        auto extracted = mgr.extract<Velocity>();
+        auto extracted = mgr.extract<velocity>();
         EXPECT_EQ(extracted.begin(), extracted.end());
 
         int count = 0;
@@ -210,16 +210,16 @@ TEST_F(ExtractionTests, EmptyAndEdgeCases)
         mgr.clear();
 
         entity e1 = mgr.create();
-        mgr.add_component<Transform>(e1, Transform{1.0f, 0.0f, 0.0f});
+        mgr.add_component<transform>(e1, transform{1.0f, 0.0f, 0.0f});
 
         entity e2 = mgr.create();
-        mgr.add_component<Velocity>(e2, Velocity{0.1f, 0.0f, 0.0f});
+        mgr.add_component<velocity>(e2, velocity{0.1f, 0.0f, 0.0f});
 
         entity e3 = mgr.create();
-        mgr.add_component<Health>(e3, Health{100});
+        mgr.add_component<health>(e3, health{100});
 
         // No entity has all three components
-        auto extracted = mgr.extract<Transform, Velocity, Health>();
+        auto extracted = mgr.extract<transform, velocity, health>();
         EXPECT_EQ(extracted.begin(), extracted.end());
 
         int count = 0;
@@ -234,9 +234,9 @@ TEST_F(ExtractionTests, EmptyAndEdgeCases)
     {
         mgr.clear();
         entity e = mgr.create();
-        mgr.add_component<Transform>(e, Transform{1.0f, 0.0f, 0.0f});
+        mgr.add_component<transform>(e, transform{1.0f, 0.0f, 0.0f});
 
-        auto extracted = mgr.extract<Health>();
+        auto extracted = mgr.extract<health>();
         EXPECT_EQ(extracted.begin(), extracted.end());
     }
 }
@@ -251,32 +251,32 @@ TEST_F(ExtractionTests, ActivePartitionBound)
     // where the two metrics disagree on which pool is "smallest" and confirm extract<>()
     // still returns the correct (small) result set.
     //
-    // Transform pool: 100 total entities, only 1 stays active (99 deactivated).
-    // Health pool: 5 total entities, all 5 active.
-    // Old selection (by size()): Health (5) < Transform (100) -> Health chosen as primary.
-    // New selection (by active_size()): Transform (1) < Health (5) -> Transform chosen as primary.
+    // transform pool: 100 total entities, only 1 stays active (99 deactivated).
+    // health pool: 5 total entities, all 5 active.
+    // Old selection (by size()): health (5) < transform (100) -> health chosen as primary.
+    // New selection (by active_size()): transform (1) < health (5) -> transform chosen as primary.
     // This makes old vs. new pool selection disagree; the matching entity below is the only
     // one with both components, so a correct result here means the smallest ACTIVE partition
     // was iterated correctly regardless of which pool ended up driving the loop.
     {
         entity match = mgr.create();
-        mgr.add_component<Transform>(match, Transform{1.0f, 2.0f, 3.0f});
-        mgr.add_component<Health>(match, Health{50});
+        mgr.add_component<transform>(match, transform{1.0f, 2.0f, 3.0f});
+        mgr.add_component<health>(match, health{50});
 
         for (int i = 0; i < 99; ++i)
         {
             entity e = mgr.create();
-            mgr.add_component<Transform>(e, Transform{static_cast<float>(i), 0.0f, 0.0f});
+            mgr.add_component<transform>(e, transform{static_cast<float>(i), 0.0f, 0.0f});
             mgr.deactivate(e);
         }
 
         for (int i = 0; i < 4; ++i)
         {
             entity e = mgr.create();
-            mgr.add_component<Health>(e, Health{i});
+            mgr.add_component<health>(e, health{i});
         }
 
-        auto extracted = mgr.extract<Transform, Health>();
+        auto extracted = mgr.extract<transform, health>();
 
         std::vector<entity> found_entities;
         for (auto [e, t, h] : extracted)
@@ -302,17 +302,17 @@ TEST_F(ExtractionTests, ActivePartitionBound)
         for (int i = 0; i < 50; ++i)
         {
             entity e = mgr.create();
-            mgr.add_component<Transform>(e, Transform{static_cast<float>(i), 0.0f, 0.0f});
+            mgr.add_component<transform>(e, transform{static_cast<float>(i), 0.0f, 0.0f});
             mgr.deactivate(e);
         }
 
         for (int i = 0; i < 3; ++i)
         {
             entity e = mgr.create();
-            mgr.add_component<Health>(e, Health{i});
+            mgr.add_component<health>(e, health{i});
         }
 
-        auto extracted = mgr.extract<Transform, Health>();
+        auto extracted = mgr.extract<transform, health>();
         EXPECT_EQ(extracted.begin(), extracted.end());
 
         int count = 0;
@@ -331,65 +331,65 @@ TEST_F(ExtractionTests, ActivePartitionBound)
 TEST_F(ExtractionTests, ConstCorrectness)
 {
     entity e1 = mgr.create();
-    mgr.add_component<Transform>(e1, Transform{1.0f, 2.0f, 3.0f});
-    mgr.add_component<Velocity>(e1, Velocity{0.1f, 0.2f, 0.3f});
+    mgr.add_component<transform>(e1, transform{1.0f, 2.0f, 3.0f});
+    mgr.add_component<velocity>(e1, velocity{0.1f, 0.2f, 0.3f});
 
     entity e2 = mgr.create();
-    mgr.add_component<Transform>(e2, Transform{4.0f, 5.0f, 6.0f});
-    mgr.add_component<Velocity>(e2, Velocity{0.4f, 0.5f, 0.6f});
+    mgr.add_component<transform>(e2, transform{4.0f, 5.0f, 6.0f});
+    mgr.add_component<velocity>(e2, velocity{0.4f, 0.5f, 0.6f});
 
     // Test 1: Mixed const/mutable access
     {
-        auto extracted = mgr.extract<Transform, const Velocity>();
+        auto extracted = mgr.extract<transform, const velocity>();
 
         for (auto [e, t, v] : extracted)
         {
-            // Can modify Transform
+            // Can modify transform
             t.x += 10.0f;
 
-            // Can read Velocity (const reference)
+            // Can read velocity (const reference)
             float speed = v.dx;
             EXPECT_TRUE(speed >= 0.0f);
 
             // Note: Uncommenting the line below should cause a compile error
-            // v.dx = 1.0f;  // Error: v is const Velocity&
+            // v.dx = 1.0f;  // Error: v is const velocity&
         }
 
-        // Verify Transform was modified
-        EXPECT_EQ(mgr.get_component<Transform>(e1)->x, 11.0f);
-        EXPECT_EQ(mgr.get_component<Transform>(e2)->x, 14.0f);
+        // Verify transform was modified
+        EXPECT_EQ(mgr.get_component<transform>(e1)->x, 11.0f);
+        EXPECT_EQ(mgr.get_component<transform>(e2)->x, 14.0f);
 
-        // Verify Velocity was not modified
-        EXPECT_EQ(mgr.get_component<Velocity>(e1)->dx, 0.1f);
-        EXPECT_EQ(mgr.get_component<Velocity>(e2)->dx, 0.4f);
+        // Verify velocity was not modified
+        EXPECT_EQ(mgr.get_component<velocity>(e1)->dx, 0.1f);
+        EXPECT_EQ(mgr.get_component<velocity>(e2)->dx, 0.4f);
     }
 
     // Test 2: Const entities manager forces const components
     {
         const entities &const_mgr = mgr;
-        auto extracted = const_mgr.extract<Transform>();
+        auto extracted = const_mgr.extract<transform>();
 
         for (auto [e, t] : extracted)
         {
-            // Can read Transform
+            // Can read transform
             float x = t.x;
             EXPECT_TRUE(x >= 0.0f);
 
             // Note: Uncommenting the line below should cause a compile error
-            // t.x = 99.0f;  // Error: t is const Transform&
+            // t.x = 99.0f;  // Error: t is const transform&
         }
 
-        // Verify type is const Transform&
+        // Verify type is const transform&
         static_assert(std::is_same_v<
-            decltype(const_mgr.extract<Transform>()),
-            extraction<const Transform>
+            decltype(const_mgr.extract<transform>()),
+            extraction<const transform>
         >);
     }
 
     // Test 3: Const entities with multiple components
     {
         const entities &const_mgr = mgr;
-        auto extracted = const_mgr.extract<Transform, Velocity>();
+        auto extracted = const_mgr.extract<transform, velocity>();
 
         int count = 0;
         for (auto [e, t, v] : extracted)
@@ -400,8 +400,8 @@ TEST_F(ExtractionTests, ConstCorrectness)
             ++count;
 
             // Note: These should cause compile errors
-            // t.x = 1.0f;  // Error: const Transform&
-            // v.dx = 1.0f; // Error: const Velocity&
+            // t.x = 1.0f;  // Error: const transform&
+            // v.dx = 1.0f; // Error: const velocity&
         }
         EXPECT_EQ(count, 2);
     }
@@ -413,25 +413,25 @@ TEST_F(ExtractionTests, ConstCorrectness)
 
 TEST_F(ExtractionTests, FrozenScenes)
 {
-    constexpr scene_id s1 = scene_id::TestScene1;
-    constexpr scene_id s2 = scene_id::TestScene2;
-    constexpr scene_id s3 = scene_id::TestScene3;
+    constexpr scene_id s1 = scene_id::test_scene1;
+    constexpr scene_id s2 = scene_id::test_scene2;
+    constexpr scene_id s3 = scene_id::test_scene3;
 
     // Test 1: extract_with_frozen() returns the same extraction type as extract()
     {
         const entities &const_mgr = mgr;
 
         static_assert(std::is_same_v<
-            decltype(mgr.extract_with_frozen<Transform>()),
-            decltype(mgr.extract<Transform>())
+            decltype(mgr.extract_with_frozen<transform>()),
+            decltype(mgr.extract<transform>())
         >);
         static_assert(std::is_same_v<
-            decltype(const_mgr.extract_with_frozen<Transform>()),
-            extraction<const Transform>
+            decltype(const_mgr.extract_with_frozen<transform>()),
+            extraction<const transform>
         >);
         static_assert(std::is_same_v<
-            decltype(const_mgr.extract_with_frozen<Transform>()),
-            decltype(const_mgr.extract<Transform>())
+            decltype(const_mgr.extract_with_frozen<transform>()),
+            decltype(const_mgr.extract<transform>())
         >);
     }
 
@@ -444,36 +444,36 @@ TEST_F(ExtractionTests, FrozenScenes)
         entity v1 = mgr.create({}, s2);
         for (entity e : { f1, f2, v1 })
         {
-            mgr.add_component<Transform>(e, Transform{1.0f, 0.0f, 0.0f});
-            mgr.add_component<Health>(e, Health{10});
+            mgr.add_component<transform>(e, transform{1.0f, 0.0f, 0.0f});
+            mgr.add_component<health>(e, health{10});
         }
         mgr.set_scene_frozen(s1, true);
 
-        // Transform is the smaller pool
+        // transform is the smaller pool
         for (int i = 0; i < 5; ++i)
-            mgr.add_component<Health>(mgr.create(), Health{i});
+            mgr.add_component<health>(mgr.create(), health{i});
 
-        EXPECT_EQ((entities_of(mgr.extract<Transform, Health>())), std::vector<entity>{ v1 });
-        EXPECT_EQ((sorted(entities_of(mgr.extract_with_frozen<Transform, Health>()))), sorted({ f1, f2, v1 }));
+        EXPECT_EQ((entities_of(mgr.extract<transform, health>())), std::vector<entity>{ v1 });
+        EXPECT_EQ((sorted(entities_of(mgr.extract_with_frozen<transform, health>()))), sorted({ f1, f2, v1 }));
 
-        // Velocity is the smallest pool and drives the iteration
+        // velocity is the smallest pool and drives the iteration
         mgr.clear();
         f1 = mgr.create({}, s1);
         f2 = mgr.create({}, s1);
         v1 = mgr.create({}, s2);
         for (entity e : { f1, f2, v1 })
         {
-            mgr.add_component<Transform>(e, Transform{1.0f, 0.0f, 0.0f});
-            mgr.add_component<Health>(e, Health{10});
+            mgr.add_component<transform>(e, transform{1.0f, 0.0f, 0.0f});
+            mgr.add_component<health>(e, health{10});
         }
         mgr.set_scene_frozen(s1, true);
         for (int i = 0; i < 5; ++i)
-            mgr.add_component<Transform>(mgr.create(), Transform{0.0f, 0.0f, 0.0f});
+            mgr.add_component<transform>(mgr.create(), transform{0.0f, 0.0f, 0.0f});
         for (entity e : { f1, f2, v1 })
-            mgr.add_component<Velocity>(e, Velocity{0.0f, 0.0f, 0.0f});
+            mgr.add_component<velocity>(e, velocity{0.0f, 0.0f, 0.0f});
 
-        EXPECT_EQ((entities_of(mgr.extract<Velocity, Transform, Health>())), std::vector<entity>{ v1 });
-        EXPECT_EQ((sorted(entities_of(mgr.extract_with_frozen<Velocity, Transform, Health>()))),
+        EXPECT_EQ((entities_of(mgr.extract<velocity, transform, health>())), std::vector<entity>{ v1 });
+        EXPECT_EQ((sorted(entities_of(mgr.extract_with_frozen<velocity, transform, health>()))),
                   sorted({ f1, f2, v1 }));
     }
 
@@ -488,15 +488,15 @@ TEST_F(ExtractionTests, FrozenScenes)
         entity v2 = mgr.create({}, s2);
         entity f4 = mgr.create({}, s1);
         for (entity e : { f1, v1, f2, f3, v2, f4 })
-            mgr.add_component<Transform>(e, Transform{0.0f, 0.0f, 0.0f});
+            mgr.add_component<transform>(e, transform{0.0f, 0.0f, 0.0f});
 
         mgr.set_scene_frozen(s1, true);
-        EXPECT_EQ(sorted(entities_of(mgr.extract<Transform>())), sorted({ v1, v2 }));
+        EXPECT_EQ(sorted(entities_of(mgr.extract<transform>())), sorted({ v1, v2 }));
 
         mgr.set_scene_frozen(s2, true);
-        auto view = mgr.extract<Transform>();
+        auto view = mgr.extract<transform>();
         EXPECT_EQ(view.begin(), view.end());
-        EXPECT_EQ(entities_of(mgr.extract_with_frozen<Transform>()).size(), 6u);
+        EXPECT_EQ(entities_of(mgr.extract_with_frozen<transform>()).size(), 6u);
     }
 
     // Test 4: the iterator lands on the next visible entity
@@ -511,10 +511,10 @@ TEST_F(ExtractionTests, FrozenScenes)
         entity f4 = mgr.create({}, s1);
         float x = 0.0f;
         for (entity e : { f1, v1, f2, f3, v2, f4 })
-            mgr.add_component<Transform>(e, Transform{x++, 0.0f, 0.0f});
+            mgr.add_component<transform>(e, transform{x++, 0.0f, 0.0f});
 
         mgr.set_scene_frozen(s1, true);
-        auto view = mgr.extract<Transform>();
+        auto view = mgr.extract<transform>();
 
         auto it = view.begin();
         {
@@ -551,11 +551,11 @@ TEST_F(ExtractionTests, FrozenScenes)
         entity a = mgr.create();
         entity b = mgr.create();
         for (entity e : { a, b })
-            mgr.add_component<Transform>(e, Transform{0.0f, 0.0f, 0.0f});
+            mgr.add_component<transform>(e, transform{0.0f, 0.0f, 0.0f});
         mgr.set_scene_frozen(s1, true);
 
-        EXPECT_EQ(sorted(entities_of(mgr.extract<Transform>())), sorted({ a, b }));
-        EXPECT_EQ(sorted(entities_of(mgr.extract_with_frozen<Transform>())), sorted({ a, b }));
+        EXPECT_EQ(sorted(entities_of(mgr.extract<transform>())), sorted({ a, b }));
+        EXPECT_EQ(sorted(entities_of(mgr.extract_with_frozen<transform>())), sorted({ a, b }));
     }
 
     // Test 6: scenes frozen during the loop apply to the entities that come after
@@ -571,11 +571,11 @@ TEST_F(ExtractionTests, FrozenScenes)
         entity c2 = mgr.create({}, s3);
         entity g1 = mgr.create();
         for (entity e : { g0, a1, a2, b1, b2, c1, c2, g1 })
-            mgr.add_component<Transform>(e, Transform{0.0f, 0.0f, 0.0f});
+            mgr.add_component<transform>(e, transform{0.0f, 0.0f, 0.0f});
 
         // The extraction holds the frozen vector itself, not its buffer, so the list can grow
         // while the loop runs.
-        auto view = mgr.extract<Transform>();
+        auto view = mgr.extract<transform>();
 
         std::vector<entity> delivered;
         for ([[maybe_unused]] auto [e, t] : view)
@@ -595,11 +595,11 @@ TEST_F(ExtractionTests, FrozenScenes)
         a1 = mgr.create({}, s1);
         a2 = mgr.create({}, s1);
         for (entity e : { g0, a1, a2 })
-            mgr.add_component<Transform>(e, Transform{0.0f, 0.0f, 0.0f});
+            mgr.add_component<transform>(e, transform{0.0f, 0.0f, 0.0f});
         mgr.set_scene_frozen(s1, true);
 
         delivered.clear();
-        for ([[maybe_unused]] auto [e, t] : mgr.extract<Transform>())
+        for ([[maybe_unused]] auto [e, t] : mgr.extract<transform>())
         {
             delivered.push_back(e);
             if (e == g0) mgr.set_scene_frozen(s1, false);
@@ -614,9 +614,9 @@ TEST_F(ExtractionTests, FrozenScenes)
         entity g = mgr.create();
         entity a = mgr.create({}, s1);
         for (entity e : { g, a })
-            mgr.add_component<Transform>(e, Transform{0.0f, 0.0f, 0.0f});
+            mgr.add_component<transform>(e, transform{0.0f, 0.0f, 0.0f});
 
-        auto view = mgr.extract<Transform>();
+        auto view = mgr.extract<transform>();
         EXPECT_EQ(sorted(entities_of(view)), sorted({ g, a }));
 
         mgr.set_scene_frozen(s1, true);
@@ -635,15 +635,15 @@ TEST_F(ExtractionTests, IteratorProtocol)
 {
     // Setup
     entity e1 = mgr.create();
-    mgr.add_component<Transform>(e1, Transform{1.0f, 0.0f, 0.0f});
+    mgr.add_component<transform>(e1, transform{1.0f, 0.0f, 0.0f});
 
     entity e2 = mgr.create();
-    mgr.add_component<Transform>(e2, Transform{2.0f, 0.0f, 0.0f});
+    mgr.add_component<transform>(e2, transform{2.0f, 0.0f, 0.0f});
 
     entity e3 = mgr.create();
-    mgr.add_component<Transform>(e3, Transform{3.0f, 0.0f, 0.0f});
+    mgr.add_component<transform>(e3, transform{3.0f, 0.0f, 0.0f});
 
-    auto extracted = mgr.extract<Transform>();
+    auto extracted = mgr.extract<transform>();
 
     // Test 1: begin() != end() when entities exist
     EXPECT_NE(extracted.begin(), extracted.end());
@@ -668,11 +668,11 @@ TEST_F(ExtractionTests, IteratorProtocol)
         auto [e, t] = *it;
 
         EXPECT_TRUE(mgr.valid(e));
-        EXPECT_TRUE(mgr.has_component<Transform>(e));
+        EXPECT_TRUE(mgr.has_component<transform>(e));
 
         // Verify we can use the types correctly
         static_assert(std::is_same_v<decltype(e), entity>);
-        static_assert(std::is_same_v<decltype(t), Transform&>);
+        static_assert(std::is_same_v<decltype(t), transform&>);
     }
 
     // Test 5: Iterator equality/inequality
@@ -714,7 +714,7 @@ TEST_F(ExtractionTests, IteratorProtocol)
     // Test 8: Empty extraction has begin() == end()
     {
         mgr.clear();
-        auto empty_extracted = mgr.extract<Transform>();
+        auto empty_extracted = mgr.extract<transform>();
         EXPECT_EQ(empty_extracted.begin(), empty_extracted.end());
     }
 }

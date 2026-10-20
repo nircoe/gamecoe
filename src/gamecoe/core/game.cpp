@@ -111,7 +111,7 @@ namespace gamecoe
         }
     }
 
-    game::game(gamecoe::window &&main_window, const Color &background_color)
+    game::game(gamecoe::window &&main_window, const color &background_color)
         : m_window(std::move(main_window))
     {
         set_background_color(background_color);
@@ -139,7 +139,7 @@ namespace gamecoe
     }
 
     std::expected<game, error> game::create(const std::string &title, std::uint32_t width,
-                                            std::uint32_t height, const Color &background_color,
+                                            std::uint32_t height, const color &background_color,
                                             logcoe::LogLevel log_level
 #if GAMECOE_USE_SOUNDCOE
                                             , const soundcoe::init_config &soundcoe_config
@@ -231,14 +231,14 @@ namespace gamecoe
         return m_window.has_value() ? &(*m_window) : nullptr;
     }
 
-    const Color& game::background_color() const
+    const color& game::background_color() const
     {
         GAMECOE_ASSERT_LOG(m_window.has_value(), "game::background_color(): called on a moved-from game");
 
         return m_background_color;
     }
 
-    void game::set_background_color(const Color &background_color)
+    void game::set_background_color(const color &background_color)
     {
         GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::set_background_color(): called on a moved-from game");
 

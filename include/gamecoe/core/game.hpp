@@ -73,10 +73,10 @@ namespace gamecoe
         std::vector<pending_scene_op> m_pending_scene_ops;
         std::vector<systems::entry> m_systems;
         std::vector<systems::scheduler::hint> m_system_hints;
-        Color m_background_color;
+        color m_background_color;
         bool m_playing = false;
 
-        game(gamecoe::window &&main_window, const Color &background_color);
+        game(gamecoe::window &&main_window, const color &background_color);
         scene_metadata* find_scene(scene_id id);
         const scene_metadata* find_scene(scene_id id) const;
         void insert_active_scene_sorted(scene_id id, std::int8_t layer);
@@ -98,7 +98,7 @@ namespace gamecoe
 
         [[nodiscard]] static std::expected<game, error> create(
             const std::string &title = "gamecoe", std::uint32_t width = 800, std::uint32_t height = 600,
-            const Color &background_color = colorcoe::darkSlateGray(),
+            const color &background_color = colorcoe::dark_slate_gray(),
             logcoe::LogLevel log_level = logcoe::LogLevel::DEBUG
 #if GAMECOE_USE_SOUNDCOE
             , const soundcoe::init_config &soundcoe_config = soundcoe::init_config{}
@@ -109,8 +109,8 @@ namespace gamecoe
         const gamecoe::entities& entities() const;
         const gamecoe::window* window() const;
 
-        const Color& background_color() const;
-        void set_background_color(const Color &background_color);
+        const color& background_color() const;
+        void set_background_color(const color &background_color);
 
         void set_log_level(logcoe::LogLevel level);
 

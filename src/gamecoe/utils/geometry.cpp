@@ -42,18 +42,18 @@ namespace gamecoe
 
                 for (int ring = 0; ring < rings; ++ring) {
                     float theta = glm::pi<float>() * (ring + 1) / (rings + 1); // Latitude angle
-                    float sinTheta = std::sin(theta);
-                    float cosTheta = std::cos(theta);
+                    float sin_theta = std::sin(theta);
+                    float cos_theta = std::cos(theta);
 
                     for (int seg = 0; seg < segments; ++seg) {
                         float phi = glm::two_pi<float>() * seg / segments; // Longitude angle
-                        float sinPhi = std::sin(phi);
-                        float cosPhi = std::cos(phi);
+                        float sin_phi = std::sin(phi);
+                        float cos_phi = std::cos(phi);
 
                         result[index++] = glm::vec3{
-                            radius * sinTheta * cosPhi,
-                            radius * cosTheta,
-                            radius * sinTheta * sinPhi
+                            radius * sin_theta * cos_phi,
+                            radius * cos_theta,
+                            radius * sin_theta * sin_phi
                         };
                     }
                 }

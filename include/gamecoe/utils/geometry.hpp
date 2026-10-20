@@ -12,7 +12,7 @@ namespace gamecoe
         {
             constexpr std::array<glm::vec3, 3> vertices()
             {
-                return 
+                return
                 {
                     glm::vec3{-0.5f, -0.5f, 0.0f},
                     glm::vec3{ 0.5f, -0.5f, 0.0f},
@@ -20,10 +20,10 @@ namespace gamecoe
                 };
             }
 
-            constexpr std::array<float, 9> verticesFlat()
+            constexpr std::array<float, 9> vertices_flat()
             {
                 constexpr auto verts = vertices();
-                return 
+                return
                 {
                     verts[0].x, verts[0].y, verts[0].z,
                     verts[1].x, verts[1].y, verts[1].z,
@@ -33,7 +33,7 @@ namespace gamecoe
 
             constexpr std::array<std::uint32_t, 3> indices()
             {
-                return 
+                return
                 {
                     0, 1, 2,
                 };
@@ -45,7 +45,7 @@ namespace gamecoe
         {
             constexpr std::array<glm::vec3, 4> vertices()
             {
-                return 
+                return
                 {
                     glm::vec3{-0.5f, -0.5f, 0.0f},
                     glm::vec3{ 0.5f, -0.5f, 0.0f},
@@ -54,10 +54,10 @@ namespace gamecoe
                 };
             }
 
-            constexpr std::array<float, 12> verticesFlat()
+            constexpr std::array<float, 12> vertices_flat()
             {
                 constexpr auto verts = vertices();
-                return 
+                return
                 {
                     verts[0].x, verts[0].y, verts[0].z,
                     verts[1].x, verts[1].y, verts[1].z,
@@ -68,7 +68,7 @@ namespace gamecoe
 
             constexpr std::array<std::uint32_t, 6> indices()
             {
-                return 
+                return
                 {
                     0, 1, 2,
                     2, 3, 0
@@ -80,7 +80,7 @@ namespace gamecoe
         {
             constexpr std::array<glm::vec3, 8> vertices()
             {
-                return 
+                return
                 {
                     glm::vec3{-0.5f, -0.5f,  0.5f},
                     glm::vec3{ 0.5f, -0.5f,  0.5f},
@@ -93,10 +93,10 @@ namespace gamecoe
                 };
             }
 
-            constexpr std::array<float, 24> verticesFlat()
+            constexpr std::array<float, 24> vertices_flat()
             {
                 constexpr auto verts = vertices();
-                return 
+                return
                 {
                     verts[0].x, verts[0].y, verts[0].z,
                     verts[1].x, verts[1].y, verts[1].z,
@@ -111,7 +111,7 @@ namespace gamecoe
 
             constexpr std::array<std::uint32_t, 36> indices()
             {
-                return 
+                return
                 {
                     0, 1, 2, 2, 3, 0,
                     4, 5, 6, 6, 7, 4,
@@ -132,14 +132,14 @@ namespace gamecoe
         {
             const std::array<glm::vec3, 42>& vertices();
         } // namespace sphere
-        
+
         template<std::size_t N>
-        std::array<glm::vec3, N> transformVertices(const std::array<glm::vec3, N> &vertices, const glm::mat4 &matrix)
+        std::array<glm::vec3, N> transform_vertices(const std::array<glm::vec3, N> &vertices, const glm::mat4 &matrix)
         {
             std::array<glm::vec3, N> transformed;
             for (std::size_t i = 0; i < N; ++i)
                 transformed[i] = glm::vec3(matrix * glm::vec4(vertices[i], 1.0f));
-            
+
             return transformed;
         }
     } // namespace geometry

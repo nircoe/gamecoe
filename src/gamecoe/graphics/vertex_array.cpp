@@ -203,7 +203,7 @@ namespace gamecoe
 
         const vertex_array *vertex_array::triangle()
         {
-            static constexpr auto vertices = geometry::triangle::verticesFlat();
+            static constexpr auto vertices = geometry::triangle::vertices_flat();
             GET_OR_CREATE_SHAPE_VA(g_triangle_va, vertices.data(), vertices.size() / 3, nullptr, 0,
                                     "vertex_array::triangle(): failed to create shape vertex array");
             return g_triangle_va;
@@ -211,7 +211,7 @@ namespace gamecoe
 
         const vertex_array *vertex_array::rectangle()
         {
-            static constexpr auto vertices = geometry::rectangle::verticesFlat();
+            static constexpr auto vertices = geometry::rectangle::vertices_flat();
             static constexpr auto indices = geometry::rectangle::indices();
             GET_OR_CREATE_SHAPE_VA(g_rectangle_va, vertices.data(), vertices.size() / 3, indices.data(), indices.size(),
                                     "vertex_array::rectangle(): failed to create shape vertex array");
@@ -220,7 +220,7 @@ namespace gamecoe
 
         const vertex_array *vertex_array::box()
         {
-            static constexpr auto vertices = geometry::box::verticesFlat();
+            static constexpr auto vertices = geometry::box::vertices_flat();
             static constexpr auto indices = geometry::box::indices();
             GET_OR_CREATE_SHAPE_VA(g_box_va, vertices.data(), vertices.size() / 3, indices.data(), indices.size(),
                                     "vertex_array::box(): failed to create shape vertex array");

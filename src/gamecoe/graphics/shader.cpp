@@ -287,38 +287,38 @@ namespace gamecoe
 
 // set uniform macros
 #if GAMECOE_HAS_DSA
-#define setUniform1i(id, location, val)            glProgramUniform1i(id, location, val)
-#define setUniform2iv(id, location, val)           glProgramUniform2iv(id, location, 1, val)
-#define setUniform3iv(id, location, val)           glProgramUniform3iv(id, location, 1, val)
-#define setUniform4iv(id, location, val)           glProgramUniform4iv(id, location, 1, val)
-#define setUniform1f(id, location, val)            glProgramUniform1f(id, location, val)
-#define setUniform2fv(id, location, val)           glProgramUniform2fv(id, location, 1, val)
-#define setUniform3fv(id, location, val)           glProgramUniform3fv(id, location, 1, val)
-#define setUniform4fv(id, location, val)           glProgramUniform4fv(id, location, 1, val)
-#define setUniformMatrix2fv(id, location, val)     glProgramUniformMatrix2fv(id, location, 1, GL_FALSE, val)
-#define setUniformMatrix3fv(id, location, val)     glProgramUniformMatrix3fv(id, location, 1, GL_FALSE, val)
-#define setUniformMatrix4fv(id, location, val)     glProgramUniformMatrix4fv(id, location, 1, GL_FALSE, val)
-#define setUniformQuat(id, location, val)          glProgramUniform4fv(id, location, 1, val)
+#define SET_UNIFORM_1I(id, location, val)            glProgramUniform1i(id, location, val)
+#define SET_UNIFORM_2IV(id, location, val)           glProgramUniform2iv(id, location, 1, val)
+#define SET_UNIFORM_3IV(id, location, val)           glProgramUniform3iv(id, location, 1, val)
+#define SET_UNIFORM_4IV(id, location, val)           glProgramUniform4iv(id, location, 1, val)
+#define SET_UNIFORM_1F(id, location, val)            glProgramUniform1f(id, location, val)
+#define SET_UNIFORM_2FV(id, location, val)           glProgramUniform2fv(id, location, 1, val)
+#define SET_UNIFORM_3FV(id, location, val)           glProgramUniform3fv(id, location, 1, val)
+#define SET_UNIFORM_4FV(id, location, val)           glProgramUniform4fv(id, location, 1, val)
+#define SET_UNIFORM_MATRIX_2FV(id, location, val)    glProgramUniformMatrix2fv(id, location, 1, GL_FALSE, val)
+#define SET_UNIFORM_MATRIX_3FV(id, location, val)    glProgramUniformMatrix3fv(id, location, 1, GL_FALSE, val)
+#define SET_UNIFORM_MATRIX_4FV(id, location, val)    glProgramUniformMatrix4fv(id, location, 1, GL_FALSE, val)
+#define SET_UNIFORM_QUAT(id, location, val)          glProgramUniform4fv(id, location, 1, val)
 #else
-#define setUniform1i(id, location, val)            glUniform1i(location, val)
-#define setUniform2iv(id, location, val)           glUniform2iv(location, 1, val)
-#define setUniform3iv(id, location, val)           glUniform3iv(location, 1, val)
-#define setUniform4iv(id, location, val)           glUniform4iv(location, 1, val)
-#define setUniform1f(id, location, val)            glUniform1f(location, val)
-#define setUniform2fv(id, location, val)           glUniform2fv(location, 1, val)
-#define setUniform3fv(id, location, val)           glUniform3fv(location, 1, val)
-#define setUniform4fv(id, location, val)           glUniform4fv(location, 1, val)
-#define setUniformMatrix2fv(id, location, val)     glUniformMatrix2fv(location, 1, GL_FALSE, val)
-#define setUniformMatrix3fv(id, location, val)     glUniformMatrix3fv(location, 1, GL_FALSE, val)
-#define setUniformMatrix4fv(id, location, val)     glUniformMatrix4fv(location, 1, GL_FALSE, val)
-#define setUniformQuat(id, location, val)          glUniform4fv(location, 1, val)
+#define SET_UNIFORM_1I(id, location, val)            glUniform1i(location, val)
+#define SET_UNIFORM_2IV(id, location, val)           glUniform2iv(location, 1, val)
+#define SET_UNIFORM_3IV(id, location, val)           glUniform3iv(location, 1, val)
+#define SET_UNIFORM_4IV(id, location, val)           glUniform4iv(location, 1, val)
+#define SET_UNIFORM_1F(id, location, val)            glUniform1f(location, val)
+#define SET_UNIFORM_2FV(id, location, val)           glUniform2fv(location, 1, val)
+#define SET_UNIFORM_3FV(id, location, val)           glUniform3fv(location, 1, val)
+#define SET_UNIFORM_4FV(id, location, val)           glUniform4fv(location, 1, val)
+#define SET_UNIFORM_MATRIX_2FV(id, location, val)    glUniformMatrix2fv(location, 1, GL_FALSE, val)
+#define SET_UNIFORM_MATRIX_3FV(id, location, val)    glUniformMatrix3fv(location, 1, GL_FALSE, val)
+#define SET_UNIFORM_MATRIX_4FV(id, location, val)    glUniformMatrix4fv(location, 1, GL_FALSE, val)
+#define SET_UNIFORM_QUAT(id, location, val)          glUniform4fv(location, 1, val)
 #endif
 
         void shader::set(const std::string &name, bool value) const
         {
             std::int32_t location = uniform_location(name);
 #if GAMECOE_USE_OPENGL
-            setUniform1i(m_id, location, value);
+            SET_UNIFORM_1I(m_id, location, value);
 #endif
         }
 
@@ -326,7 +326,7 @@ namespace gamecoe
         {
             std::int32_t location = uniform_location(name);
 #if GAMECOE_USE_OPENGL
-            setUniform1i(m_id, location, value);
+            SET_UNIFORM_1I(m_id, location, value);
 #endif
         }
 
@@ -334,7 +334,7 @@ namespace gamecoe
         {
             std::int32_t location = uniform_location(name);
 #if GAMECOE_USE_OPENGL
-            setUniform1f(m_id, location, value);
+            SET_UNIFORM_1F(m_id, location, value);
 #endif
         }
 
@@ -342,7 +342,7 @@ namespace gamecoe
         {
             std::int32_t location = uniform_location(name);
 #if GAMECOE_USE_OPENGL
-            setUniform2fv(m_id, location, glm::value_ptr(value));
+            SET_UNIFORM_2FV(m_id, location, glm::value_ptr(value));
 #endif
         }
 
@@ -350,7 +350,7 @@ namespace gamecoe
         {
             std::int32_t location = uniform_location(name);
 #if GAMECOE_USE_OPENGL
-            setUniform3fv(m_id, location, glm::value_ptr(value));
+            SET_UNIFORM_3FV(m_id, location, glm::value_ptr(value));
 #endif
         }
 
@@ -358,7 +358,7 @@ namespace gamecoe
         {
             std::int32_t location = uniform_location(name);
 #if GAMECOE_USE_OPENGL
-            setUniform4fv(m_id, location, glm::value_ptr(value));
+            SET_UNIFORM_4FV(m_id, location, glm::value_ptr(value));
 #endif
         }
 
@@ -366,7 +366,7 @@ namespace gamecoe
         {
             std::int32_t location = uniform_location(name);
 #if GAMECOE_USE_OPENGL
-            setUniform2iv(m_id, location, glm::value_ptr(value));
+            SET_UNIFORM_2IV(m_id, location, glm::value_ptr(value));
 #endif
         }
 
@@ -374,7 +374,7 @@ namespace gamecoe
         {
             std::int32_t location = uniform_location(name);
 #if GAMECOE_USE_OPENGL
-            setUniform3iv(m_id, location, glm::value_ptr(value));
+            SET_UNIFORM_3IV(m_id, location, glm::value_ptr(value));
 #endif
         }
 
@@ -382,7 +382,7 @@ namespace gamecoe
         {
             std::int32_t location = uniform_location(name);
 #if GAMECOE_USE_OPENGL
-            setUniform4iv(m_id, location, glm::value_ptr(value));
+            SET_UNIFORM_4IV(m_id, location, glm::value_ptr(value));
 #endif
         }
 
@@ -390,7 +390,7 @@ namespace gamecoe
         {
             std::int32_t location = uniform_location(name);
 #if GAMECOE_USE_OPENGL
-            setUniformMatrix2fv(m_id, location, glm::value_ptr(value));
+            SET_UNIFORM_MATRIX_2FV(m_id, location, glm::value_ptr(value));
 #endif
         }
 
@@ -398,7 +398,7 @@ namespace gamecoe
         {
             std::int32_t location = uniform_location(name);
 #if GAMECOE_USE_OPENGL
-            setUniformMatrix3fv(m_id, location, glm::value_ptr(value));
+            SET_UNIFORM_MATRIX_3FV(m_id, location, glm::value_ptr(value));
 #endif
         }
 
@@ -406,7 +406,7 @@ namespace gamecoe
         {
             std::int32_t location = uniform_location(name);
 #if GAMECOE_USE_OPENGL
-            setUniformMatrix4fv(m_id, location, glm::value_ptr(value));
+            SET_UNIFORM_MATRIX_4FV(m_id, location, glm::value_ptr(value));
 #endif
         }
 
@@ -414,7 +414,7 @@ namespace gamecoe
         {
             std::int32_t location = uniform_location(name);
 #if GAMECOE_USE_OPENGL
-            setUniformQuat(m_id, location, glm::value_ptr(value));
+            SET_UNIFORM_QUAT(m_id, location, glm::value_ptr(value));
 #endif
         }
     } // namespace graphics

@@ -15,7 +15,7 @@ namespace gamecoe
 {
     namespace
     {
-        [[nodiscard]] std::expected<std::filesystem::path, error> getExecutablePath()
+        [[nodiscard]] std::expected<std::filesystem::path, error> get_executable_path()
         {
             std::filesystem::path exe;
 #if _WIN32
@@ -58,15 +58,15 @@ namespace gamecoe
 
     std::expected<std::string, error> executable_directory()
     {
-        auto exe = getExecutablePath();
+        auto exe = get_executable_path();
         if (!exe) return std::unexpected(exe.error());
         return exe->parent_path().string();
     }
 
-    std::expected<std::string, error> resolve_path(const std::string &relativePath)
+    std::expected<std::string, error> resolve_path(const std::string &relative_path)
     {
-        auto exe = getExecutablePath();
+        auto exe = get_executable_path();
         if (!exe) return std::unexpected(exe.error());
-        return (exe->parent_path() / relativePath).string();
+        return (exe->parent_path() / relative_path).string();
     }
 } // namespace gamecoe
