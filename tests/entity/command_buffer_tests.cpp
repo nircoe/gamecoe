@@ -114,7 +114,7 @@ TEST_F(CommandBufferTests, SpawnAndFlush)
 
 TEST_F(CommandBufferTests, FlushReentrantCommandAppendIsSafe)
 {
-    // Regression (D-3): a queued command that appends another command to the same buffer
+    // Regression: a queued command that appends another command to the same buffer
     // mid-flush must not invalidate flush()'s own iteration over m_commands.
     command_buffer::placeholder p = buf.spawn();
     buf.add(p, [this, p](const command_buffer::resolver&)

@@ -122,8 +122,7 @@ TEST_F(GameTests, CreateSceneDuringPlayIsGuarded)
 #ifndef NDEBUG
     EXPECT_DEATH(g->create_scene(scene_a, build_scene_a), "cannot be created during game::play");
 #else
-    // Release: guard-return, the play-phase lock is what makes m_scenes storage-stable for the
-    // rest of play() - this is the actual mechanism the three original UAF sites relied on.
+    // Release: guard-return. The play-phase lock keeps m_scenes storage-stable for the rest of play().
     g->create_scene(scene_a, build_scene_a);
     EXPECT_FALSE(g->has_scene(scene_a));
 #endif
@@ -243,7 +242,7 @@ TEST_F(GameTests, UnloadDestroysParentedSceneEntities)
     g->entities().set_parent(entities_a[1], entities_a[0]);
 
     // A parented child gets destroyed via its parent's cascade before unload_scene()'s own
-    // loop reaches it - the count must still land on 3, not crash on the already-dead handle.
+    // loop reaches it - the count must still land on 0, not crash on the already-dead handle.
     g->unload_scene(scene_a);
 
     EXPECT_EQ(count_scene_entities(*g, scene_a), 0u);
@@ -723,7 +722,6 @@ TEST_F(GameTests, FreezeSceneBasics)
         for (entity e : entities_a)
             EXPECT_TRUE(g->entities().is_active(e));
         EXPECT_EQ(count_active_scene_entities(*g, scene_a), 0u);
-        EXPECT_EQ(count_scene_entities(*g, scene_a), 3u);
         EXPECT_EQ(count_scene_entities(*g, scene_a), 3u);
         EXPECT_EQ(count_active_scene_entities(*g, scene_b), 1u);
     }

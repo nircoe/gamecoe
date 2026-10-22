@@ -123,7 +123,6 @@ TEST_F(ExtractionTests, BasicExtractionAndFiltering)
         for (auto [e, t, v] : extracted)
         {
             found_entities.push_back(e);
-            // Verify component values are correct
             EXPECT_TRUE(mgr.has_component<transform>(e));
             EXPECT_TRUE(mgr.has_component<velocity>(e));
         }
@@ -159,7 +158,6 @@ TEST_F(ExtractionTests, BasicExtractionAndFiltering)
             t.x += 100.0f;
         }
 
-        // Verify modifications persisted
         EXPECT_EQ(mgr.get_component<transform>(e1)->x, 101.0f);
         EXPECT_EQ(mgr.get_component<transform>(e3)->x, 103.0f);
         EXPECT_EQ(mgr.get_component<transform>(e4)->x, 104.0f);
@@ -252,9 +250,9 @@ TEST_F(ExtractionTests, ActivePartitionBound)
     //
     // transform pool: 100 total entities, only 1 stays active (99 deactivated).
     // health pool: 5 total entities, all 5 active.
-    // Old selection (by size()): health (5) < transform (100) -> health chosen as primary.
-    // New selection (by active_size()): transform (1) < health (5) -> transform chosen as primary.
-    // This makes old vs. new pool selection disagree; the matching entity below is the only
+    // By size(): health (5) < transform (100), so health would drive the loop.
+    // By active_size(): transform (1) < health (5), so transform drives the loop.
+    // The two metrics disagree. The matching entity below is the only
     // one with both components, so a correct result here means the smallest ACTIVE partition
     // was iterated correctly regardless of which pool ended up driving the loop.
     {
@@ -378,7 +376,6 @@ TEST_F(ExtractionTests, ConstCorrectness)
             // t.x = 99.0f;  // Error: t is const transform&
         }
 
-        // Verify type is const transform&
         static_assert(std::is_same_v<
             decltype(const_mgr.extract<transform>()),
             extraction<const transform>
@@ -632,7 +629,6 @@ TEST_F(ExtractionTests, FrozenScenes)
 
 TEST_F(ExtractionTests, IteratorProtocol)
 {
-    // Setup
     entity e1 = mgr.create();
     mgr.add_component<transform>(e1, transform{1.0f, 0.0f, 0.0f});
 
@@ -651,7 +647,7 @@ TEST_F(ExtractionTests, IteratorProtocol)
     {
         auto it = extracted.begin();
         auto &ref = ++it;
-        EXPECT_EQ(&ref, &it); // Returns reference to self
+        EXPECT_EQ(&ref, &it);
     }
 
     // Test 3: Postfix operator++ advances and returns copy
@@ -669,7 +665,6 @@ TEST_F(ExtractionTests, IteratorProtocol)
         EXPECT_TRUE(mgr.valid(e));
         EXPECT_TRUE(mgr.has_component<transform>(e));
 
-        // Verify we can use the types correctly
         static_assert(std::is_same_v<decltype(e), entity>);
         static_assert(std::is_same_v<decltype(t), transform&>);
     }

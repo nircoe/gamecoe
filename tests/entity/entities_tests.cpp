@@ -100,7 +100,6 @@ TEST_F(EntitiesTests, EntityLifecycle)
         EXPECT_TRUE(mgr.valid(e1));
         EXPECT_TRUE(mgr.valid(e2));
 
-        // IDs should be distinct
         EXPECT_NE(e0, e1);
         EXPECT_NE(e1, e2);
 
@@ -132,11 +131,9 @@ TEST_F(EntitiesTests, EntityLifecycle)
 
         entity e1 = mgr.create();
 
-        // Same ID recycled, generation incremented
         EXPECT_EQ(e1.id(), original_id);
         EXPECT_EQ(e1.generation(), original_gen + 1);
 
-        // Old handle is stale, new one is valid
         EXPECT_FALSE(mgr.valid(e0));
         EXPECT_TRUE(mgr.valid(e1));
     }
@@ -241,20 +238,16 @@ TEST_F(EntitiesTests, ComponentOperations)
     {
         entity e = mgr.create();
 
-        // Add
         mgr.add_component<position>(e, position{1.0f, 2.0f, 3.0f});
         EXPECT_TRUE(mgr.has_component<position>(e));
 
-        // Get (mutable)
         position *pos = mgr.get_component<position>(e);
         EXPECT_NE(pos, nullptr);
         EXPECT_EQ(pos->x, 1.0f);
 
-        // Modify and verify
         pos->x = 99.0f;
         EXPECT_EQ(mgr.get_component<position>(e)->x, 99.0f);
 
-        // Remove
         mgr.remove_component<position>(e);
         EXPECT_FALSE(mgr.has_component<position>(e));
         EXPECT_EQ(mgr.get_component<position>(e), nullptr);
@@ -318,7 +311,6 @@ TEST_F(EntitiesTests, DestroyRemovesAllComponents)
 
     mgr.destroy(e);
 
-    // Both components should be gone along with the entity
     EXPECT_FALSE(mgr.valid(e));
     EXPECT_FALSE(mgr.has_component<position>(e));
     EXPECT_FALSE(mgr.has_component<velocity>(e));
@@ -345,7 +337,7 @@ TEST_F(EntitiesTests, ForEach)
     });
     EXPECT_EQ(count, 5);
 
-    // Const for_each — verify mutations persisted
+    // Const for_each, verify mutations persisted
     const entities &const_mgr = mgr;
     float sum = 0.0f;
     const_mgr.for_each<position>([&sum]([[maybe_unused]] entity e, const position &pos)
@@ -387,7 +379,7 @@ TEST_F(EntitiesTests, BulkOperations)
 
     EXPECT_EQ(count, NUM_ENTITIES);
     EXPECT_EQ(mgr.size(), NUM_ENTITIES);
-    EXPECT_LT(duration.count(), 10); // Should complete in < 10ms
+    EXPECT_LT(duration.count(), 10);
 }
 
 //==============================================================================
@@ -666,26 +658,24 @@ TEST_F(EntitiesTests, SetParentCycleDetection)
 #ifndef NDEBUG
     // Test 1: direct 2-node cycle - A is already parent of B, then set_parent(A, B) would make B a
     // parent of its own ancestor A
-    EXPECT_DEATH(
-        {
-            entity a = mgr.create();
-            entity b = mgr.create();
-            mgr.set_parent(b, a); // b's parent = a
-            mgr.set_parent(a, b); // would create a -> b -> a cycle
-        },
-        "would create a parent/child cycle");
+    {
+        entity a = mgr.create();
+        entity b = mgr.create();
+        mgr.set_parent(b, a);
+
+        EXPECT_DEATH(mgr.set_parent(a, b), "would create a parent/child cycle");
+    }
 
     // Test 2: indirect 3-node cycle - A -> B -> C existing chain, then set_parent(A, C) closes the loop
-    EXPECT_DEATH(
-        {
-            entity a = mgr.create();
-            entity b = mgr.create();
-            entity c = mgr.create();
-            mgr.set_parent(b, a); // b's parent = a
-            mgr.set_parent(c, b); // c's parent = b
-            mgr.set_parent(a, c); // would create a -> c -> b -> a cycle
-        },
-        "would create a parent/child cycle");
+    {
+        entity a = mgr.create();
+        entity b = mgr.create();
+        entity c = mgr.create();
+        mgr.set_parent(b, a);
+        mgr.set_parent(c, b);
+
+        EXPECT_DEATH(mgr.set_parent(a, c), "would create a parent/child cycle");
+    }
 #endif
 }
 
@@ -1082,7 +1072,7 @@ TEST_F(EntitiesTests, SelfActiveCascade)
 
         EXPECT_TRUE(mgr.is_active(e));
 
-        mgr.activate(e); // already self-active - should be ignored
+        mgr.activate(e);
 
         EXPECT_TRUE(mgr.is_active(e));
 
@@ -1160,16 +1150,11 @@ TEST_F(EntitiesTests, ReparentRecomputesWorldActive)
         EXPECT_FALSE(mgr.is_active(child_b)); // still parentless, but its own self_active is false
     }
 
-    // Test 4: reparenting between two inactive parents must never observably pass through an
-    // active intermediate state. set_parent() detaches the old link via the private
-    // unlink_parent() helper (not the public remove_parent()) specifically so the child is never
-    // treated as a parentless root mid-call - which, with its true self_active of true, would
-    // otherwise be momentarily active - before being linked to the new parent and recomputed once
-    // at the very end via a single set_active() call. This test can only observe before/after
-    // state, but that's still a meaningful regression guard: a broken implementation that routed
-    // through remove_parent()'s own recompute would flip is_active(child) to true right before
-    // set_parent() completes, and a caller inspecting state from a signal/callback triggered by
-    // that recompute would see it.
+    // Test 4: reparenting between two inactive parents must never pass through an active intermediate
+    // state. set_parent() detaches the old link via the private unlink_parent() helper, not the public
+    // remove_parent(), so the child is never treated as a parentless root mid-call (its self_active is
+    // true, so it would be momentarily active). It is recomputed once at the end. This test only sees
+    // before/after state, but it still guards against routing through remove_parent()'s own recompute.
     {
         mgr.clear();
         entity old_parent = mgr.create();

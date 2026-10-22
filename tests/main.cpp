@@ -94,8 +94,8 @@ int main(int argc, char **argv)
     testcoe::init(&argc, argv);
 
     // Default fork-based death tests inherit any thread state a test already spun up (e.g.
-    // GLFW/logcoe via game::create()) - a held lock at fork time can deadlock the child.
-    // threadsafe re-execs fresh instead, so it's set globally rather than per-test.
+    // GLFW/logcoe via game::create()). A held lock at fork time can deadlock the child.
+    // threadsafe re-execs fresh instead.
     GTEST_FLAG_SET(death_test_style, "threadsafe");
 
     if (ask_for_all || (test_name.empty() && suite_name.empty()))

@@ -168,10 +168,8 @@ TEST_F(VertexArrayTests, DestroyShapeVertexArraysRebuildsFreshInstance)
     const vertex_array *before = vertex_array::triangle();
     ASSERT_NE(before, nullptr);
 
-    // Regression guard: the shape cache pointers used to be function-local statics, left
-    // dangling by destroy_shape_vertex_arrays()'s separate tracking vector. They're now
-    // file-scope globals that get nulled on destroy, so triangle() rebuilds instead of
-    // returning freed memory.
+    // Regression guard: destroy_shape_vertex_arrays() must null the shape cache pointers, so
+    // triangle() rebuilds instead of returning freed memory.
     vertex_array::destroy_shape_vertex_arrays();
 
     const vertex_array *after = vertex_array::triangle();

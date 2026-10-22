@@ -44,7 +44,6 @@ TEST_F(SparseSetTests, InsertOperations)
         set.clear();
         std::vector<entity> entities;
 
-        // Insert 100 entities
         for (std::uint32_t i = 0; i < 100; ++i)
             entities.push_back(entity::create(i, 0));
 
@@ -53,7 +52,6 @@ TEST_F(SparseSetTests, InsertOperations)
 
         EXPECT_EQ(set.size(), 100);
 
-        // Verify all are contained
         for (auto e : entities)
             EXPECT_TRUE(set.contains(e));
     }
@@ -64,9 +62,9 @@ TEST_F(SparseSetTests, InsertOperations)
         auto e = entity::create(42, 0);
 
         set.insert(e, true);
-        set.insert(e, true); // Duplicate insert
+        set.insert(e, true);
 
-        EXPECT_EQ(set.size(), 1); // Size unchanged
+        EXPECT_EQ(set.size(), 1);
         EXPECT_TRUE(set.contains(e));
     }
 
@@ -144,7 +142,6 @@ TEST_F(SparseSetTests, EraseOperations)
         set.insert(e2, true);
         set.insert(e3, true);
 
-        // Erase middle entity (e2)
         set.erase(e2);
 
         EXPECT_EQ(set.size(), 2);
@@ -154,7 +151,7 @@ TEST_F(SparseSetTests, EraseOperations)
 
         // e3 should have been swapped to e2's old position
         EXPECT_EQ(set.index(e1).value(), 0);
-        EXPECT_EQ(set.index(e3).value(), 1); // e3 moved to index 1 (e2's old position)
+        EXPECT_EQ(set.index(e3).value(), 1);
     }
 
     // Test 3: Erase non-existent entity (no-op)
@@ -166,9 +163,9 @@ TEST_F(SparseSetTests, EraseOperations)
         set.insert(e1, true);
         EXPECT_EQ(set.size(), 1);
 
-        set.erase(e2); // e2 not in set
+        set.erase(e2);
 
-        EXPECT_EQ(set.size(), 1); // Size unchanged
+        EXPECT_EQ(set.size(), 1);
         EXPECT_TRUE(set.contains(e1));
     }
 }
@@ -215,7 +212,7 @@ TEST_F(SparseSetTests, EraseAtOperations)
         auto e = entity::create(42, 0);
         set.insert(e, true);
 
-        set.erase_at(5); // Out of bounds, should be no-op
+        set.erase_at(5);
 
         EXPECT_EQ(set.size(), 1);
         EXPECT_TRUE(set.contains(e));
@@ -306,7 +303,6 @@ TEST_F(SparseSetTests, ActivePartition)
             set.insert(e, true);
         }
 
-        // Deactivate every other entity
         std::vector<entity> expected_active;
         std::vector<entity> expected_inactive;
         for (std::size_t i = 0; i < inserted.size(); ++i)
@@ -359,7 +355,7 @@ TEST_F(SparseSetTests, EraseAcrossActiveBoundary)
 
         set.erase(a);
 
-        // Pre-fix bug candidate: active_size() left at 2 with c incorrectly landing active
+        // Wrong result: active_size() left at 2 with c incorrectly landing active
         constexpr std::size_t buggy_active_size = 2;
         EXPECT_NE(set.active_size(), buggy_active_size);
         EXPECT_EQ(set.active_size(), 1);
@@ -520,8 +516,8 @@ TEST_F(SparseSetTests, EraseAcrossActiveBoundary)
         EXPECT_FALSE(set.contains(d));
     }
 
-    // Test 8: entirely-active set (no inactive entities at all) - confirm erase still
-    // behaves exactly as before this ticket (regression check for the plain case)
+    // Test 8: entirely-active set (no inactive entities at all). erase must still work as in a plain set
+    // (regression check for the plain case)
     {
         set.clear();
         auto a = entity::create(1, 0);
@@ -552,7 +548,6 @@ TEST_F(SparseSetTests, EraseAcrossActiveBoundary)
 
 TEST_F(SparseSetTests, GenerationMismatch)
 {
-    // Create two entities with same ID but different generations
     auto e_gen0 = entity::create(42, 0);
     auto e_gen1 = entity::create(42, 1);
 
@@ -560,9 +555,8 @@ TEST_F(SparseSetTests, GenerationMismatch)
 
     // e_gen0 is contained, but e_gen1 (same id, different gen) is NOT
     EXPECT_TRUE(set.contains(e_gen0));
-    EXPECT_FALSE(set.contains(e_gen1)); // Generation mismatch!
+    EXPECT_FALSE(set.contains(e_gen1));
 
-    // Index should return nullopt for wrong generation
     EXPECT_TRUE(set.index(e_gen0).has_value());
     EXPECT_FALSE(set.index(e_gen1).has_value());
 }
@@ -607,7 +601,6 @@ TEST_F(SparseSetTests, ClearSet)
     EXPECT_EQ(set.size(), 0);
     EXPECT_TRUE(set.empty());
 
-    // Verify previously inserted entities are no longer contained
     for (std::uint32_t i = 0; i < 50; ++i)
         EXPECT_FALSE(set.contains(entity::create(i, 0)));
 }
@@ -620,7 +613,6 @@ TEST_F(SparseSetTests, IterateDense)
 {
     std::vector<entity> entities;
 
-    // Insert 10 entities
     for (std::uint32_t i = 0; i < 10; ++i)
     {
         auto e = entity::create(i * 10, 0); // IDs: 0, 10, 20, ..., 90
@@ -628,7 +620,6 @@ TEST_F(SparseSetTests, IterateDense)
         set.insert(e, true);
     }
 
-    // Iterate using begin()/end()
     std::vector<entity> iterated_entities;
     for (auto it = set.begin(); it != set.end(); ++it)
         iterated_entities.push_back(*it);
@@ -656,7 +647,6 @@ TEST_F(SparseSetTests, MoveSemantics)
     EXPECT_EQ(set1.size(), 2);
     EXPECT_EQ(set1.active_size(), 1);
 
-    // Move constructor
     sparse_set set2(std::move(set1));
     EXPECT_EQ(set2.size(), 2);
     EXPECT_EQ(set2.active_size(), 1);
@@ -665,7 +655,6 @@ TEST_F(SparseSetTests, MoveSemantics)
     EXPECT_TRUE(set2.contains(e1));
     EXPECT_TRUE(set2.contains(e2));
 
-    // Move assignment
     sparse_set set3;
     set3 = std::move(set2);
     EXPECT_EQ(set3.size(), 2);
@@ -682,7 +671,6 @@ TEST_F(SparseSetTests, MoveSemantics)
 
 TEST_F(SparseSetTests, ReserveCapacity)
 {
-    // Reserve capacity for 1000 entities
     set.reserve(1000);
 
     // Insert 500 entities (should not trigger reallocation)
@@ -691,7 +679,6 @@ TEST_F(SparseSetTests, ReserveCapacity)
 
     EXPECT_EQ(set.size(), 500);
 
-    // Verify all entities are accessible
     for (std::uint32_t i = 0; i < 500; ++i)
         EXPECT_TRUE(set.contains(entity::create(i, 0)));
 }

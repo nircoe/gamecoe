@@ -293,7 +293,6 @@ TEST_F(ComponentPoolTests, ActivePartition)
         }
         payload_sweep();
 
-        // Deactivate entities 1, 3, 5
         pool.deactivate(entities[1]);
         payload_sweep();
         pool.deactivate(entities[3]);
@@ -331,7 +330,7 @@ TEST_F(ComponentPoolTests, ActivePartition)
 
 TEST_F(ComponentPoolTests, AddIntoPoolWithInactiveEntities)
 {
-    // Test 1: add() into a pool with [active ‖ inactive] must land the new component in its
+    // Test 1: add() into a pool with [active | inactive] must land the new component in its
     // own slot without corrupting the existing inactive entity's payload - a naive
     // `return m_components.back()` implementation would return a stale/wrong reference here.
     {
@@ -675,7 +674,6 @@ TEST_F(ComponentPoolTests, ForEachAll)
         pool.add(e, true, position{static_cast<float>(i), 0.0f, 0.0f});
     }
 
-    // Deactivate a subset
     pool.deactivate(entities[1]);
     pool.deactivate(entities[4]);
 
