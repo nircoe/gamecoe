@@ -280,8 +280,7 @@ namespace gamecoe
         if (auto* p = parent_pool->try_get(child); p && p->handle == parent) return;
 
         // Walk up from parent toward the root, checking whether child appears as its own ancestor.
-        // guard bounds the walk to entities.size() so a corrupted parent chain
-        // (shouldn't happen — set_parent blocks cycles at insertion) can't loop forever.
+        // guard bounds the walk to entities.size() so a corrupted parent chain can't loop forever.
         entity ancestor = parent;
         std::size_t guard = 0;
         const std::size_t max_guard = size();

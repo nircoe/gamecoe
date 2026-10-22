@@ -9,11 +9,8 @@ namespace gamecoe
 {
     struct entity
     {
-        // 20-bit id, 12-bit generation: sized for object-pooling workloads (roughly 1M entities,
-        // ~4K generation-recycles per id) while keeping the whole handle at 4 bytes register-friendly.
-        // MAX_ENTITIES and MAX_GENERATIONS reserve the top value to avoid sentinel collision (see invalid()).
-        // Future: consider 32-bit id and separated 16-bit generation, 
-        // or 64-bit handles for larger games requiring more ids and generations (with custom separation within the 64-bits).
+        // 20-bit id, 12-bit generation: about 1M entities and 4K recycles per id, in a 4 byte handle.
+        // MAX_ENTITIES and MAX_GENERATIONS skip the top value so it stays free for invalid().
         static constexpr std::uint8_t ID_BITS = 20;
         static constexpr std::uint8_t GEN_BITS = 12;
         static constexpr std::uint32_t ID_MASK = (1U << ID_BITS) - 1;
@@ -21,7 +18,7 @@ namespace gamecoe
         static constexpr std::uint32_t MAX_ENTITIES = ID_MASK - 1;  // 1,048,574
         static constexpr std::uint16_t MAX_GENERATIONS = GEN_MASK - 1;  // 4,094
 
-        // All-1s bit pattern, this sentinel is why MAX_ENTITIES and MAX_GENERATIONS reserve the top value.
+        // All-1s bit pattern.
         [[nodiscard]] static constexpr entity invalid() noexcept { return entity{std::numeric_limits<std::uint32_t>::max()}; }
 
         auto operator<=>(const entity &other) const noexcept = default;

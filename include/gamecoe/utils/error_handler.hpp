@@ -32,7 +32,7 @@ namespace gamecoe
 {
     namespace detail
     {
-        // Centralizes the "always log on error construction" behavior.
+        // Logs every error it builds.
         [[nodiscard]] error make_error(error_code code, const std::string &message);
 
         [[nodiscard]] inline error invalid_argument(const std::string &message)

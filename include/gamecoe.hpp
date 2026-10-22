@@ -16,5 +16,3 @@
 #if GAMECOE_USE_SOUNDCOE
 #include <soundcoe.hpp>
 #endif
-
-// more to come...

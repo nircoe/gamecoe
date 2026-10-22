@@ -15,8 +15,7 @@ namespace gamecoe
 {
     class sparse_set
     {
-        // PAGE_SIZE = 1024 matches 4KB OS page (1024 * sizeof(uint32_t) == 4096),
-        // balances memory waste vs pointer-chasing overhead.
+        // 1024 uint32_t entries fill one 4KB OS page.
         static constexpr std::uint16_t PAGE_SIZE = 1024;
         // Mirrors entity::invalid()'s all-1s pattern,
         // safe for the same reason (create() can never produce this exact value).
@@ -29,8 +28,8 @@ namespace gamecoe
         std::vector<entity> m_dense;
         std::uint32_t m_active_count{0};
 
-        // Generation packed alongside dense index in the sparse array itself,
-        // so contains() never touches the dense array, pure cache win.
+        // Generation is packed with the dense index in the sparse array,
+        // so contains() never touches the dense array.
         std::uint16_t index_in_page(entity e) const noexcept { return e.id() % PAGE_SIZE; }
         std::uint32_t page_index(entity e) const noexcept { return e.id() / PAGE_SIZE; }
 
@@ -74,9 +73,9 @@ namespace gamecoe
 
         void reserve(std::size_t capacity) { m_dense.reserve(capacity); }
 
-        // A new entry is appended at the back, which the active_count <= size invariant guarantees
-        // is at or past the active/inactive boundary - so an inactive insert is a plain append, and
-        // only the active path pays for a swap down into the active partition.
+        // A new entry is appended at the back, which the active_count <= size invariant keeps
+        // at or past the active/inactive boundary. An inactive insert is a plain append,
+        // an active one swaps down into the active partition.
         bool insert(entity e, bool active)
         {
             if (contains(e)) return true;
@@ -101,8 +100,7 @@ namespace gamecoe
             return true;
         }
 
-        // Mirrors erase() but skips entity-to-index lookup, used by component_pool::remove()
-        // which has already resolved the index and would otherwise pay for redundant lookup.
+        // Like erase(), but takes the dense index directly.
         void erase_at(std::uint32_t dense_index)
         {
             if (dense_index >= m_dense.size()) return;

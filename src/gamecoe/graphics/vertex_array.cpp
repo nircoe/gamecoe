@@ -14,8 +14,8 @@ namespace gamecoe
     {
         namespace
         {
-            // Leaked if destroy_shape_vertex_arrays() is never called
-            // safer than an automatic destructor potentially running after the GL context is already gone.
+            // Leaked if destroy_shape_vertex_arrays() is never called, safer than a destructor
+            // running after the GL context is gone.
             vertex_array *g_triangle_va = nullptr;
             vertex_array *g_rectangle_va = nullptr;
             vertex_array *g_box_va = nullptr;

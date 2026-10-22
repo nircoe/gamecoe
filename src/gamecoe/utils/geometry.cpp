@@ -34,19 +34,17 @@ namespace gamecoe
                 std::array<glm::vec3, 42> result;
                 constexpr float radius = 0.5f;
 
-                // UV Sphere: 6 rings (latitude) × 7 segments (longitude) = 42 vertices
-                // This gives even distribution across the sphere surface
                 constexpr int rings = 6;
                 constexpr int segments = 7;
                 int index = 0;
 
                 for (int ring = 0; ring < rings; ++ring) {
-                    float theta = glm::pi<float>() * (ring + 1) / (rings + 1); // Latitude angle
+                    float theta = glm::pi<float>() * (ring + 1) / (rings + 1);
                     float sin_theta = std::sin(theta);
                     float cos_theta = std::cos(theta);
 
                     for (int seg = 0; seg < segments; ++seg) {
-                        float phi = glm::two_pi<float>() * seg / segments; // Longitude angle
+                        float phi = glm::two_pi<float>() * seg / segments;
                         float sin_phi = std::sin(phi);
                         float cos_phi = std::cos(phi);
 

@@ -23,8 +23,7 @@ namespace gamecoe
         struct placeholder
         {
         private:
-            // Opaque token, not a real entity until flush() - same "safety over convenience"
-            // precedent as entity itself. Private ctor + friend keeps callers from forging one.
+            // Opaque token, not a real entity until flush(). Private ctor + friend keeps callers from forging one.
             std::uint32_t m_index;
             explicit constexpr placeholder(std::uint32_t index) noexcept : m_index(index) { }
             friend class command_buffer;
@@ -42,8 +41,7 @@ namespace gamecoe
         };
 
     private:
-        // std::function requires copyable captured values (all current components qualify) -
-        // revisit std::move_only_function once CI toolchains confirm C++23 library support
+        // std::function requires copyable captured values.
         using command = std::function<void(entities&, const resolver&)>;
         std::vector<components::transform> m_spawn_transforms;
         std::vector<command> m_commands;
@@ -56,8 +54,8 @@ namespace gamecoe
         // Queues an entity with the given transform (default if omitted). No real entity until flush().
         placeholder spawn(components::transform t = components::transform{});
 
-        // Queues a component add-or-assign, applied at flush(). Add-only would always fail for
-        // transform (every spawned entity already has one), so add-or-assign covers every component type the same way.
+        // Queues a component add-or-assign, applied at flush().
+        // Add-or-assign because every spawned entity already has a transform.
         template <typename T>
         requires (!std::invocable<T, const resolver&>)
         void add(placeholder p, T value)

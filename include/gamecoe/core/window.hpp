@@ -28,7 +28,7 @@ namespace gamecoe
         window& operator=(window &&other) noexcept;
         ~window();
 
-        // Requires glfwInit() to have already succeeded (window does not call glfwInit()/glfwTerminate() itself - that's game's responsibility).
+        // Needs glfwInit() to have succeeded. game calls glfwInit()/glfwTerminate(), window doesn't.
         [[nodiscard]] static std::expected<window, error> create(
             const std::string &title = "gamecoe", std::uint32_t width = 800, std::uint32_t height = 600);
 

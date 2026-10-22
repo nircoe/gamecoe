@@ -45,10 +45,8 @@ namespace gamecoe
             const extraction* m_extracted;
             std::size_t m_index;
 
-            // std::get<Is> needs a compile-time index, but which pool is smallest is only known
+            // std::get<Is> needs a compile-time index, but the smallest pool is only known
             // at runtime (m_smallest_pool_index), so this loops over indices via a fold expression.
-            // has_all_components() below can stay type-keyed (a plain fold over Components) since
-            // it doesn't need to single out one specific pool.
             template <std::size_t... Is>
             entity get_current_entity(std::index_sequence<Is...>) const
             {

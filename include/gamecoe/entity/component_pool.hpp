@@ -147,9 +147,9 @@ namespace gamecoe
             return index ? &m_components[index.value()] : nullptr;
         }
 
-        // Active partition only - a deactivated entity (e.g. one in a paused scene) is skipped,
-        // same bound extract<>() uses. Activating/deactivating an entity from inside the callback
-        // reorders the dense array mid-loop, same hazard as extraction (see extraction.hpp).
+        // Active partition only, a deactivated entity (e.g. one in a paused scene) is skipped.
+        // Activating/deactivating an entity from inside the callback reorders the dense array
+        // mid-loop, same hazard as extraction (see extraction.hpp).
         template<typename Func>
         void for_each(Func &&func)
         {
@@ -184,8 +184,8 @@ namespace gamecoe
                 func(m_entities.get_entity_at_index(i), m_components[i]);
         }
 
-        // Iterators invalidated by add/remove (dense array reallocation). Span both partitions
-        // (active and inactive) - for active-only iteration use for_each()/extract() instead.
+        // Iterators invalidated by add/remove (dense array reallocation). Spans both partitions
+        // (active and inactive). For active-only iteration use for_each()/extract().
         T *begin() noexcept { return m_components.data(); }
         T *end() noexcept { return m_components.data() + m_components.size(); }
         const T *begin() const noexcept { return m_components.data(); }

@@ -29,8 +29,7 @@ namespace gamecoe
 
     class entities
     {
-        // Plain counters, not atomics. Atomics would imply a thread-safety guarantee
-        // this ECS doesn't have yet, revisit once the threading model is decided.
+        // Plain counters, not atomics. The ECS has no thread-safety guarantee.
         static std::uint32_t s_component_id;
 
         std::vector<std::unique_ptr<basic_component_pool>> m_pools;
@@ -97,10 +96,9 @@ namespace gamecoe
         // Applies world_active to e and cascades to its subtree per each descendant's own self_active and scene pause.
         void set_active(entity e, bool world_active);
 
-        // self_active AND scene not paused AND (no parent OR the parent's own world-active state) - the formula every
-        // hierarchy-aware active-state recompute in this file is built on. Reads e's *current*
-        // self_active and parent link, so callers update those first if this call means to reflect
-        // a change (e.g. activate() sets m_self_active[e.id()] = true before calling this).
+        // self_active AND scene not paused AND (no parent OR the parent's world-active state).
+        // Reads e's current self_active and parent link, so callers update those first
+        // (e.g. activate() sets m_self_active[e.id()] = true before calling this).
         bool compute_world_active(entity e);
 
         // True if the scene is in m_paused_scenes.

@@ -18,8 +18,7 @@ namespace gamecoe
             [[nodiscard]] glm::mat4 translation_matrix() const noexcept { return glm::translate(glm::mat4(1.0f), position); }
             [[nodiscard]] glm::mat4 rotation_matrix() const noexcept { return glm::mat4_cast(rotation); }
             [[nodiscard]] glm::mat4 scale_matrix() const noexcept { return glm::scale(glm::mat4(1.0f), scale); }
-            // Built by hand instead of translation_matrix() * rotation_matrix() * scale_matrix()
-            // to avoid two extra mat4 multiplications - this runs per-entity, per-frame.
+            // Built by hand to skip two mat4 multiplications, this runs per entity per frame.
             [[nodiscard]] glm::mat4 local_matrix() const noexcept
             {
                 glm::mat4 m = glm::mat4_cast(rotation);
