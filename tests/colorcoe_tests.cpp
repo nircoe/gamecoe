@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
-#include <colorcoe.hpp>
 #include <gamecoe/utils/error.hpp>
+#include <colorcoe.hpp>
+#include <gtest/gtest.h>
 
 using namespace gamecoe;
 
@@ -8,7 +8,9 @@ using namespace gamecoe;
 //                 ColorcoeTests - color::from_hex() tests
 //==============================================================================
 
-class ColorcoeTests : public ::testing::Test { };
+class ColorcoeTests : public ::testing::Test
+{
+};
 
 //==============================================================================
 //                         Successful Decoding

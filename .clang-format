@@ -7,7 +7,7 @@ AccessModifierOffset: -4
 PointerAlignment: Right
 SpaceBeforeParens: ControlStatements
 SpaceInEmptyBlock: true
-AllowShortFunctionsOnASingleLine: Inline
+AllowShortFunctionsOnASingleLine: All
 AllowShortIfStatementsOnASingleLine: WithoutElse
 BreakTemplateDeclarations: Yes
 NamespaceIndentation: All
@@ -16,13 +16,16 @@ IndentCaseLabels: true
 IndentPPDirectives: BeforeHash
 InsertNewlineAtEOF: true
 BinPackParameters: false
+Cpp11BracedListStyle: false
 LambdaBodyIndentation: OuterScope
 PenaltyReturnTypeOnItsOwnLine: 1000
 IncludeBlocks: Merge
 IncludeCategories:
-  - Regex: '^<(gamecoe/[^>]*|gamecoe_config\.hpp|gamecoe\.hpp|colorcoe\.hpp|inputcoe\.hpp|timecoe\.hpp|support/[^>]*)>$'
+  - Regex: '^<(gamecoe/[^>]*|gamecoe_config\.hpp|gamecoe\.hpp|support/[^>]*)>$'
     Priority: 1
-  - Regex: '^<[^>]+\.(h|hpp)>$'
+  - Regex: '^<(colorcoe|inputcoe|timecoe)\.hpp>$'
     Priority: 2
-  - Regex: '^<[^>.]+>$'
+  - Regex: '^<[^>]+\.(h|hpp)>$'
     Priority: 3
+  - Regex: '^<[^>.]+>$'
+    Priority: 4

@@ -1,10 +1,10 @@
-#include <gtest/gtest.h>
 #include <gamecoe/entity/sparse_set.hpp>
+#include <gtest/gtest.h>
 #include <algorithm>
-#include <vector>
 #include <cstddef>
 #include <cstdint>
 #include <utility>
+#include <vector>
 
 using namespace gamecoe;
 

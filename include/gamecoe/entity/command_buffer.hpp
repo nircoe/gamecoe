@@ -1,17 +1,17 @@
 #pragma once
 
-#include <gamecoe/entity/entity.hpp>
-#include <gamecoe/entity/entities.hpp>
 #include <gamecoe/component/transform.hpp>
 #include <gamecoe/core/scene_id.hpp>
+#include <gamecoe/entity/entities.hpp>
+#include <gamecoe/entity/entity.hpp>
 #include <concepts>
-#include <functional>
-#include <optional>
-#include <vector>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <optional>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace gamecoe
 {
@@ -31,18 +31,18 @@ namespace gamecoe
 
         class resolver
         {
-            explicit resolver(const std::vector<entity>& created) noexcept : m_created(created) { }
-            const std::vector<entity>& m_created;
+            explicit resolver(const std::vector<entity> &created) noexcept : m_created(created) { }
+            const std::vector<entity> &m_created;
             friend class command_buffer;
 
         public:
-            resolver(const resolver&) = delete;
+            resolver(const resolver &) = delete;
             entity resolve(placeholder p) const;
         };
 
     private:
         // std::function requires copyable captured values.
-        using command = std::function<void(entities&, const resolver&)>;
+        using command = std::function<void(entities &, const resolver &)>;
         std::vector<components::transform> m_spawn_transforms;
         std::vector<command> m_commands;
         std::size_t m_last_spawn_count = 0;
@@ -57,10 +57,10 @@ namespace gamecoe
         // Queues a component add-or-assign, applied at flush().
         // Add-or-assign because every spawned entity already has a transform.
         template <typename T>
-        requires (!std::invocable<T, const resolver&>)
+            requires(!std::invocable<T, const resolver &>)
         void add(placeholder p, T value)
         {
-            m_commands.emplace_back([p, value = std::move(value)](entities& ents, const resolver& r) mutable
+            m_commands.emplace_back([p, value = std::move(value)](entities &ents, const resolver &r) mutable
             {
                 entity e = r.resolve(p);
                 ents.set_component<T>(e, std::move(value));
@@ -69,13 +69,13 @@ namespace gamecoe
 
         // Queues a component computed from a resolver callable, applied at flush().
         template <typename Callable>
-        requires std::invocable<Callable, const resolver&>
-        void add(placeholder p, Callable&& fn)
+            requires std::invocable<Callable, const resolver &>
+        void add(placeholder p, Callable &&fn)
         {
-            using T = std::decay_t<std::invoke_result_t<Callable, const resolver&>>;
+            using T = std::decay_t<std::invoke_result_t<Callable, const resolver &>>;
             static_assert(!std::is_void_v<T>, "command_buffer::add(): callable must return a component value");
 
-            m_commands.emplace_back([p, fn = std::forward<Callable>(fn)](entities& ents, const resolver& r) mutable
+            m_commands.emplace_back([p, fn = std::forward<Callable>(fn)](entities &ents, const resolver &r) mutable
             {
                 entity e = r.resolve(p);
                 ents.set_component<T>(e, fn(r));
@@ -85,8 +85,9 @@ namespace gamecoe
         // Queues a set_parent, applied at flush() via the live entities::set_parent().
         void set_parent(placeholder child, placeholder parent);
 
-        // Creates all queued entities, runs all queued commands, then clears. Stamps scene_tag on every created entity if `scene` is set.
-        void flush(entities& ents, std::optional<scene_id> scene = std::nullopt);
+        // Creates all queued entities, runs all queued commands, then clears. Stamps scene_tag on every created entity
+        // if `scene` is set.
+        void flush(entities &ents, std::optional<scene_id> scene = std::nullopt);
 
         [[nodiscard]] std::size_t spawn_count() const noexcept { return m_spawn_transforms.size(); }
         [[nodiscard]] bool empty() const noexcept { return m_spawn_transforms.empty() && m_commands.empty(); }
@@ -95,5 +96,5 @@ namespace gamecoe
     };
 
     static_assert(std::is_nothrow_move_constructible_v<command_buffer>,
-        "command_buffer must stay nothrow-movable - flat_map reallocation falls back to copying otherwise");
+                  "command_buffer must stay nothrow-movable - flat_map reallocation falls back to copying otherwise");
 } // namespace gamecoe

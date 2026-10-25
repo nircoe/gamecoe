@@ -3,8 +3,5 @@
 
 namespace gamecoe
 {
-    std::string to_string(scene_id id)
-    {
-        return "TestScene" + std::to_string(std::to_underlying(id));
-    }
+    std::string to_string(scene_id id) { return "TestScene" + std::to_string(std::to_underlying(id)); }
 } // namespace gamecoe

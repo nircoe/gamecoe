@@ -1,19 +1,19 @@
 #pragma once
 
-#include <cstddef>
-#include <gamecoe/entity/entity.hpp>
-#include <gamecoe/entity/component_pool.hpp>
-#include <gamecoe/entity/extraction.hpp>
 #include <gamecoe/component/scene_tag.hpp>
 #include <gamecoe/component/transform.hpp>
 #include <gamecoe/core/scene_id.hpp>
+#include <gamecoe/entity/component_pool.hpp>
+#include <gamecoe/entity/entity.hpp>
+#include <gamecoe/entity/extraction.hpp>
+#include <gamecoe/utils/error_handler.hpp>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <optional>
 #include <type_traits>
 #include <utility>
 #include <vector>
-#include <memory>
-#include <cstdint>
-#include <gamecoe/utils/error_handler.hpp>
 
 namespace gamecoe
 {
@@ -44,36 +44,36 @@ namespace gamecoe
         // for_each() skip them by their scene_tag.
         std::vector<scene_id> m_frozen_scenes;
 
-        std::uint32_t m_current_entity_id{0};
+        std::uint32_t m_current_entity_id{ 0 };
 
         // Creates a new pool if not exists (lazy auto-registration).
         template <typename T>
-        component_pool<T>* get_pool()
+        component_pool<T> *get_pool()
         {
             std::uint32_t comp_id = component_id<T>();
 
-            if (comp_id >= m_pools.size())  m_pools.resize(comp_id + 1);
-            if (!m_pools[comp_id])          m_pools[comp_id] = std::make_unique<component_pool<T>>();
+            if (comp_id >= m_pools.size()) m_pools.resize(comp_id + 1);
+            if (!m_pools[comp_id]) m_pools[comp_id] = std::make_unique<component_pool<T>>();
 
-            return static_cast<component_pool<T>*>(m_pools[comp_id].get());
+            return static_cast<component_pool<T> *>(m_pools[comp_id].get());
         }
 
         // Non-creating lookup - nullptr if T's pool doesn't exist yet. The const-safe
         // counterpart to get_pool<T>() above, for callers that must not mutate m_pools.
         template <typename T>
-        component_pool<T>* find_pool()
+        component_pool<T> *find_pool()
         {
             std::uint32_t comp_id = component_id<T>();
             if (comp_id >= m_pools.size() || !m_pools[comp_id]) return nullptr;
-            return static_cast<component_pool<T>*>(m_pools[comp_id].get());
+            return static_cast<component_pool<T> *>(m_pools[comp_id].get());
         }
 
         template <typename T>
-        const component_pool<T>* find_pool() const
+        const component_pool<T> *find_pool() const
         {
             std::uint32_t comp_id = component_id<T>();
             if (comp_id >= m_pools.size() || !m_pools[comp_id]) return nullptr;
-            return static_cast<const component_pool<T>*>(m_pools[comp_id].get());
+            return static_cast<const component_pool<T> *>(m_pools[comp_id].get());
         }
 
         bool in_frozen_scene(entity e, const component_pool<components::scene_tag> *tags) const
@@ -117,7 +117,9 @@ namespace gamecoe
 
         // Re-tags root's subtree to target_tag, or clears the tag if target_tag is empty.
         // Stops at a node whose tag already matches, so it won't re-walk an already-correct subtree.
-        void retag_subtree_scene(component_pool<components::scene_tag>& scene_tag_pool, entity root, const std::optional<components::scene_tag>& target_tag);
+        void retag_subtree_scene(component_pool<components::scene_tag> &scene_tag_pool,
+                                 entity root,
+                                 const std::optional<components::scene_tag> &target_tag);
 
     public:
         // Returns static and unique id for component T
@@ -129,18 +131,16 @@ namespace gamecoe
         }
 
         entities() = default;
-        entities(const entities&) = delete;
-        entities(entities&& other) noexcept
-            : m_pools(std::move(other.m_pools))
-            , m_recycle_ids(std::move(other.m_recycle_ids))
-            , m_generations(std::move(other.m_generations))
-            , m_self_active(std::move(other.m_self_active))
-            , m_paused_scenes(std::move(other.m_paused_scenes))
-            , m_frozen_scenes(std::move(other.m_frozen_scenes))
-            , m_current_entity_id(std::exchange(other.m_current_entity_id, 0))
-        {}
-        entities &operator=(const entities&) = delete;
-        entities &operator=(entities&&) = delete;
+        entities(const entities &) = delete;
+        entities(entities &&other) noexcept
+            : m_pools(std::move(other.m_pools)), m_recycle_ids(std::move(other.m_recycle_ids)),
+              m_generations(std::move(other.m_generations)), m_self_active(std::move(other.m_self_active)),
+              m_paused_scenes(std::move(other.m_paused_scenes)), m_frozen_scenes(std::move(other.m_frozen_scenes)),
+              m_current_entity_id(std::exchange(other.m_current_entity_id, 0))
+        {
+        }
+        entities &operator=(const entities &) = delete;
+        entities &operator=(entities &&) = delete;
 
         ~entities() = default;
 
@@ -185,13 +185,15 @@ namespace gamecoe
 
         // Entity must already be valid, asserted. Returns nullptr in Release if e is invalid.
         template <typename T, typename... Args>
-        T* add_component(entity e, Args&&... args)
+        T *add_component(entity e, Args &&...args)
         {
             static_assert(!std::is_same_v<T, components::transform>,
-                "entities::add_component(): transform is mandatory, added automatically by create()");
-            static_assert(!hierarchy_component<T>,
+                          "entities::add_component(): transform is mandatory, added automatically by create()");
+            static_assert(
+                !hierarchy_component<T>,
                 "entities::add_component(): hierarchy components are managed - use entities::set_parent() instead");
-            static_assert(!std::is_same_v<T, components::scene_tag>,
+            static_assert(
+                !std::is_same_v<T, components::scene_tag>,
                 "entities::add_component(): scene_tag is stamped by create(), pass the scene_id to create() instead");
 
             GAMECOE_ASSERT_GUARD(valid(e), "entities::add_component(): entity is not valid", nullptr);
@@ -215,13 +217,13 @@ namespace gamecoe
         void remove_component(entity e)
         {
             static_assert(!std::is_same_v<T, components::transform>,
-                "entities::remove_component(): transform is mandatory and cannot be removed");
+                          "entities::remove_component(): transform is mandatory and cannot be removed");
             static_assert(!hierarchy_component<T>,
-                "entities::remove_component(): hierarchy components are managed - use "
-                "entities::remove_parent() instead");
+                          "entities::remove_component(): hierarchy components are managed - use "
+                          "entities::remove_parent() instead");
             static_assert(!std::is_same_v<T, components::scene_tag>,
-                "entities::remove_component(): scene_tag is managed by set_parent() and destroy(), "
-                "not removable directly");
+                          "entities::remove_component(): scene_tag is managed by set_parent() and destroy(), "
+                          "not removable directly");
 
             if (!has_component<T>(e)) return;
 
@@ -230,49 +232,53 @@ namespace gamecoe
 
         // Pointer may be invalidated by any add_component call (pool reallocation).
         template <typename T>
-        [[nodiscard]] T* get_component(entity e)
+        [[nodiscard]] T *get_component(entity e)
         {
             if (!has_component<T>(e)) return nullptr;
 
-            auto pool = static_cast<component_pool<T>*>(m_pools[component_id<T>()].get());
+            auto pool = static_cast<component_pool<T> *>(m_pools[component_id<T>()].get());
             return pool->try_get(e);
         }
 
         // Pointer may be invalidated by any add_component call (pool reallocation).
         template <typename T>
-        [[nodiscard]] const T* get_component(entity e) const
+        [[nodiscard]] const T *get_component(entity e) const
         {
             if (!has_component<T>(e)) return nullptr;
 
-            auto pool = static_cast<const component_pool<T>*>(m_pools[component_id<T>()].get());
+            auto pool = static_cast<const component_pool<T> *>(m_pools[component_id<T>()].get());
             return pool->try_get(e);
         }
 
         // Add-or-assign: sets T's value if e already has it, otherwise adds it fresh.
         template <typename T, typename V>
-        void set_component(entity e, V&& value)
+        void set_component(entity e, V &&value)
         {
-            static_assert(!hierarchy_component<T>,
+            static_assert(
+                !hierarchy_component<T>,
                 "entities::set_component(): hierarchy components are managed - use entities::set_parent() instead");
             static_assert(!std::is_same_v<std::decay_t<T>, components::scene_tag>,
-                "entities::set_component(): scene_tag is stamped by create(), not settable afterward");
-            static_assert(!std::is_same_v<std::decay_t<T>, components::transform>,
+                          "entities::set_component(): scene_tag is stamped by create(), not settable afterward");
+            static_assert(
+                !std::is_same_v<std::decay_t<T>, components::transform>,
                 "entities::set_component(): transform is a built-in component, use entities::transform(e) directly");
 
-            if (T* c = get_component<T>(e)) *c = std::forward<V>(value);
-            else                             add_component<T>(e, std::forward<V>(value));
+            if (T *c = get_component<T>(e))
+                *c = std::forward<V>(value);
+            else
+                add_component<T>(e, std::forward<V>(value));
         }
 
         // Transform always exists for a valid entity. Returns nullptr in Release if e is invalid.
-        [[nodiscard]] components::transform* transform(entity e);
+        [[nodiscard]] components::transform *transform(entity e);
 
         // Transform always exists for a valid entity. Returns nullptr in Release if e is invalid.
-        [[nodiscard]] const components::transform* transform(entity e) const;
+        [[nodiscard]] const components::transform *transform(entity e) const;
 
         // nullptr if e is global (no scene_tag). Returns nullptr in Release if e is invalid.
         // Pointer may be invalidated by any add_component call, create() with a scene, or set_parent()
         // (pool reallocation).
-        [[nodiscard]] const components::scene_tag* scene(entity e) const;
+        [[nodiscard]] const components::scene_tag *scene(entity e) const;
 
         // Snapshot of every entity tagged with the scene (active + inactive).
         [[nodiscard]] std::vector<entity> scene_entities(scene_id id) const;
@@ -326,7 +332,7 @@ namespace gamecoe
         template <typename... Components>
         extraction<std::add_const_t<Components>...> extract() const
         {
-            return extraction<std::add_const_t<Components>...>(const_cast<entities*>(this)->find_pool<Components>()...,
+            return extraction<std::add_const_t<Components>...>(const_cast<entities *>(this)->find_pool<Components>()...,
                                                                find_pool<components::scene_tag>(), &m_frozen_scenes);
         }
 
@@ -341,7 +347,7 @@ namespace gamecoe
         template <typename... Components>
         extraction<std::add_const_t<Components>...> extract_with_frozen() const
         {
-            return extraction<std::add_const_t<Components>...>(const_cast<entities*>(this)->find_pool<Components>()...,
+            return extraction<std::add_const_t<Components>...>(const_cast<entities *>(this)->find_pool<Components>()...,
                                                                nullptr, nullptr);
         }
     };

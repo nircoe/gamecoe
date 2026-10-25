@@ -1,11 +1,11 @@
 #pragma once
 
-#include <algorithm>
-#include <cstddef>
-#include <gamecoe/entity/entity.hpp>
-#include <gamecoe/entity/component_pool.hpp>
 #include <gamecoe/component/scene_tag.hpp>
 #include <gamecoe/core/scene_id.hpp>
+#include <gamecoe/entity/component_pool.hpp>
+#include <gamecoe/entity/entity.hpp>
+#include <algorithm>
+#include <cstddef>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -15,7 +15,8 @@ namespace gamecoe
 {
     namespace detail
     {
-        inline bool in_frozen_scene(entity e, const component_pool<components::scene_tag> *tags,
+        inline bool in_frozen_scene(entity e,
+                                    const component_pool<components::scene_tag> *tags,
                                     const std::vector<scene_id> *frozen)
         {
             if (!frozen || frozen->empty() || !tags) return false;
@@ -33,7 +34,7 @@ namespace gamecoe
     template <typename... Components>
     class extraction
     {
-        std::tuple<component_pool<std::remove_const_t<Components>>*...> m_pools;
+        std::tuple<component_pool<std::remove_const_t<Components>> *...> m_pools;
         const component_pool<components::scene_tag> *m_scene_tags;
         const std::vector<scene_id> *m_frozen_scenes;
         std::size_t m_smallest_pool_index;
@@ -42,7 +43,7 @@ namespace gamecoe
     public:
         class iterator
         {
-            const extraction* m_extracted;
+            const extraction *m_extracted;
             std::size_t m_index;
 
             // std::get<Is> needs a compile-time index, but the smallest pool is only known
@@ -54,16 +55,19 @@ namespace gamecoe
 
                 entity e = entity::invalid();
 
-                (void)((Is == m_extracted->m_smallest_pool_index ?
-                    (e = std::get<Is>(m_extracted->m_pools)->get_entity_at_index(m_index), true) : false)
-                || ...);
+                (void)((Is == m_extracted->m_smallest_pool_index
+                            ? (e = std::get<Is>(m_extracted->m_pools)->get_entity_at_index(m_index), true)
+                            : false) ||
+                       ...);
 
                 return e;
             }
 
             bool has_all_components(entity e) const
             {
-                return (std::get<component_pool<std::remove_const_t<Components>>*>(m_extracted->m_pools)->contains(e) && ...);
+                return (
+                    std::get<component_pool<std::remove_const_t<Components>> *>(m_extracted->m_pools)->contains(e) &&
+                    ...);
             }
 
             void next()
@@ -74,50 +78,58 @@ namespace gamecoe
 
                     // The frozen list is read on every call, so a scene frozen mid-iteration is skipped from the
                     // next entity on.
-                    if (has_all_components(e)
-                        && !detail::in_frozen_scene(e, m_extracted->m_scene_tags, m_extracted->m_frozen_scenes))
+                    if (has_all_components(e) &&
+                        !detail::in_frozen_scene(e, m_extracted->m_scene_tags, m_extracted->m_frozen_scenes))
                         return;
                     ++m_index; // entity e is not in all pools, check the next one
                 }
             }
 
             template <std::size_t... Is>
-            std::tuple<entity, Components&...> get_current_tuple(std::index_sequence<Is...>) const
+            std::tuple<entity, Components &...> get_current_tuple(std::index_sequence<Is...>) const
             {
                 entity e = get_current_entity(std::index_sequence_for<Components...>{});
 
-                return std::tuple<entity, Components&...> {
-                    e,
-                    *std::get<Is>(m_extracted->m_pools)->try_get(e)...
-                };
+                return std::tuple<entity, Components &...>{ e, *std::get<Is>(m_extracted->m_pools)->try_get(e)... };
             }
 
         public:
-            explicit iterator(const extraction* e, std::size_t index = 0) : m_extracted(e), m_index(index) { next(); }
+            explicit iterator(const extraction *e, std::size_t index = 0) : m_extracted(e), m_index(index) { next(); }
 
-            std::tuple<entity, Components&...> operator*() const
+            std::tuple<entity, Components &...> operator*() const
             {
                 return get_current_tuple(std::index_sequence_for<Components...>{});
             }
 
-            iterator& operator++() { ++m_index; next(); return *this; }
-            iterator operator++(int) { iterator tmp = *this; ++m_index; next(); return tmp; }
+            iterator &operator++()
+            {
+                ++m_index;
+                next();
+                return *this;
+            }
+            iterator operator++(int)
+            {
+                iterator tmp = *this;
+                ++m_index;
+                next();
+                return tmp;
+            }
 
             bool operator==(const iterator &other) const { return m_index == other.m_index; }
             bool operator!=(const iterator &other) const { return m_index != other.m_index; }
         };
 
-        explicit extraction(component_pool<std::remove_const_t<Components>>*... pools,
+        explicit extraction(component_pool<std::remove_const_t<Components>> *...pools,
                             const component_pool<components::scene_tag> *scene_tags,
                             const std::vector<scene_id> *frozen_scenes)
             : m_pools(pools...), m_scene_tags(scene_tags), m_frozen_scenes(frozen_scenes)
         {
-            std::size_t sizes[] = { (pools ? pools->active_size() : std::size_t{0})... };
+            std::size_t sizes[] = { (pools ? pools->active_size() : std::size_t{ 0 })... };
 
             m_smallest_pool_index = 0;
             m_smallest_pool_size = sizes[0];
 
-            for(std::size_t i = 1; i < sizeof...(Components); ++i)
+            for (std::size_t i = 1; i < sizeof...(Components); ++i)
             {
                 if (sizes[i] < m_smallest_pool_size)
                 {

@@ -6,20 +6,18 @@ namespace gamecoe
 {
     namespace geometry
     {
-        const std::array<glm::vec3, 16>& circle::vertices()
+        const std::array<glm::vec3, 16> &circle::vertices()
         {
-            static const std::array<glm::vec3, 16> verts = []() {
+            static const std::array<glm::vec3, 16> verts = []()
+            {
                 std::array<glm::vec3, 16> result;
                 constexpr float radius = 0.5f;
                 constexpr int count = 16;
 
-                for (int i = 0; i < count; ++i) {
+                for (int i = 0; i < count; ++i)
+                {
                     float angle = (glm::two_pi<float>() * i) / count;
-                    result[i] = glm::vec3{
-                        radius * std::cos(angle),
-                        radius * std::sin(angle),
-                        0.0f
-                    };
+                    result[i] = glm::vec3{ radius * std::cos(angle), radius * std::sin(angle), 0.0f };
                 }
 
                 return result;
@@ -28,9 +26,10 @@ namespace gamecoe
             return verts;
         }
 
-        const std::array<glm::vec3, 42>& sphere::vertices()
+        const std::array<glm::vec3, 42> &sphere::vertices()
         {
-            static const std::array<glm::vec3, 42> verts = []() {
+            static const std::array<glm::vec3, 42> verts = []()
+            {
                 std::array<glm::vec3, 42> result;
                 constexpr float radius = 0.5f;
 
@@ -38,21 +37,20 @@ namespace gamecoe
                 constexpr int segments = 7;
                 int index = 0;
 
-                for (int ring = 0; ring < rings; ++ring) {
+                for (int ring = 0; ring < rings; ++ring)
+                {
                     float theta = glm::pi<float>() * (ring + 1) / (rings + 1);
                     float sin_theta = std::sin(theta);
                     float cos_theta = std::cos(theta);
 
-                    for (int seg = 0; seg < segments; ++seg) {
+                    for (int seg = 0; seg < segments; ++seg)
+                    {
                         float phi = glm::two_pi<float>() * seg / segments;
                         float sin_phi = std::sin(phi);
                         float cos_phi = std::cos(phi);
 
-                        result[index++] = glm::vec3{
-                            radius * sin_theta * cos_phi,
-                            radius * cos_theta,
-                            radius * sin_theta * sin_phi
-                        };
+                        result[index++] =
+                            glm::vec3{ radius * sin_theta * cos_phi, radius * cos_theta, radius * sin_theta * sin_phi };
                     }
                 }
 

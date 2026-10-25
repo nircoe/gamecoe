@@ -10,9 +10,9 @@
 #include <cstddef>
 #include <format>
 #include <limits>
-#include <utility>
 #include <string>
 #include <string_view>
+#include <utility>
 
 #if GAMECOE_USE_OPENGL
     #include <glad/gl.h>
@@ -29,8 +29,8 @@ namespace gamecoe
         void shutdown_subsystems(bool logcoe_up, bool glfw_up, bool soundcoe_up)
         {
             if (soundcoe_up) soundcoe::shutdown();
-            if (glfw_up)     glfwTerminate();
-            if (logcoe_up)   logcoe::shutdown();
+            if (glfw_up) glfwTerminate();
+            if (logcoe_up) logcoe::shutdown();
         }
 
         std::int8_t clamp_layer(int layer, const std::string &caller)
@@ -40,7 +40,7 @@ namespace gamecoe
             if (layer < min_layer || layer > max_layer)
             {
                 logcoe::warning(caller + ": layer " + std::to_string(layer) + " out of range [" +
-                                 std::to_string(min_layer) + ", " + std::to_string(max_layer) + "], clamped");
+                                std::to_string(min_layer) + ", " + std::to_string(max_layer) + "], clamped");
                 layer = std::clamp(layer, min_layer, max_layer);
             }
             return static_cast<std::int8_t>(layer);
@@ -92,38 +92,39 @@ namespace gamecoe
                     case hint_overrides_edge:
                         // TODO: log component names instead of ids.
                         logcoe::debug(std::format("game::prepare_to_play(): run_before(\"{}\", \"{}\") "
-                            "changes the order derived from component access (component ids: {})",
-                            d.systems[0], d.systems[1], join_ids(d.components)));
+                                                  "changes the order derived from component access (component ids: {})",
+                                                  d.systems[0], d.systems[1], join_ids(d.components)));
                         break;
                     case hint_unknown_system:
                         logcoe::warning(std::format("game::run_before(): unknown system {}, hint skipped",
-                            join_names(d.systems, ", ")));
+                                                    join_names(d.systems, ", ")));
                         break;
                     case hint_self_reference:
                         logcoe::warning(std::format("game::run_before(): \"{}\" cannot run before itself, hint skipped",
-                            d.systems.front()));
+                                                    d.systems.front()));
                         break;
                     case hint_contradiction:
                         logcoe::warning(std::format("game::run_before(\"{}\", \"{}\") contradicts earlier hints ({}), "
-                            "hint skipped", d.systems.back(), d.systems.front(), join_names(d.systems, " -> ")));
+                                                    "hint skipped",
+                                                    d.systems.back(), d.systems.front(),
+                                                    join_names(d.systems, " -> ")));
                         break;
                 }
             }
         }
-    }
+    } // namespace
 
-    game::game(gamecoe::window &&main_window, const color &background_color)
-        : m_window(std::move(main_window))
+    game::game(gamecoe::window &&main_window, const color &background_color) : m_window(std::move(main_window))
     {
         set_background_color(background_color);
     }
 
-    game::game(game&& other) noexcept
+    game::game(game &&other) noexcept
         : m_entities(std::move(other.m_entities)), m_window(std::move(other.m_window)),
           m_scenes(std::move(other.m_scenes)), m_active_scenes(std::move(other.m_active_scenes)),
           m_pending_scene_ops(std::move(other.m_pending_scene_ops)), m_systems(std::move(other.m_systems)),
-          m_system_hints(std::move(other.m_system_hints)),
-          m_background_color(other.m_background_color), m_playing(other.m_playing)
+          m_system_hints(std::move(other.m_system_hints)), m_background_color(other.m_background_color),
+          m_playing(other.m_playing)
     {
         other.m_window.reset();
     }
@@ -139,24 +140,28 @@ namespace gamecoe
         g_game_alive = false;
     }
 
-    std::expected<game, error> game::create(const std::string &title, std::uint32_t width,
-                                            std::uint32_t height, const color &background_color,
+    std::expected<game, error> game::create(const std::string &title,
+                                            std::uint32_t width,
+                                            std::uint32_t height,
+                                            const color &background_color,
                                             logcoe::LogLevel log_level
 #if GAMECOE_USE_SOUNDCOE
-                                            , const soundcoe::init_config &soundcoe_config
+                                            ,
+                                            const soundcoe::init_config &soundcoe_config
 #endif
-                                            )
+    )
     {
         GAMECOE_ASSERT_GUARD(!g_game_alive, "game::create(): a game instance is already alive",
-            std::unexpected(error{error_code::game_already_alive, "game::create(): a game instance is already alive"}));
+                             std::unexpected(error{ error_code::game_already_alive,
+                                                    "game::create(): a game instance is already alive" }));
 
         struct garbage_collector
         {
             bool logcoe_up = false, glfw_up = false, soundcoe_up = false, game_claimed = false;
 
             garbage_collector() = default;
-            garbage_collector(const garbage_collector&) = delete;
-            garbage_collector& operator=(const garbage_collector&) = delete;
+            garbage_collector(const garbage_collector &) = delete;
+            garbage_collector &operator=(const garbage_collector &) = delete;
 
             ~garbage_collector()
             {
@@ -174,8 +179,8 @@ namespace gamecoe
         gc.logcoe_up = true;
 
         if (!glfwInit())
-            return std::unexpected(detail::make_error(error_code::glfw_init_failure,
-                                                      "game::create(): Failed to initialize glfw"));
+            return std::unexpected(
+                detail::make_error(error_code::glfw_init_failure, "game::create(): Failed to initialize glfw"));
         gc.glfw_up = true;
 
         auto main_window = gamecoe::window::create(title, width, height);
@@ -183,8 +188,8 @@ namespace gamecoe
 
 #if GAMECOE_USE_OPENGL
         if (!gladLoadGL(glfwGetProcAddress))
-            return std::unexpected(detail::make_error(error_code::glad_load_failure,
-                                                      "game::create(): Failed to load glad"));
+            return std::unexpected(
+                detail::make_error(error_code::glad_load_failure, "game::create(): Failed to load glad"));
 
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_MULTISAMPLE);
@@ -200,8 +205,8 @@ namespace gamecoe
         resolved_config.audioRootDirectory = std::move(*audio_dir);
 
         if (!soundcoe::initialize(resolved_config))
-            return std::unexpected(detail::make_error(error_code::soundcoe_init_failure,
-                                                      "game::create(): Failed to initialize soundcoe"));
+            return std::unexpected(
+                detail::make_error(error_code::soundcoe_init_failure, "game::create(): Failed to initialize soundcoe"));
         gc.soundcoe_up = true;
 #endif
 
@@ -213,26 +218,23 @@ namespace gamecoe
         return game{ std::move(*main_window), background_color };
     }
 
-    gamecoe::entities& game::entities()
+    gamecoe::entities &game::entities()
     {
         GAMECOE_ASSERT_LOG(m_window.has_value(), "game::entities(): called on a moved-from game");
 
         return m_entities;
     }
 
-    const gamecoe::entities& game::entities() const
+    const gamecoe::entities &game::entities() const
     {
         GAMECOE_ASSERT_LOG(m_window.has_value(), "game::entities(): called on a moved-from game");
 
         return m_entities;
     }
 
-    const gamecoe::window* game::window() const
-    {
-        return m_window.has_value() ? &(*m_window) : nullptr;
-    }
+    const gamecoe::window *game::window() const { return m_window.has_value() ? &(*m_window) : nullptr; }
 
-    const color& game::background_color() const
+    const color &game::background_color() const
     {
         GAMECOE_ASSERT_LOG(m_window.has_value(), "game::background_color(): called on a moved-from game");
 
@@ -257,13 +259,13 @@ namespace gamecoe
         logcoe::setLogLevel(level);
     }
 
-    game::scene_metadata* game::find_scene(scene_id id)
+    game::scene_metadata *game::find_scene(scene_id id)
     {
         auto it = m_scenes.find(id);
         return it != m_scenes.end() ? &it->second : nullptr;
     }
 
-    const game::scene_metadata* game::find_scene(scene_id id) const
+    const game::scene_metadata *game::find_scene(scene_id id) const
     {
         auto it = m_scenes.find(id);
         return it != m_scenes.end() ? &it->second : nullptr;
@@ -271,8 +273,9 @@ namespace gamecoe
 
     void game::insert_active_scene_sorted(scene_id id, std::int8_t layer)
     {
-        auto pos = std::upper_bound(m_active_scenes.begin(), m_active_scenes.end(), id,
-            [this, layer](scene_id, scene_id b) { return layer < m_scenes.find(b)->second.layer; });
+        auto pos =
+            std::upper_bound(m_active_scenes.begin(), m_active_scenes.end(), id,
+                             [this, layer](scene_id, scene_id b) { return layer < m_scenes.find(b)->second.layer; });
         m_active_scenes.insert(pos, id);
     }
 
@@ -288,7 +291,7 @@ namespace gamecoe
         GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::status(): called on a moved-from game",
                              scene_status::unloaded);
 
-        const scene_metadata* meta = find_scene(id);
+        const scene_metadata *meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::status(): scene is not registered", scene_status::unloaded);
         return meta->status;
     }
@@ -297,7 +300,7 @@ namespace gamecoe
     {
         GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::scene_layer(): called on a moved-from game", 0);
 
-        const scene_metadata* meta = find_scene(id);
+        const scene_metadata *meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::scene_layer(): scene is not registered", 0);
         return meta->layer;
     }
@@ -306,7 +309,7 @@ namespace gamecoe
     {
         GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::set_scene_layer(): called on a moved-from game");
 
-        scene_metadata* meta = find_scene(id);
+        scene_metadata *meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::set_scene_layer(): scene is not registered");
 
         const std::int8_t new_layer = clamp_layer(layer, "game::set_scene_layer()");
@@ -350,7 +353,7 @@ namespace gamecoe
     {
         GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::load_scene(): called on a moved-from game");
 
-        scene_metadata* meta = find_scene(id);
+        scene_metadata *meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::load_scene(): scene is not registered");
 
         if (!m_playing)
@@ -379,7 +382,7 @@ namespace gamecoe
     {
         GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::activate_scene(): called on a moved-from game");
 
-        scene_metadata* meta = find_scene(id);
+        scene_metadata *meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::activate_scene(): scene is not registered");
 
         if (!m_playing)
@@ -422,7 +425,7 @@ namespace gamecoe
     {
         GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::deactivate_scene(): called on a moved-from game");
 
-        scene_metadata* meta = find_scene(id);
+        scene_metadata *meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::deactivate_scene(): scene is not registered");
 
         if (!m_playing)
@@ -452,7 +455,7 @@ namespace gamecoe
     {
         GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::unload_scene(): called on a moved-from game");
 
-        scene_metadata* meta = find_scene(id);
+        scene_metadata *meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::unload_scene(): scene is not registered");
 
         if (!m_playing)
@@ -495,15 +498,15 @@ namespace gamecoe
         meta->pending.clear();
         meta->status = scene_status::unloaded;
 
-        logcoe::info("game::unload_scene(): unloaded scene \"" + scene_name + "\" (" +
-                     std::to_string(destroyed_count) + " destroyed entities)");
+        logcoe::info("game::unload_scene(): unloaded scene \"" + scene_name + "\" (" + std::to_string(destroyed_count) +
+                     " destroyed entities)");
     }
 
     void game::freeze_scene(scene_id id)
     {
         GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::freeze_scene(): called on a moved-from game");
 
-        const scene_metadata* meta = find_scene(id);
+        const scene_metadata *meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::freeze_scene(): scene is not registered");
         GAMECOE_ASSERT_GUARD(meta->status == scene_status::active, "game::freeze_scene(): scene is not active");
 
@@ -515,7 +518,8 @@ namespace gamecoe
 
         logcoe::info("game::freeze_scene(): froze scene \"" + to_string(id) + "\"");
         logcoe::debug("game::freeze_scene(): extract() and for_each() now skip the entities of scene \"" +
-                      to_string(id) + "\", systems that must still process it (rendering, transform, camera) "
+                      to_string(id) +
+                      "\", systems that must still process it (rendering, transform, camera) "
                       "should use extract_with_frozen()");
     }
 
@@ -523,7 +527,7 @@ namespace gamecoe
     {
         GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::unfreeze_scene(): called on a moved-from game");
 
-        const scene_metadata* meta = find_scene(id);
+        const scene_metadata *meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::unfreeze_scene(): scene is not registered");
         GAMECOE_ASSERT_GUARD(meta->status == scene_status::active, "game::unfreeze_scene(): scene is not active");
 
@@ -605,10 +609,18 @@ namespace gamecoe
         {
             switch (op.target_status)
             {
-                case scene_status::unloaded: unload_scene(op.id);     break;
-                case scene_status::loaded:   load_scene(op.id);       break;
-                case scene_status::active:   activate_scene(op.id);   break;
-                case scene_status::inactive: deactivate_scene(op.id); break;
+                case scene_status::unloaded:
+                    unload_scene(op.id);
+                    break;
+                case scene_status::loaded:
+                    load_scene(op.id);
+                    break;
+                case scene_status::active:
+                    activate_scene(op.id);
+                    break;
+                case scene_status::inactive:
+                    deactivate_scene(op.id);
+                    break;
             }
         }
 
@@ -625,7 +637,7 @@ namespace gamecoe
         std::vector<systems::scheduler::node> nodes;
         nodes.reserve(m_systems.size());
         for (const systems::entry &entry_ : m_systems)
-            nodes.push_back({entry_.name, entry_.reads, entry_.writes});
+            nodes.push_back({ entry_.name, entry_.reads, entry_.writes });
 
         systems::scheduler::result schedule = systems::scheduler::build_order(nodes, hints);
         log_schedule_diagnostics(schedule.diagnostics);
@@ -650,8 +662,8 @@ namespace gamecoe
         GAMECOE_ASSERT_GUARD(static_cast<bool>(entry_.func), "game::register_system(): system function is null");
         GAMECOE_ASSERT_GUARD(!entry_.name.empty(), "game::register_system(): system name is empty");
 
-        const bool duplicate = std::ranges::any_of(m_systems,
-            [&entry_](const systems::entry &existing) { return existing.name == entry_.name; });
+        const bool duplicate = std::ranges::any_of(m_systems, [&entry_](const systems::entry &existing)
+        { return existing.name == entry_.name; });
 
         if (duplicate)
         {
@@ -662,7 +674,8 @@ namespace gamecoe
 
         m_systems.push_back(std::move(entry_));
         logcoe::debug(std::format("game::register_system(): registered system \"{}\" (#{}, {} reads, {} writes)",
-            m_systems.back().name, m_systems.size(), m_systems.back().reads.size(), m_systems.back().writes.size()));
+                                  m_systems.back().name, m_systems.size(), m_systems.back().reads.size(),
+                                  m_systems.back().writes.size()));
     }
 
     void game::run_before(std::string first, std::string second)
@@ -670,7 +683,7 @@ namespace gamecoe
         GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::run_before(): called on a moved-from game");
         GAMECOE_ASSERT_GUARD(!m_playing, "game::run_before(): hint cannot be added during game::play()");
 
-        m_system_hints.push_back({std::move(first), std::move(second)});
+        m_system_hints.push_back({ std::move(first), std::move(second) });
     }
 
     void game::run_systems()

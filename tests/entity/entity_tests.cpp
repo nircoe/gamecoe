@@ -1,11 +1,11 @@
-#include <gtest/gtest.h>
 #include <gamecoe/entity/entity.hpp>
-#include <set>
-#include <map>
-#include <unordered_set>
+#include <gtest/gtest.h>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <map>
+#include <set>
+#include <unordered_set>
 
 using namespace gamecoe;
 
@@ -21,8 +21,7 @@ protected:
     {
         std::size_t operator()(entity e) const noexcept
         {
-            return std::hash<std::uint32_t>{}(e.id()) ^
-                   (std::hash<std::uint16_t>{}(e.generation()) << 1);
+            return std::hash<std::uint32_t>{}(e.id()) ^ (std::hash<std::uint16_t>{}(e.generation()) << 1);
         }
     };
 };

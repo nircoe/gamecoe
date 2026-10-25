@@ -1,17 +1,30 @@
 #pragma once
 
-#include <cstdint>
-#include <string>
-#include <expected>
 #include <gamecoe/utils/error.hpp>
+#include <cstdint>
+#include <expected>
+#include <string>
 
 namespace gamecoe
 {
     namespace graphics
     {
-        enum class texture_wrap { repeat, clamp_to_edge, clamp_to_border, mirrored_repeat };
-        enum class texture_filter { nearest, linear, nearest_mipmap_nearest, nearest_mipmap_linear,
-                                    linear_mipmap_nearest, linear_mipmap_linear };
+        enum class texture_wrap
+        {
+            repeat,
+            clamp_to_edge,
+            clamp_to_border,
+            mirrored_repeat
+        };
+        enum class texture_filter
+        {
+            nearest,
+            linear,
+            nearest_mipmap_nearest,
+            nearest_mipmap_linear,
+            linear_mipmap_nearest,
+            linear_mipmap_linear
+        };
 
         class texture
         {
@@ -23,22 +36,25 @@ namespace gamecoe
             void reset() noexcept;
 
         public:
-            texture(const texture&) = delete;
-            texture &operator=(const texture&) = delete;
+            texture(const texture &) = delete;
+            texture &operator=(const texture &) = delete;
             texture(texture &&other) noexcept;
             texture &operator=(texture &&other) noexcept;
             ~texture();
 
-            [[nodiscard]] static std::expected<texture, error> create_2d(
-                const std::string &image, bool flip_vertically = true, bool generate_mipmap = true);
+            [[nodiscard]] static std::expected<texture, error> create_2d(const std::string &image,
+                                                                         bool flip_vertically = true,
+                                                                         bool generate_mipmap = true);
 
             void bind() const;
             void unbind() const;
             [[nodiscard]] std::uint32_t id() const noexcept;
             [[nodiscard]] std::int32_t dimension() const noexcept;
 
-            [[nodiscard]] std::expected<void, error> set_parameters(
-                texture_wrap wrap_s, texture_wrap wrap_t, texture_filter min_filter, texture_filter mag_filter);
+            [[nodiscard]] std::expected<void, error> set_parameters(texture_wrap wrap_s,
+                                                                    texture_wrap wrap_t,
+                                                                    texture_filter min_filter,
+                                                                    texture_filter mag_filter);
         };
     } // namespace graphics
 } // namespace gamecoe

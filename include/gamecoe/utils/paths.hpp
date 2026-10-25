@@ -4,7 +4,8 @@
 #include <expected>
 #include <string>
 
-namespace gamecoe {
+namespace gamecoe
+{
     // Gets the executable directory (build root) full path
     [[nodiscard]] std::expected<std::string, error> executable_directory();
     // Gets relative path to build root, and returns the full path

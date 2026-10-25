@@ -10,7 +10,10 @@ namespace gamecoe
     namespace components
     {
         // Both entities& arguments are the same shared registry.
-        using collision_callback = void(*)(entity self, entities& self_registry, entity other, entities& other_registry);
+        using collision_callback = void (*)(entity self,
+                                            entities &self_registry,
+                                            entity other,
+                                            entities &other_registry);
 
         struct collision_callbacks
         {

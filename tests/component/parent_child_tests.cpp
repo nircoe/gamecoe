@@ -1,5 +1,5 @@
-#include <gtest/gtest.h>
 #include <gamecoe/component/parent_child.hpp>
+#include <gtest/gtest.h>
 
 using namespace gamecoe;
 

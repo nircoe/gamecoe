@@ -1,12 +1,12 @@
-#include <gtest/gtest.h>
-#include <support/gl_context.hpp>
 #include <gamecoe/graphics/texture.hpp>
+#include <support/gl_context.hpp>
+#include <glad/gl.h>
+#include <gtest/gtest.h>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
-#include <cstdint>
 #include <string>
 #include <utility>
-#include <glad/gl.h>
 
 using namespace gamecoe;
 using namespace gamecoe::graphics;
@@ -25,13 +25,15 @@ namespace
         }
         return path;
     }
-}
+} // namespace
 
 //==============================================================================
 //              TextureTests - graphics::texture class tests
 //==============================================================================
 
-class TextureTests : public GLContextTest {};
+class TextureTests : public GLContextTest
+{
+};
 
 //==============================================================================
 //                        Creation
@@ -90,8 +92,8 @@ TEST_F(TextureTests, SetParametersSuccess)
     auto result = texture::create_2d(path.string());
     ASSERT_TRUE(result.has_value());
 
-    auto params = result->set_parameters(texture_wrap::repeat, texture_wrap::clamp_to_edge,
-                                          texture_filter::linear, texture_filter::linear);
+    auto params = result->set_parameters(texture_wrap::repeat, texture_wrap::clamp_to_edge, texture_filter::linear,
+                                         texture_filter::linear);
     EXPECT_TRUE(params.has_value());
 
     std::filesystem::remove(path);

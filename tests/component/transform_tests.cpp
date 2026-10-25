@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
 #include <gamecoe/component/transform.hpp>
 #include <support/test_utils.hpp>
+#include <gtest/gtest.h>
 
 using namespace gamecoe;
 using namespace test_utils;

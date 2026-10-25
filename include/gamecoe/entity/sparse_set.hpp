@@ -1,15 +1,15 @@
 #pragma once
 
-#include <cstddef>
 #include <gamecoe/entity/entity.hpp>
+#include <gamecoe/utils/error_handler.hpp>
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <optional>
-#include <vector>
 #include <memory>
-#include <array>
+#include <optional>
 #include <utility>
-#include <gamecoe/utils/error_handler.hpp>
+#include <vector>
 
 namespace gamecoe
 {
@@ -26,7 +26,7 @@ namespace gamecoe
 
         std::vector<page_ptr_type> m_sparse;
         std::vector<entity> m_dense;
-        std::uint32_t m_active_count{0};
+        std::uint32_t m_active_count{ 0 };
 
         // Generation is packed with the dense index in the sparse array,
         // so contains() never touches the dense array.
@@ -55,13 +55,15 @@ namespace gamecoe
 
     public:
         sparse_set() noexcept = default;
-        sparse_set(const sparse_set&) = delete;
-        sparse_set& operator=(const sparse_set&) = delete;
-        sparse_set(sparse_set&& other) noexcept
+        sparse_set(const sparse_set &) = delete;
+        sparse_set &operator=(const sparse_set &) = delete;
+        sparse_set(sparse_set &&other) noexcept
             : m_sparse(std::move(other.m_sparse)), m_dense(std::move(other.m_dense)),
-              m_active_count(std::exchange(other.m_active_count, 0)) {}
+              m_active_count(std::exchange(other.m_active_count, 0))
+        {
+        }
 
-        sparse_set& operator=(sparse_set&& other) noexcept
+        sparse_set &operator=(sparse_set &&other) noexcept
         {
             m_sparse = std::move(other.m_sparse);
             m_dense = std::move(other.m_dense);
@@ -79,11 +81,11 @@ namespace gamecoe
         bool insert(entity e, bool active)
         {
             if (contains(e)) return true;
-            GAMECOE_ASSERT_GUARD(m_dense.size() <= entity::MAX_ENTITIES, "sparse_set::insert(): max entities exceeded", false);
+            GAMECOE_ASSERT_GUARD(m_dense.size() <= entity::MAX_ENTITIES, "sparse_set::insert(): max entities exceeded",
+                                 false);
 
             auto page_i = page_index(e);
-            if (page_i >= m_sparse.size())
-                m_sparse.resize(page_i + 1);
+            if (page_i >= m_sparse.size()) m_sparse.resize(page_i + 1);
 
             auto &page = m_sparse[page_i];
             if (!page)
@@ -125,30 +127,41 @@ namespace gamecoe
             (*swapped_page)[index_in_page(swapped)] = pack_dense_index(dense_index, swapped.generation());
         }
 
-        void erase(entity e) { if (auto i = index(e)) erase_at(i.value()); }
+        void erase(entity e)
+        {
+            if (auto i = index(e)) erase_at(i.value());
+        }
 
         [[nodiscard]] std::size_t active_size() const noexcept { return m_active_count; }
         [[nodiscard]] bool is_active(std::uint32_t dense_index) const noexcept { return dense_index < m_active_count; }
 
-        void deactivate(entity e) { if (auto i = index(e)) deactivate_at(i.value()); }
-        void activate(entity e)   { if (auto i = index(e)) activate_at(i.value()); }
+        void deactivate(entity e)
+        {
+            if (auto i = index(e)) deactivate_at(i.value());
+        }
+        void activate(entity e)
+        {
+            if (auto i = index(e)) activate_at(i.value());
+        }
 
         // Returns the dense index the entry was swapped with, or nullopt if it was already in the target state.
         std::optional<std::uint32_t> deactivate_at(std::uint32_t dense_index)
         {
-            GAMECOE_ASSERT_GUARD(dense_index < m_dense.size(), "sparse_set::deactivate_at(): index out of bounds", std::nullopt);
-            if (dense_index >= m_active_count) return std::nullopt;   // already inactive
+            GAMECOE_ASSERT_GUARD(dense_index < m_dense.size(), "sparse_set::deactivate_at(): index out of bounds",
+                                 std::nullopt);
+            if (dense_index >= m_active_count) return std::nullopt; // already inactive
             --m_active_count;
-            swap_dense(dense_index, m_active_count);     // m_active_count now names the old last-active slot
+            swap_dense(dense_index, m_active_count); // m_active_count now names the old last-active slot
             return m_active_count;
         }
 
         std::optional<std::uint32_t> activate_at(std::uint32_t dense_index)
         {
-            GAMECOE_ASSERT_GUARD(dense_index < m_dense.size(), "sparse_set::activate_at(): index out of bounds", std::nullopt);
-            if (dense_index < m_active_count) return std::nullopt;    // already active
+            GAMECOE_ASSERT_GUARD(dense_index < m_dense.size(), "sparse_set::activate_at(): index out of bounds",
+                                 std::nullopt);
+            if (dense_index < m_active_count) return std::nullopt; // already active
             std::uint32_t partner = m_active_count;
-            swap_dense(dense_index, partner);            // m_active_count names the first inactive slot
+            swap_dense(dense_index, partner); // m_active_count names the first inactive slot
             ++m_active_count;
             return partner;
         }
@@ -170,11 +183,17 @@ namespace gamecoe
 
         [[nodiscard]] entity get_entity_at_index(std::size_t index) const noexcept
         {
-            GAMECOE_ASSERT_GUARD(index < m_dense.size(), "sparse_set::get_entity_at_index(): index out of bounds", entity::invalid());
+            GAMECOE_ASSERT_GUARD(index < m_dense.size(), "sparse_set::get_entity_at_index(): index out of bounds",
+                                 entity::invalid());
             return m_dense[index];
         }
 
-        void clear() { m_sparse.clear(); m_dense.clear(); m_active_count = 0; }
+        void clear()
+        {
+            m_sparse.clear();
+            m_dense.clear();
+            m_active_count = 0;
+        }
         [[nodiscard]] std::size_t size() const noexcept { return m_dense.size(); }
         [[nodiscard]] bool empty() const noexcept { return m_dense.empty(); }
 

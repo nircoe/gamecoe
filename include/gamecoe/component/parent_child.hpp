@@ -1,8 +1,8 @@
 #pragma once
 
 #include <gamecoe/entity/entity.hpp>
-#include <vector>
 #include <type_traits>
+#include <vector>
 
 namespace gamecoe
 {

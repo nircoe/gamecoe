@@ -2,8 +2,8 @@
 #include <gamecoe/utils/error_handler.hpp>
 #include <gamecoe_config.hpp>
 #include <inputcoe.hpp>
-#include <utility>
 #include <cstdio>
+#include <utility>
 
 #if GAMECOE_USE_LOGCOE
     #include <logcoe.hpp>
@@ -13,8 +13,8 @@
     #include <glad/gl.h>
 #endif
 
-#include <GLFW/glfw3.h>
 #include <gamecoe/utils/consts.hpp>
+#include <GLFW/glfw3.h>
 
 namespace
 {
@@ -28,7 +28,7 @@ namespace gamecoe
 {
     void window::framebuffer_size_callback(int width, int height)
     {
-        if(width == 0 || height == 0)
+        if (width == 0 || height == 0)
         {
             logcoe::debug("window::framebuffer_size_callback(): zero-sized framebuffer, ignoring");
             return;
@@ -47,8 +47,9 @@ namespace gamecoe
     {
         glfwSetWindowUserPointer(m_window, this);
 
-        glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow *glfw_window, int width, int height) {
-            window *window_ptr = static_cast<window*>(glfwGetWindowUserPointer(glfw_window));
+        glfwSetFramebufferSizeCallback(m_window, [](GLFWwindow *glfw_window, int width, int height)
+        {
+            window *window_ptr = static_cast<window *>(glfwGetWindowUserPointer(glfw_window));
             GAMECOE_ASSERT_GUARD(window_ptr, "window::framebuffer_size_callback(): user pointer is null");
             window_ptr->framebuffer_size_callback(width, height);
         });
@@ -58,22 +59,20 @@ namespace gamecoe
     }
 
     window::window(window &&other) noexcept
-        : m_window(other.m_window), m_title(std::move(other.m_title)), m_width(other.m_width),
-          m_height(other.m_height), m_first_frame(other.m_first_frame)
+        : m_window(other.m_window), m_title(std::move(other.m_title)), m_width(other.m_width), m_height(other.m_height),
+          m_first_frame(other.m_first_frame)
     {
         other.m_window = nullptr;
 
         // resize callback dereferences the stored user pointer as window*, must point at the surviving object
-        if(m_window)
-            glfwSetWindowUserPointer(m_window, this);
+        if (m_window) glfwSetWindowUserPointer(m_window, this);
     }
 
-    window& window::operator=(window &&other) noexcept
+    window &window::operator=(window &&other) noexcept
     {
-        if(this == &other)
-            return *this;
+        if (this == &other) return *this;
 
-        if(m_window)
+        if (m_window)
         {
             glfwSetWindowUserPointer(m_window, nullptr);
             glfwDestroyWindow(m_window);
@@ -88,15 +87,14 @@ namespace gamecoe
         other.m_window = nullptr;
 
         // resize callback dereferences the stored user pointer as window*, must point at the surviving object
-        if(m_window)
-            glfwSetWindowUserPointer(m_window, this);
+        if (m_window) glfwSetWindowUserPointer(m_window, this);
 
         return *this;
     }
 
     window::~window()
     {
-        if(!m_window) return;
+        if (!m_window) return;
 
         glfwSetWindowUserPointer(m_window, nullptr);
         glfwDestroyWindow(m_window);
@@ -111,9 +109,9 @@ namespace gamecoe
 
 #if GAMECOE_OPENGL_VERSION_AT_LEAST(3, 2)
         glfwWindowHint(GLFW_OPENGL_PROFILE, GAMECOE_GRAPHICS_PROFILE);
-#if defined(__APPLE__) && GAMECOE_OPENGL_VERSION_AT_LEAST(3, 0)
+    #if defined(__APPLE__) && GAMECOE_OPENGL_VERSION_AT_LEAST(3, 0)
         glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
+    #endif
 #endif
 #if GAMECOE_USE_OPENGL
         glfwWindowHint(GLFW_SAMPLES, 4);
@@ -121,32 +119,31 @@ namespace gamecoe
 
         GLFWwindow *current = glfwGetCurrentContext();
         GLFWwindow *glfw_window = glfwCreateWindow(width, height, title.c_str(), nullptr, current);
-        if(!glfw_window)
-            return std::unexpected(
-                        detail::make_error(
-                            error_code::window_creation_failure,
-                            "window::create(): Failed to create glfw window"));
+        if (!glfw_window)
+            return std::unexpected(detail::make_error(error_code::window_creation_failure,
+                                                      "window::create(): Failed to create glfw window"));
 
-        if(!current) // multi-window support
+        if (!current) // multi-window support
         {
             glfwMakeContextCurrent(glfw_window);
             glfwSwapInterval(0); // TODO: maybe in the future allow the users to limit their FPS
         }
 
-        logcoe::info("window::create(): created window \"" + title +
-                        "\" (" + std::to_string(width) + "x" + std::to_string(height) + ")");
+        logcoe::info("window::create(): created window \"" + title + "\" (" + std::to_string(width) + "x" +
+                     std::to_string(height) + ")");
 
         int fb_width, fb_height;
         glfwGetFramebufferSize(glfw_window, &fb_width, &fb_height);
 
-        return window{glfw_window, title, static_cast<std::uint32_t>(fb_width), static_cast<std::uint32_t>(fb_height)};
+        return window{ glfw_window, title, static_cast<std::uint32_t>(fb_width),
+                       static_cast<std::uint32_t>(fb_height) };
     }
 
     bool window::active()
     {
         GAMECOE_ASSERT_GUARD(m_window, "window::active(): window is null", false);
 
-        if(m_first_frame)
+        if (m_first_frame)
             m_first_frame = false;
         else
         {

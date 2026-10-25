@@ -1,5 +1,5 @@
-#include <gtest/gtest.h>
 #include <gamecoe/component/shape_collider.hpp>
+#include <gtest/gtest.h>
 
 using namespace gamecoe;
 

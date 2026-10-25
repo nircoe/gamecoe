@@ -1,17 +1,17 @@
-#include <gtest/gtest.h>
-#include <gamecoe/entity/entities.hpp>
-#include <gamecoe/component/transform.hpp>
 #include <gamecoe/component/parent_child.hpp>
 #include <gamecoe/component/scene_tag.hpp>
+#include <gamecoe/component/transform.hpp>
+#include <gamecoe/entity/entities.hpp>
+#include <support/scene_id.hpp>
+#include <support/test_utils.hpp>
+#include <gtest/gtest.h>
 #include <array>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <type_traits>
 #include <utility>
 #include <vector>
-#include <cstddef>
-#include <cstdint>
-#include <support/test_utils.hpp>
-#include <support/scene_id.hpp>
 
 using namespace gamecoe;
 using namespace test_utils;
@@ -238,7 +238,7 @@ TEST_F(EntitiesTests, ComponentOperations)
     {
         entity e = mgr.create();
 
-        mgr.add_component<position>(e, position{1.0f, 2.0f, 3.0f});
+        mgr.add_component<position>(e, position{ 1.0f, 2.0f, 3.0f });
         EXPECT_TRUE(mgr.has_component<position>(e));
 
         position *pos = mgr.get_component<position>(e);
@@ -260,7 +260,7 @@ TEST_F(EntitiesTests, ComponentOperations)
     {
         mgr.clear();
         entity e = mgr.create();
-        mgr.add_component<position>(e, position{5.0f, 6.0f, 7.0f});
+        mgr.add_component<position>(e, position{ 5.0f, 6.0f, 7.0f });
 
         const entities &const_mgr = mgr;
         const position *pos = const_mgr.get_component<position>(e);
@@ -288,9 +288,9 @@ TEST_F(EntitiesTests, ComponentOperations)
         entity invalid = entity::invalid();
 
 #ifndef NDEBUG
-        EXPECT_DEATH(mgr.add_component<position>(invalid, position{1.0f, 2.0f, 3.0f}), "entity is not valid");
+        EXPECT_DEATH(mgr.add_component<position>(invalid, position{ 1.0f, 2.0f, 3.0f }), "entity is not valid");
 #else
-        EXPECT_EQ(mgr.add_component<position>(invalid, position{1.0f, 2.0f, 3.0f}), nullptr);
+        EXPECT_EQ(mgr.add_component<position>(invalid, position{ 1.0f, 2.0f, 3.0f }), nullptr);
 #endif
     }
 }
@@ -303,8 +303,8 @@ TEST_F(EntitiesTests, DestroyRemovesAllComponents)
 {
     entity e = mgr.create();
 
-    mgr.add_component<position>(e, position{1.0f, 0.0f, 0.0f});
-    mgr.add_component<velocity>(e, velocity{0.1f, 0.0f, 0.0f});
+    mgr.add_component<position>(e, position{ 1.0f, 0.0f, 0.0f });
+    mgr.add_component<velocity>(e, velocity{ 0.1f, 0.0f, 0.0f });
 
     EXPECT_TRUE(mgr.has_component<position>(e));
     EXPECT_TRUE(mgr.has_component<velocity>(e));
@@ -325,7 +325,7 @@ TEST_F(EntitiesTests, ForEach)
     for (int i = 0; i < 5; ++i)
     {
         entity e = mgr.create();
-        mgr.add_component<position>(e, position{static_cast<float>(i), 0.0f, 0.0f});
+        mgr.add_component<position>(e, position{ static_cast<float>(i), 0.0f, 0.0f });
     }
 
     // Mutable for_each
@@ -340,10 +340,7 @@ TEST_F(EntitiesTests, ForEach)
     // Const for_each, verify mutations persisted
     const entities &const_mgr = mgr;
     float sum = 0.0f;
-    const_mgr.for_each<position>([&sum]([[maybe_unused]] entity e, const position &pos)
-    {
-        sum += pos.x;
-    });
+    const_mgr.for_each<position>([&sum]([[maybe_unused]] entity e, const position &pos) { sum += pos.x; });
     // 0+10 + 1+10 + 2+10 + 3+10 + 4+10 = 60
     EXPECT_EQ(sum, 60.0f);
 }
@@ -363,8 +360,8 @@ TEST_F(EntitiesTests, BulkOperations)
     for (std::size_t i = 0; i < NUM_ENTITIES; ++i)
     {
         entity e = mgr.create();
-        mgr.add_component<position>(e, position{static_cast<float>(i), 0.0f, 0.0f});
-        mgr.add_component<velocity>(e, velocity{1.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(e, position{ static_cast<float>(i), 0.0f, 0.0f });
+        mgr.add_component<velocity>(e, velocity{ 1.0f, 0.0f, 0.0f });
     }
 
     int count = 0;
@@ -420,7 +417,7 @@ TEST_F(EntitiesTests, MandatoryTransform)
     {
         mgr.clear();
         entity e = mgr.create();
-        mgr.add_component<position>(e, position{1.0f, 2.0f, 3.0f});
+        mgr.add_component<position>(e, position{ 1.0f, 2.0f, 3.0f });
         mgr.remove_component<position>(e);
 
         EXPECT_TRUE(mgr.has_component<components::transform>(e));
@@ -539,7 +536,8 @@ TEST_F(EntitiesTests, Hierarchy)
         EXPECT_TRUE(mgr.valid(child)); // child remains a valid, independent entity
     }
 
-    // Test 6: remove_parent with multiple children only detaches the specified one; children component remains for the rest
+    // Test 6: remove_parent with multiple children only detaches the specified one; children component remains for the
+    // rest
     {
         mgr.clear();
         entity parent = mgr.create();
@@ -644,8 +642,8 @@ TEST_F(EntitiesTests, RemoveChildrenWithGrandchildren)
     // Test 2: each detached child's world_active recomputes from its own self_active as a new
     // parentless root; grandchild's world_active recomputes relative to child_a's new state, not
     // parent's old one, and still respects grandchild's own self_active independently
-    EXPECT_TRUE(mgr.is_active(child_a));   // parentless root now - self_active alone decides
-    EXPECT_TRUE(mgr.is_active(child_b));   // same
+    EXPECT_TRUE(mgr.is_active(child_a));     // parentless root now - self_active alone decides
+    EXPECT_TRUE(mgr.is_active(child_b));     // same
     EXPECT_FALSE(mgr.is_active(grandchild)); // follows child_a (now active), but own self_active is false
 }
 
@@ -775,8 +773,8 @@ TEST_F(EntitiesTests, DestroyKeepsActivePartitionIntact)
         for (int i = 0; i < 6; ++i)
         {
             entity e = mgr.create();
-            mgr.add_component<position>(e, position{static_cast<float>(i), 0.0f, 0.0f});
-            mgr.add_component<velocity>(e, velocity{static_cast<float>(i) * 0.1f, 0.0f, 0.0f});
+            mgr.add_component<position>(e, position{ static_cast<float>(i), 0.0f, 0.0f });
+            mgr.add_component<velocity>(e, velocity{ static_cast<float>(i) * 0.1f, 0.0f, 0.0f });
             es.push_back(e);
         }
 
@@ -822,8 +820,8 @@ TEST_F(EntitiesTests, DestroyKeepsActivePartitionIntact)
         for (int i = 0; i < 6; ++i)
         {
             entity e = mgr.create();
-            mgr.add_component<position>(e, position{static_cast<float>(i), 0.0f, 0.0f});
-            mgr.add_component<velocity>(e, velocity{static_cast<float>(i) * 0.1f, 0.0f, 0.0f});
+            mgr.add_component<position>(e, position{ static_cast<float>(i), 0.0f, 0.0f });
+            mgr.add_component<velocity>(e, velocity{ static_cast<float>(i) * 0.1f, 0.0f, 0.0f });
             es.push_back(e);
         }
 
@@ -870,21 +868,21 @@ TEST_F(EntitiesTests, DestroyKeepsActivePartitionIntact)
         mgr.clear();
 
         entity other_active = mgr.create();
-        mgr.add_component<position>(other_active, position{10.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(other_active, position{ 10.0f, 0.0f, 0.0f });
 
         entity other_inactive = mgr.create();
-        mgr.add_component<position>(other_inactive, position{20.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(other_inactive, position{ 20.0f, 0.0f, 0.0f });
         mgr.deactivate(other_inactive);
 
         entity parent = mgr.create();
-        mgr.add_component<position>(parent, position{30.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(parent, position{ 30.0f, 0.0f, 0.0f });
 
         entity child_active = mgr.create();
-        mgr.add_component<position>(child_active, position{31.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(child_active, position{ 31.0f, 0.0f, 0.0f });
         mgr.set_parent(child_active, parent);
 
         entity child_inactive = mgr.create();
-        mgr.add_component<position>(child_inactive, position{32.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(child_inactive, position{ 32.0f, 0.0f, 0.0f });
         mgr.set_parent(child_inactive, parent);
         mgr.deactivate(child_inactive);
 
@@ -918,8 +916,8 @@ TEST_F(EntitiesTests, DestroyKeepsActivePartitionIntact)
 TEST_F(EntitiesTests, ActivateDeactivate)
 {
     entity e = mgr.create();
-    mgr.add_component<position>(e, position{1.0f, 2.0f, 3.0f});
-    mgr.add_component<velocity>(e, velocity{0.1f, 0.2f, 0.3f});
+    mgr.add_component<position>(e, position{ 1.0f, 2.0f, 3.0f });
+    mgr.add_component<velocity>(e, velocity{ 0.1f, 0.2f, 0.3f });
 
     // Test 1: deactivate() removes the entity from extract<>() iteration but leaves its
     // components in place, still reachable via has_component()/get_component()
@@ -1016,8 +1014,8 @@ TEST_F(EntitiesTests, SelfActiveCascade)
     {
         mgr.clear();
         entity e = mgr.create({}, scene_id{});
-        mgr.add_component<position>(e, position{1.0f, 2.0f, 3.0f});
-        mgr.add_component<velocity>(e, velocity{0.1f, 0.2f, 0.3f});
+        mgr.add_component<position>(e, position{ 1.0f, 2.0f, 3.0f });
+        mgr.add_component<velocity>(e, velocity{ 0.1f, 0.2f, 0.3f });
 
         mgr.deactivate(e);
 
@@ -1068,7 +1066,7 @@ TEST_F(EntitiesTests, SelfActiveCascade)
     {
         mgr.clear();
         entity e = mgr.create();
-        mgr.add_component<position>(e, position{4.0f, 5.0f, 6.0f});
+        mgr.add_component<position>(e, position{ 4.0f, 5.0f, 6.0f });
 
         EXPECT_TRUE(mgr.is_active(e));
 
@@ -1207,11 +1205,11 @@ TEST_F(EntitiesTests, CreateWithScene)
         EXPECT_FALSE(in_active_extract<components::transform>(mgr, during));
 
         bool in_active_tags = false, in_all_tags = false;
-        mgr.for_each<components::scene_tag>([&](entity e, components::scene_tag&)
+        mgr.for_each<components::scene_tag>([&](entity e, components::scene_tag &)
         {
             if (e == during) in_active_tags = true;
         });
-        mgr.for_each_all<components::scene_tag>([&](entity e, components::scene_tag&)
+        mgr.for_each_all<components::scene_tag>([&](entity e, components::scene_tag &)
         {
             if (e == during) in_all_tags = true;
         });
@@ -1366,7 +1364,7 @@ TEST_F(EntitiesTests, SetParentAdoptsSubtreeScene)
         EXPECT_FALSE(mgr.is_active(leaf));
 
         bool active_found_root = false, active_found_mid = false, active_found_leaf = false;
-        mgr.for_each<components::scene_tag>([&](entity e, components::scene_tag&)
+        mgr.for_each<components::scene_tag>([&](entity e, components::scene_tag &)
         {
             if (e == root) active_found_root = true;
             if (e == mid) active_found_mid = true;
@@ -1377,7 +1375,7 @@ TEST_F(EntitiesTests, SetParentAdoptsSubtreeScene)
         EXPECT_FALSE(active_found_leaf);
 
         bool all_found_root = false, all_found_mid = false, all_found_leaf = false;
-        mgr.for_each_all<components::scene_tag>([&](entity e, components::scene_tag&)
+        mgr.for_each_all<components::scene_tag>([&](entity e, components::scene_tag &)
         {
             if (e == root) all_found_root = true;
             if (e == mid) all_found_mid = true;
@@ -1399,7 +1397,7 @@ TEST_F(EntitiesTests, ScenePause)
     {
         mgr.clear();
         entity e = mgr.create({}, scene_id::test_scene1);
-        mgr.add_component<position>(e, position{1.0f, 2.0f, 3.0f});
+        mgr.add_component<position>(e, position{ 1.0f, 2.0f, 3.0f });
 
         EXPECT_EQ(mgr.set_scene_paused(scene_id::test_scene1, true), 1u);
 
@@ -1482,8 +1480,8 @@ TEST_F(EntitiesTests, ScenePause)
         entity g2 = mgr.create({}, scene_id::test_scene1);
         entity c2 = mgr.create({}, scene_id::test_scene1);
         entity p2 = mgr.create({}, scene_id::test_scene1);
-        mgr.add_component<position>(g1, position{1.0f, 0.0f, 0.0f});
-        mgr.add_component<position>(g2, position{2.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(g1, position{ 1.0f, 0.0f, 0.0f });
+        mgr.add_component<position>(g2, position{ 2.0f, 0.0f, 0.0f });
 
         mgr.set_parent(c1, p1);
         mgr.set_parent(g1, c1);
@@ -1570,7 +1568,7 @@ TEST_F(EntitiesTests, ScenePause)
     {
         mgr.clear();
         auto [root, mid, leaf] = make_chain(mgr, scene_id::test_scene1);
-        mgr.add_component<position>(leaf, position{1.0f, 2.0f, 3.0f});
+        mgr.add_component<position>(leaf, position{ 1.0f, 2.0f, 3.0f });
         mgr.deactivate(mid);
 
         EXPECT_EQ(mgr.set_scene_paused(scene_id::test_scene1, true), 3u);
@@ -1628,7 +1626,7 @@ TEST_F(EntitiesTests, SetParentFollowsScenePause)
         mgr.clear();
         auto [root, mid, leaf] = make_chain(mgr, scene_id::test_scene2);
         entity p = mgr.create({}, scene_id::test_scene1);
-        mgr.add_component<position>(leaf, position{1.0f, 2.0f, 3.0f});
+        mgr.add_component<position>(leaf, position{ 1.0f, 2.0f, 3.0f });
 
         mgr.set_scene_paused(scene_id::test_scene2, true);
         ASSERT_FALSE(mgr.is_active(root));
@@ -1676,7 +1674,7 @@ TEST_F(EntitiesTests, SetParentFollowsScenePause)
         mgr.clear();
         auto [root, mid, leaf] = make_chain(mgr, scene_id::test_scene2);
         entity p = mgr.create({}, scene_id::test_scene1);
-        mgr.add_component<position>(leaf, position{1.0f, 2.0f, 3.0f});
+        mgr.add_component<position>(leaf, position{ 1.0f, 2.0f, 3.0f });
 
         mgr.set_scene_paused(scene_id::test_scene1, true);
 
@@ -1780,7 +1778,7 @@ TEST_F(EntitiesTests, SceneFreeze)
         // No scene_tag pool and no entities in the scene
         EXPECT_TRUE(mgr.set_scene_frozen(s1, true));
         entity e = mgr.create();
-        mgr.add_component<position>(e, position{1.0f, 2.0f, 3.0f});
+        mgr.add_component<position>(e, position{ 1.0f, 2.0f, 3.0f });
         EXPECT_TRUE(in_active_extract<position>(mgr, e));
     }
 
@@ -1819,7 +1817,7 @@ TEST_F(EntitiesTests, SceneFreeze)
         mgr.clear();
 
         entity e = mgr.create({}, s1);
-        mgr.add_component<position>(e, position{1.0f, 2.0f, 3.0f});
+        mgr.add_component<position>(e, position{ 1.0f, 2.0f, 3.0f });
         std::size_t size_before = mgr.size();
 
         mgr.set_scene_frozen(s1, true);
@@ -1849,8 +1847,8 @@ TEST_F(EntitiesTests, SceneFreeze)
         entity g = mgr.create();
         for (entity e : { a, b, g })
         {
-            mgr.add_component<position>(e, position{1.0f, 0.0f, 0.0f});
-            mgr.add_component<velocity>(e, velocity{0.0f, 1.0f, 0.0f});
+            mgr.add_component<position>(e, position{ 1.0f, 0.0f, 0.0f });
+            mgr.add_component<velocity>(e, velocity{ 0.0f, 1.0f, 0.0f });
         }
 
         mgr.set_scene_frozen(s1, true);
@@ -1873,7 +1871,7 @@ TEST_F(EntitiesTests, SceneFreeze)
         entity b = mgr.create({}, s2);
         entity g = mgr.create();
         for (entity e : { a, b, g })
-            mgr.add_component<position>(e, position{1.0f, 0.0f, 0.0f});
+            mgr.add_component<position>(e, position{ 1.0f, 0.0f, 0.0f });
 
         mgr.set_scene_frozen(s1, true);
 
@@ -1890,17 +1888,11 @@ TEST_F(EntitiesTests, SceneFreeze)
 
         visited.clear();
         const entities &const_mgr = mgr;
-        const_mgr.for_each<position>([&](entity e, const position &)
-        {
-            visited.push_back(e);
-        });
+        const_mgr.for_each<position>([&](entity e, const position &) { visited.push_back(e); });
         EXPECT_EQ(sorted(visited), sorted({ b, g }));
 
         visited.clear();
-        mgr.for_each_all<position>([&](entity e, const position &)
-        {
-            visited.push_back(e);
-        });
+        mgr.for_each_all<position>([&](entity e, const position &) { visited.push_back(e); });
         EXPECT_EQ(sorted(visited), sorted({ a, b, g }));
     }
 
@@ -1910,8 +1902,8 @@ TEST_F(EntitiesTests, SceneFreeze)
 
         entity a = mgr.create({}, s1);
         entity b = mgr.create({}, s2);
-        mgr.add_component<position>(a, position{1.0f, 2.0f, 3.0f});
-        mgr.add_component<position>(b, position{4.0f, 5.0f, 6.0f});
+        mgr.add_component<position>(a, position{ 1.0f, 2.0f, 3.0f });
+        mgr.add_component<position>(b, position{ 4.0f, 5.0f, 6.0f });
 
         mgr.set_scene_frozen(s1, true);
         mgr.set_scene_frozen(s2, true);
@@ -1925,10 +1917,7 @@ TEST_F(EntitiesTests, SceneFreeze)
         EXPECT_FLOAT_EQ(mgr.get_component<position>(a)->x, 1.0f);
 
         std::vector<entity> visited;
-        mgr.for_each<position>([&](entity e, const position &)
-        {
-            visited.push_back(e);
-        });
+        mgr.for_each<position>([&](entity e, const position &) { visited.push_back(e); });
         EXPECT_EQ(visited, std::vector<entity>{ a });
     }
 
@@ -1937,7 +1926,7 @@ TEST_F(EntitiesTests, SceneFreeze)
         mgr.clear();
 
         entity a = mgr.create({}, s1);
-        mgr.add_component<position>(a, position{1.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(a, position{ 1.0f, 0.0f, 0.0f });
 
         mgr.set_scene_frozen(s1, true);
         mgr.deactivate(a);
@@ -1960,9 +1949,9 @@ TEST_F(EntitiesTests, SceneFreeze)
         mgr.set_scene_frozen(s1, true);
 
         entity a = mgr.create({}, s1);
-        mgr.add_component<position>(a, position{1.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(a, position{ 1.0f, 0.0f, 0.0f });
         entity b = mgr.create({}, s2);
-        mgr.add_component<position>(b, position{2.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(b, position{ 2.0f, 0.0f, 0.0f });
 
         EXPECT_TRUE(mgr.is_active(a));
         EXPECT_TRUE(in_extract_with_frozen<position>(mgr, a));
@@ -1972,7 +1961,7 @@ TEST_F(EntitiesTests, SceneFreeze)
         // A recycled id carries no scene_tag, so it isn't frozen
         mgr.destroy(a);
         entity g = mgr.create();
-        mgr.add_component<position>(g, position{3.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(g, position{ 3.0f, 0.0f, 0.0f });
         EXPECT_EQ(g.id(), a.id());
         EXPECT_TRUE(in_active_extract<position>(mgr, g));
         EXPECT_FALSE(mgr.is_frozen(g));
@@ -1987,7 +1976,7 @@ TEST_F(EntitiesTests, SceneFreeze)
         EXPECT_FALSE(mgr.is_scene_frozen(s1));
 
         entity e = mgr.create({}, s1);
-        mgr.add_component<position>(e, position{1.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(e, position{ 1.0f, 0.0f, 0.0f });
         EXPECT_TRUE(in_active_extract<position>(mgr, e));
         EXPECT_TRUE(mgr.set_scene_frozen(s1, true));
     }
@@ -2004,8 +1993,8 @@ TEST_F(EntitiesTests, SceneFreezeWithHierarchyAndPause)
 
         auto [root, mid, leaf] = make_chain(mgr, s2);
         entity p = mgr.create({}, s1);
-        mgr.add_component<position>(p, position{0.0f, 0.0f, 0.0f});
-        mgr.add_component<position>(leaf, position{1.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(p, position{ 0.0f, 0.0f, 0.0f });
+        mgr.add_component<position>(leaf, position{ 1.0f, 0.0f, 0.0f });
         mgr.set_scene_frozen(s1, true);
         EXPECT_TRUE(in_active_extract<position>(mgr, leaf));
 
@@ -2026,7 +2015,7 @@ TEST_F(EntitiesTests, SceneFreezeWithHierarchyAndPause)
         mgr.set_scene_frozen(s1, true);
 
         auto [root, mid, leaf] = make_chain(mgr, s1);
-        mgr.add_component<position>(leaf, position{1.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(leaf, position{ 1.0f, 0.0f, 0.0f });
         EXPECT_FALSE(in_active_extract<position>(mgr, leaf));
 
         entity other = mgr.create({}, s2);
@@ -2038,7 +2027,7 @@ TEST_F(EntitiesTests, SceneFreezeWithHierarchyAndPause)
         // Adopted by a global parent, the subtree loses its tags and is never frozen
         mgr.set_scene_frozen(s1, false);
         auto [root2, mid2, leaf2] = make_chain(mgr, s1);
-        mgr.add_component<position>(leaf2, position{2.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(leaf2, position{ 2.0f, 0.0f, 0.0f });
         entity global = mgr.create();
         mgr.set_parent(root2, global);
         mgr.set_scene_frozen(s1, true);
@@ -2055,8 +2044,8 @@ TEST_F(EntitiesTests, SceneFreezeWithHierarchyAndPause)
         entity c1 = mgr.create();
         entity p2 = mgr.create({}, s1);
         entity c2 = mgr.create();
-        mgr.add_component<position>(c1, position{1.0f, 0.0f, 0.0f});
-        mgr.add_component<position>(c2, position{2.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(c1, position{ 1.0f, 0.0f, 0.0f });
+        mgr.add_component<position>(c2, position{ 2.0f, 0.0f, 0.0f });
         mgr.set_parent(c1, p1);
         mgr.set_parent(c2, p2);
         mgr.set_scene_frozen(s1, true);
@@ -2075,7 +2064,7 @@ TEST_F(EntitiesTests, SceneFreezeWithHierarchyAndPause)
         mgr.clear();
 
         entity e = mgr.create({}, s1);
-        mgr.add_component<position>(e, position{1.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(e, position{ 1.0f, 0.0f, 0.0f });
 
         mgr.set_scene_frozen(s1, true);
         mgr.set_scene_paused(s1, true);
@@ -2116,7 +2105,7 @@ TEST_F(EntitiesTests, SceneFreezeWithHierarchyAndPause)
         auto [root, mid, leaf] = make_chain(mgr, s1);
         entity other = mgr.create({}, s1);
         for (entity e : { root, mid, leaf, other })
-            mgr.add_component<position>(e, position{1.0f, 0.0f, 0.0f});
+            mgr.add_component<position>(e, position{ 1.0f, 0.0f, 0.0f });
         mgr.set_scene_frozen(s1, true);
 
         mgr.destroy(root);
@@ -2142,7 +2131,7 @@ TEST_F(EntitiesTests, SceneFreezeMidIteration)
         for (int i = 0; i < 4; ++i)
         {
             entity e = mgr.create({}, s1);
-            mgr.add_component<position>(e, position{0.0f, 0.0f, 0.0f});
+            mgr.add_component<position>(e, position{ 0.0f, 0.0f, 0.0f });
         }
 
         int visited = 0;
@@ -2160,11 +2149,11 @@ TEST_F(EntitiesTests, SceneFreezeMidIteration)
         mgr.set_scene_frozen(s1, true);
 
         entity trigger = mgr.create();
-        mgr.add_component<position>(trigger, position{0.0f, 0.0f, 0.0f});
+        mgr.add_component<position>(trigger, position{ 0.0f, 0.0f, 0.0f });
         for (int i = 0; i < 3; ++i)
         {
             entity e = mgr.create({}, s1);
-            mgr.add_component<position>(e, position{0.0f, 0.0f, 0.0f});
+            mgr.add_component<position>(e, position{ 0.0f, 0.0f, 0.0f });
         }
 
         int visited = 0;
@@ -2184,13 +2173,13 @@ TEST_F(EntitiesTests, SceneFreezeMidIteration)
         for (int i = 0; i < 3; ++i)
         {
             entity e = mgr.create();
-            mgr.add_component<position>(e, position{0.0f, 0.0f, 0.0f});
+            mgr.add_component<position>(e, position{ 0.0f, 0.0f, 0.0f });
         }
         for (scene_id s : scenes)
             for (int i = 0; i < 2; ++i)
             {
                 entity e = mgr.create({}, s);
-                mgr.add_component<position>(e, position{0.0f, 0.0f, 0.0f});
+                mgr.add_component<position>(e, position{ 0.0f, 0.0f, 0.0f });
             }
 
         std::size_t visited = 0;
@@ -2211,7 +2200,7 @@ TEST_F(EntitiesTests, SceneFreezeSurvivesMove)
 
     entities source;
     entity e = source.create({}, s1);
-    source.add_component<position>(e, position{1.0f, 0.0f, 0.0f});
+    source.add_component<position>(e, position{ 1.0f, 0.0f, 0.0f });
     source.set_scene_frozen(s1, true);
 
     entities dest(std::move(source));
@@ -2224,7 +2213,7 @@ TEST_F(EntitiesTests, SceneFreezeSurvivesMove)
 
     EXPECT_FALSE(source.is_scene_frozen(s1));
     entity fresh = source.create({}, s1);
-    source.add_component<position>(fresh, position{2.0f, 0.0f, 0.0f});
+    source.add_component<position>(fresh, position{ 2.0f, 0.0f, 0.0f });
     EXPECT_TRUE(in_active_extract<position>(source, fresh));
 }
 
@@ -2242,10 +2231,10 @@ TEST_F(EntitiesTests, AddComponentToInactiveEntity)
     {
         mgr.clear();
         entity e = mgr.create();
-        mgr.add_component<position>(e, position{1.0f, 2.0f, 3.0f});
+        mgr.add_component<position>(e, position{ 1.0f, 2.0f, 3.0f });
         mgr.deactivate(e);
 
-        velocity *vel_ref = mgr.add_component<velocity>(e, velocity{4.0f, 5.0f, 6.0f});
+        velocity *vel_ref = mgr.add_component<velocity>(e, velocity{ 4.0f, 5.0f, 6.0f });
 
         // Pointer is valid right away, not just via a fresh get_component() afterward
         ASSERT_NE(vel_ref, nullptr);
@@ -2322,12 +2311,11 @@ TEST_F(EntitiesTests, AddComponentToInactiveEntity)
 
 TEST_F(EntitiesTests, DeepHierarchyCascade)
 {
-    // destroy(), set_active() and set_parent()'s retag walk cascade a hierarchy via an explicit std::vector-backed worklist,
-    // deliberately not recursion, so a malformed/deep parent chain can't stack-overflow. Every
-    // other test in this file tops out at 2-3 levels deep, so a recursive rewrite of either
-    // cascade would pass the whole suite - this is the one guard deep enough to actually catch
-    // that regression. Chain is built leaf-first (each new entity becomes the parent of the
-    // previous one) so set_parent()'s own cycle-detection ancestor walk stays O(1) per call -
+    // destroy(), set_active() and set_parent()'s retag walk cascade a hierarchy via an explicit std::vector-backed
+    // worklist, deliberately not recursion, so a malformed/deep parent chain can't stack-overflow. Every other test in
+    // this file tops out at 2-3 levels deep, so a recursive rewrite of either cascade would pass the whole suite - this
+    // is the one guard deep enough to actually catch that regression. Chain is built leaf-first (each new entity
+    // becomes the parent of the previous one) so set_parent()'s own cycle-detection ancestor walk stays O(1) per call -
     // the walk starts at the brand-new parent, which has no ancestors yet.
     constexpr std::size_t DEPTH = 50000;
 

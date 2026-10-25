@@ -1,12 +1,12 @@
-#include <gamecoe/entity/entities.hpp>
-#include <gamecoe/component/transform.hpp>
 #include <gamecoe/component/parent_child.hpp>
 #include <gamecoe/component/scene_tag.hpp>
+#include <gamecoe/component/transform.hpp>
+#include <gamecoe/entity/entities.hpp>
+#include <gamecoe_config.hpp>
 #include <algorithm>
 #include <cstddef>
 #include <optional>
 #include <string>
-#include <gamecoe_config.hpp>
 
 #if GAMECOE_USE_LOGCOE
     #include <logcoe.hpp>
@@ -14,7 +14,7 @@
 
 namespace gamecoe
 {
-    std::uint32_t entities::s_component_id{0};
+    std::uint32_t entities::s_component_id{ 0 };
 
     entity entities::create(components::transform initial_transform, std::optional<scene_id> in_scene)
     {
@@ -24,7 +24,8 @@ namespace gamecoe
         if (m_recycle_ids.empty())
         {
             id = m_current_entity_id;
-            GAMECOE_ASSERT_GUARD(id <= entity::MAX_ENTITIES, "entities::create(): entity limit reached", entity::invalid());
+            GAMECOE_ASSERT_GUARD(id <= entity::MAX_ENTITIES, "entities::create(): entity limit reached",
+                                 entity::invalid());
 
             m_current_entity_id++;
             generation = 0;
@@ -47,25 +48,27 @@ namespace gamecoe
         return e;
     }
 
-    components::transform* entities::transform(entity e)
+    components::transform *entities::transform(entity e)
     {
         GAMECOE_ASSERT_GUARD(valid(e), "entities::transform(): entity is not valid", nullptr);
 
-        components::transform* t = get_component<components::transform>(e);
-        GAMECOE_ASSERT_LOG(t != nullptr, "entities::transform(): transform missing (should be impossible - mandatory component)");
+        components::transform *t = get_component<components::transform>(e);
+        GAMECOE_ASSERT_LOG(t != nullptr,
+                           "entities::transform(): transform missing (should be impossible - mandatory component)");
         return t;
     }
 
-    const components::transform* entities::transform(entity e) const
+    const components::transform *entities::transform(entity e) const
     {
         GAMECOE_ASSERT_GUARD(valid(e), "entities::transform(): entity is not valid", nullptr);
 
-        const components::transform* t = get_component<components::transform>(e);
-        GAMECOE_ASSERT_LOG(t != nullptr, "entities::transform(): transform missing (should be impossible - mandatory component)");
+        const components::transform *t = get_component<components::transform>(e);
+        GAMECOE_ASSERT_LOG(t != nullptr,
+                           "entities::transform(): transform missing (should be impossible - mandatory component)");
         return t;
     }
 
-    const components::scene_tag* entities::scene(entity e) const
+    const components::scene_tag *entities::scene(entity e) const
     {
         GAMECOE_ASSERT_GUARD(valid(e), "entities::scene(): entity is not valid", nullptr);
 
@@ -75,11 +78,10 @@ namespace gamecoe
     std::vector<entity> entities::scene_entities(scene_id id) const
     {
         std::vector<entity> matches;
-        for_each_all<components::scene_tag>(
-            [id, &matches](entity e, const components::scene_tag &tag)
-            {
-                if (tag.id == id) matches.push_back(e);
-            });
+        for_each_all<components::scene_tag>([id, &matches](entity e, const components::scene_tag &tag)
+        {
+            if (tag.id == id) matches.push_back(e);
+        });
         return matches;
     }
 
@@ -101,15 +103,17 @@ namespace gamecoe
 
             unlink_parent(current);
 
-            if (auto* kids = get_pool<components::children>()->try_get(current))
+            if (auto *kids = get_pool<components::children>()->try_get(current))
                 to_destroy.insert(to_destroy.end(), kids->handles.begin(), kids->handles.end());
 
             m_generations[current.id()]++;
             bool exhausted = m_generations[current.id()] > entity::MAX_GENERATIONS;
-            GAMECOE_ASSERT_LOG(!exhausted, "entities::destroy(): id's generation reached the maximum, permanently retiring this id");
+            GAMECOE_ASSERT_LOG(
+                !exhausted, "entities::destroy(): id's generation reached the maximum, permanently retiring this id");
             if (!exhausted) m_recycle_ids.push_back(current.id());
 
-            for (auto &pool : m_pools) if (pool) pool->remove(current);
+            for (auto &pool : m_pools)
+                if (pool) pool->remove(current);
         }
     }
 
@@ -164,12 +168,15 @@ namespace gamecoe
     {
         if (is_scene_paused(id) == paused) return 0;
 
-        if (paused) m_paused_scenes.push_back(id);
-        else std::erase(m_paused_scenes, id);
+        if (paused)
+            m_paused_scenes.push_back(id);
+        else
+            std::erase(m_paused_scenes, id);
 
         // set_active() swaps slots in every pool, so collect the scene's entities before touching any.
         std::vector<entity> scene_ents = scene_entities(id);
-        for (entity e : scene_ents) set_active(e, compute_world_active(e));
+        for (entity e : scene_ents)
+            set_active(e, compute_world_active(e));
 
         return scene_ents.size();
     }
@@ -178,8 +185,10 @@ namespace gamecoe
     {
         if (is_scene_frozen(id) == frozen) return false;
 
-        if (frozen) m_frozen_scenes.push_back(id);
-        else std::erase(m_frozen_scenes, id);
+        if (frozen)
+            m_frozen_scenes.push_back(id);
+        else
+            std::erase(m_frozen_scenes, id);
 
         return true;
     }
@@ -197,9 +206,10 @@ namespace gamecoe
 
             if (!valid(current) || is_active(current) == target) continue;
 
-            for (auto &pool : m_pools) if (pool) (target ? pool->activate(current) : pool->deactivate(current));
+            for (auto &pool : m_pools)
+                if (pool) (target ? pool->activate(current) : pool->deactivate(current));
 
-            if (auto* kids = get_pool<components::children>()->try_get(current))
+            if (auto *kids = get_pool<components::children>()->try_get(current))
                 for (entity child : kids->handles)
                     worklist.emplace_back(child, target && own_active(child));
         }
@@ -208,7 +218,7 @@ namespace gamecoe
     bool entities::compute_world_active(entity e)
     {
         if (!own_active(e)) return false;
-        auto* p = get_pool<components::parent>()->try_get(e);
+        auto *p = get_pool<components::parent>()->try_get(e);
         return !p || is_active(p->handle);
     }
 
@@ -222,21 +232,15 @@ namespace gamecoe
         return std::find(m_frozen_scenes.begin(), m_frozen_scenes.end(), id) != m_frozen_scenes.end();
     }
 
-    bool entities::is_frozen(entity e) const
-    {
-        return in_frozen_scene(e, find_pool<components::scene_tag>());
-    }
+    bool entities::is_frozen(entity e) const { return in_frozen_scene(e, find_pool<components::scene_tag>()); }
 
-    bool entities::own_active(entity e) const
-    {
-        return m_self_active[e.id()] && !in_paused_scene(e);
-    }
+    bool entities::own_active(entity e) const { return m_self_active[e.id()] && !in_paused_scene(e); }
 
     bool entities::in_paused_scene(entity e) const
     {
         if (m_paused_scenes.empty()) return false;
-        auto* pool = find_pool<components::scene_tag>();
-        auto* tag = pool ? pool->try_get(e) : nullptr;
+        auto *pool = find_pool<components::scene_tag>();
+        auto *tag = pool ? pool->try_get(e) : nullptr;
         return tag && is_scene_paused(tag->id);
     }
 
@@ -247,7 +251,9 @@ namespace gamecoe
         GAMECOE_ASSERT_GUARD(valid(e), "entities::is_active(): entity is not valid", false);
 
         auto pool = find_pool<components::transform>();
-        GAMECOE_ASSERT_GUARD(pool != nullptr && pool->contains(e), "entities::is_active(): transform missing (should be impossible - mandatory component)", false);
+        GAMECOE_ASSERT_GUARD(pool != nullptr && pool->contains(e),
+                             "entities::is_active(): transform missing (should be impossible - mandatory component)",
+                             false);
 
         return pool->is_active(e);
     }
@@ -258,26 +264,28 @@ namespace gamecoe
         m_recycle_ids.reserve(capacity);
         m_self_active.reserve(capacity);
 
-        for (auto &pool : m_pools) if (pool) pool->reserve(capacity);
+        for (auto &pool : m_pools)
+            if (pool) pool->reserve(capacity);
 
         logcoe::debug("entities::reserve(): reserved capacity for " + std::to_string(capacity) + " entities");
     }
 
     std::size_t entities::size() const
     {
-        const component_pool<components::transform>* pool = find_pool<components::transform>();
+        const component_pool<components::transform> *pool = find_pool<components::transform>();
         return pool ? pool->size() : 0;
     }
 
     void entities::set_parent(entity child, entity parent)
     {
-        GAMECOE_ASSERT_GUARD(valid(child) && valid(parent), "entities::set_parent(): child/parent must be valid entities");
+        GAMECOE_ASSERT_GUARD(valid(child) && valid(parent),
+                             "entities::set_parent(): child/parent must be valid entities");
         GAMECOE_ASSERT_GUARD(child != parent, "entities::set_parent(): entity cannot be its own parent");
 
         auto parent_pool = get_pool<components::parent>();
         auto children_pool = get_pool<components::children>();
 
-        if (auto* p = parent_pool->try_get(child); p && p->handle == parent) return;
+        if (auto *p = parent_pool->try_get(child); p && p->handle == parent) return;
 
         // Walk up from parent toward the root, checking whether child appears as its own ancestor.
         // guard bounds the walk to entities.size() so a corrupted parent chain can't loop forever.
@@ -287,7 +295,7 @@ namespace gamecoe
         while (guard < max_guard)
         {
             GAMECOE_ASSERT_GUARD(ancestor != child, "entities::set_parent(): would create a parent/child cycle");
-            auto* pa = parent_pool->try_get(ancestor);
+            auto *pa = parent_pool->try_get(ancestor);
             if (!pa) break;
             ancestor = pa->handle;
             ++guard;
@@ -296,29 +304,34 @@ namespace gamecoe
         unlink_parent(child);
         parent_pool->add(child, is_active(child), components::parent{ parent });
 
-        if (auto* kids = children_pool->try_get(parent)) kids->handles.push_back(child);
-        else children_pool->add(parent, is_active(parent), components::children{ { child } });
+        if (auto *kids = children_pool->try_get(parent))
+            kids->handles.push_back(child);
+        else
+            children_pool->add(parent, is_active(parent), components::children{ { child } });
 
         // Whole moved subtree joins parent's scene, or goes global if parent has no tag. The set_active()
         // below then follows the new scene's pause state. unload_scene()'s destroy cascade assumes every
         // hierarchy edge stays inside one scene. If the pool doesn't exist yet, nothing has ever been
         // tagged, so there's nothing to retag.
-        if (auto* scene_tag_pool = find_pool<components::scene_tag>())
+        if (auto *scene_tag_pool = find_pool<components::scene_tag>())
         {
             std::optional<components::scene_tag> parent_scene_tag;
-            if (auto* t = scene_tag_pool->try_get(parent)) parent_scene_tag = *t;   // copy, retag_subtree_scene's add() may reallocate the pool
+            if (auto *t = scene_tag_pool->try_get(parent))
+                parent_scene_tag = *t; // copy, retag_subtree_scene's add() may reallocate the pool
             retag_subtree_scene(*scene_tag_pool, child, parent_scene_tag);
         }
 
         set_active(child, compute_world_active(child));
     }
 
-    void entities::retag_subtree_scene(component_pool<components::scene_tag>& scene_tag_pool, entity root, const std::optional<components::scene_tag>& target_tag)
+    void entities::retag_subtree_scene(component_pool<components::scene_tag> &scene_tag_pool,
+                                       entity root,
+                                       const std::optional<components::scene_tag> &target_tag)
     {
         auto children_pool = get_pool<components::children>();
 
         // Root's own tag already matches, so the whole subtree does too. Skip the walk entirely.
-        auto* root_tag = scene_tag_pool.try_get(root);
+        auto *root_tag = scene_tag_pool.try_get(root);
         if (target_tag ? (root_tag && root_tag->id == target_tag->id) : !root_tag) return;
 
         std::vector<entity> to_retag{ root };
@@ -330,15 +343,18 @@ namespace gamecoe
             if (!valid(current)) continue;
 
             // Tag matches, so the subtree already does too. Skip descending.
-            auto* existing_tag = scene_tag_pool.try_get(current);
+            auto *existing_tag = scene_tag_pool.try_get(current);
             bool already_matches = target_tag ? (existing_tag && existing_tag->id == target_tag->id) : !existing_tag;
             if (already_matches) continue;
 
-            if (!target_tag)        scene_tag_pool.remove(current);
-            else if (existing_tag)  existing_tag->id = target_tag->id;
-            else                    scene_tag_pool.add(current, is_active(current), *target_tag);
+            if (!target_tag)
+                scene_tag_pool.remove(current);
+            else if (existing_tag)
+                existing_tag->id = target_tag->id;
+            else
+                scene_tag_pool.add(current, is_active(current), *target_tag);
 
-            if (auto* kids = children_pool->try_get(current))
+            if (auto *kids = children_pool->try_get(current))
                 to_retag.insert(to_retag.end(), kids->handles.begin(), kids->handles.end());
         }
     }
@@ -346,13 +362,13 @@ namespace gamecoe
     bool entities::unlink_parent(entity child)
     {
         auto parent_pool = get_pool<components::parent>();
-        auto* parent_comp = parent_pool->try_get(child);
+        auto *parent_comp = parent_pool->try_get(child);
         if (!parent_comp) return false;
 
         entity old_parent = parent_comp->handle;
 
         auto children_pool = get_pool<components::children>();
-        if (auto* kids = children_pool->try_get(old_parent))
+        if (auto *kids = children_pool->try_get(old_parent))
         {
             std::erase(kids->handles, child);
             // A childless entity has no children component at all, not one with an empty list -
@@ -378,7 +394,7 @@ namespace gamecoe
     void entities::remove_children(entity parent)
     {
         auto children_pool = get_pool<components::children>();
-        auto* kids = children_pool->try_get(parent);
+        auto *kids = children_pool->try_get(parent);
         if (!kids)
         {
             logcoe::debug("entities::remove_children(): entity has no children, ignoring");

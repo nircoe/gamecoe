@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
-#include <support/gl_context.hpp>
 #include <gamecoe/graphics/vertex_array.hpp>
+#include <support/gl_context.hpp>
+#include <gtest/gtest.h>
 #include <cstddef>
 #include <cstdint>
 #include <utility>
@@ -30,11 +30,7 @@ TEST_F(VertexArrayTests, CreateWithoutIndices)
 {
     SKIP_IF_NO_GL();
 
-    float vertices[] = {
-        0.0f, 0.5f, 0.0f,
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f
-    };
+    float vertices[] = { 0.0f, 0.5f, 0.0f, -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f };
     std::size_t vertex_count = 3;
 
     auto result = vertex_array::create(vertices, vertex_count, 3);
@@ -48,12 +44,7 @@ TEST_F(VertexArrayTests, CreateWithIndices)
 {
     SKIP_IF_NO_GL();
 
-    float vertices[] = {
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.5f,  0.5f, 0.0f,
-        -0.5f,  0.5f, 0.0f
-    };
+    float vertices[] = { -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.5f, 0.5f, 0.0f, -0.5f, 0.5f, 0.0f };
     std::uint32_t indices[] = { 0, 1, 2, 2, 3, 0 };
     std::size_t vertex_count = 4;
     std::size_t index_count = 6;
@@ -74,11 +65,7 @@ TEST_F(VertexArrayTests, MoveConstruction)
 {
     SKIP_IF_NO_GL();
 
-    float vertices[] = {
-        0.0f, 0.5f, 0.0f,
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f
-    };
+    float vertices[] = { 0.0f, 0.5f, 0.0f, -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f };
     std::size_t vertex_count = 3;
 
     auto result = vertex_array::create(vertices, vertex_count, 3);
@@ -98,19 +85,10 @@ TEST_F(VertexArrayTests, MoveAssignmentNoDoubleDestroy)
 {
     SKIP_IF_NO_GL();
 
-    float vertices1[] = {
-        0.0f, 0.5f, 0.0f,
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f
-    };
+    float vertices1[] = { 0.0f, 0.5f, 0.0f, -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f };
     std::size_t vertex_count1 = 3;
 
-    float vertices2[] = {
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.5f,  0.5f, 0.0f,
-        -0.5f,  0.5f, 0.0f
-    };
+    float vertices2[] = { -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.5f, 0.5f, 0.0f, -0.5f, 0.5f, 0.0f };
     std::uint32_t indices2[] = { 0, 1, 2, 2, 3, 0 };
     std::size_t vertex_count2 = 4;
     std::size_t index_count2 = 6;

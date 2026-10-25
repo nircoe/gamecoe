@@ -1,11 +1,11 @@
 #pragma once
 
-#include <cstdint>
-#include <expected>
-#include <flat_map>
 #include <gamecoe/utils/error.hpp>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <cstdint>
+#include <expected>
+#include <flat_map>
 #include <string>
 #include <vector>
 
@@ -24,15 +24,15 @@ namespace gamecoe
             std::int32_t uniform_location(const std::string &name) const;
 
         public:
-            shader(const shader&) = delete;
-            shader &operator=(const shader&) = delete;
+            shader(const shader &) = delete;
+            shader &operator=(const shader &) = delete;
             shader(shader &&other) noexcept;
             shader &operator=(shader &&other) noexcept;
             ~shader();
 
-            [[nodiscard]] static std::expected<shader, error> create(
-                const std::string &vertex_path, const std::string &fragment_path,
-                const std::vector<std::string> &macros = {});
+            [[nodiscard]] static std::expected<shader, error> create(const std::string &vertex_path,
+                                                                     const std::string &fragment_path,
+                                                                     const std::vector<std::string> &macros = {});
 
             [[nodiscard]] std::uint32_t id() const noexcept;
             void use() const;

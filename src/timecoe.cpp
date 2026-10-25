@@ -22,8 +22,5 @@ namespace timecoe
         }
     } // namespace detail
 
-    float delta_time() noexcept
-    {
-        return g_delta_time;
-    }
+    float delta_time() noexcept { return g_delta_time; }
 } // namespace timecoe

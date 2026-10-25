@@ -51,8 +51,10 @@ int main(int argc, char **argv)
     std::cout << "Comprehensive testing for gamecoe." << std::endl;
     std::cout << "Testing Core Module: window, game" << std::endl;
     std::cout << "Testing Graphics Module: buffer, vertex_array, shader, texture" << std::endl;
-    std::cout << "Testing Entity Module: entity, sparse_set, component_pool, entities, extraction, command_buffer" << std::endl;
-    std::cout << "Testing Component Module: transform, parent, children, scene_tag, shape_renderer, shape_collider" << std::endl;
+    std::cout << "Testing Entity Module: entity, sparse_set, component_pool, entities, extraction, command_buffer"
+              << std::endl;
+    std::cout << "Testing Component Module: transform, parent, children, scene_tag, shape_renderer, shape_collider"
+              << std::endl;
     std::cout << "Testing System Module: systems::entry, systems::create, systems::scheduler" << std::endl;
     std::cout << std::endl;
 

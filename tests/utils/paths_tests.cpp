@@ -1,5 +1,5 @@
-#include <gtest/gtest.h>
 #include <gamecoe/utils/paths.hpp>
+#include <gtest/gtest.h>
 #include <filesystem>
 #include <string>
 
@@ -9,7 +9,9 @@ using namespace gamecoe;
 //                 PathsTests - Executable path resolution tests
 //==============================================================================
 
-class PathsTests : public ::testing::Test { };
+class PathsTests : public ::testing::Test
+{
+};
 
 //==============================================================================
 //                           Successful Path Resolution

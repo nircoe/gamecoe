@@ -1,13 +1,13 @@
-#include <gamecoe/utils/paths.hpp>
 #include <gamecoe/utils/error_handler.hpp>
+#include <gamecoe/utils/paths.hpp>
 #include <expected>
 #include <filesystem>
 
 #ifdef _WIN32
     #include <windows.h>
 #elif __APPLE__
-    #include <mach-o/dyld.h>
     #include <limits.h>
+    #include <mach-o/dyld.h>
     #include <cstdint>
 #endif
 
@@ -22,33 +22,26 @@ namespace gamecoe
             char path[MAX_PATH];
             DWORD result = GetModuleFileNameA(nullptr, path, MAX_PATH);
             if (result == 0 || result == MAX_PATH)
-                return std::unexpected(
-                        detail::make_error(
-                            error_code::path_resolution_failure,
-                            "[gamecoe] Could not get the executable path on Windows"));
+                return std::unexpected(detail::make_error(error_code::path_resolution_failure,
+                                                          "[gamecoe] Could not get the executable path on Windows"));
             exe = std::filesystem::path(path);
 #elif __APPLE__
             char path[PATH_MAX];
             std::uint32_t size = PATH_MAX;
-            if(_NSGetExecutablePath(path, &size))
-               return std::unexpected(
-                        detail::make_error(
-                            error_code::path_resolution_failure,
-                            "[gamecoe] Could not get the executable path on MacOS"));
+            if (_NSGetExecutablePath(path, &size))
+                return std::unexpected(detail::make_error(error_code::path_resolution_failure,
+                                                          "[gamecoe] Could not get the executable path on MacOS"));
             exe = std::filesystem::path(path);
 #elif __linux__
             std::error_code ec;
             exe = std::filesystem::canonical("/proc/self/exe", ec);
             if (ec)
                 return std::unexpected(
-                        detail::make_error(
-                            error_code::path_resolution_failure,
-                            "[gamecoe] Could not get the executable path on Linux: " + ec.message()));
+                    detail::make_error(error_code::path_resolution_failure,
+                                       "[gamecoe] Could not get the executable path on Linux: " + ec.message()));
 #else
             return std::unexpected(
-                    detail::make_error(
-                        error_code::unsupported_platform,
-                        "[gamecoe] Unsupported Operation System"));
+                detail::make_error(error_code::unsupported_platform, "[gamecoe] Unsupported Operation System"));
 #endif
 
             return exe;

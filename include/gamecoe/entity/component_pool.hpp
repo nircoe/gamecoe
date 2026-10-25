@@ -1,12 +1,12 @@
 #pragma once
 
-#include <cstddef>
-#include <cstdint>
 #include <gamecoe/entity/entity.hpp>
 #include <gamecoe/entity/sparse_set.hpp>
+#include <gamecoe/utils/error_handler.hpp>
+#include <cstddef>
+#include <cstdint>
 #include <utility>
 #include <vector>
-#include <gamecoe/utils/error_handler.hpp>
 
 namespace gamecoe
 {
@@ -31,7 +31,11 @@ namespace gamecoe
         [[nodiscard]] bool contains(entity e) const noexcept { return m_entities.contains(e); }
         [[nodiscard]] std::size_t size() const noexcept { return m_entities.size(); }
         [[nodiscard]] bool empty() const noexcept { return m_entities.empty(); }
-        void reserve(std::size_t capacity) { m_entities.reserve(capacity); do_reserve(capacity); }
+        void reserve(std::size_t capacity)
+        {
+            m_entities.reserve(capacity);
+            do_reserve(capacity);
+        }
 
         [[nodiscard]] std::size_t active_size() const noexcept { return m_entities.active_size(); }
 
@@ -63,7 +67,10 @@ namespace gamecoe
                 swap_components(i, partner.value());
         }
 
-        [[nodiscard]] entity get_entity_at_index(std::size_t index) const noexcept { return m_entities.get_entity_at_index(index); }
+        [[nodiscard]] entity get_entity_at_index(std::size_t index) const noexcept
+        {
+            return m_entities.get_entity_at_index(index);
+        }
     };
 
     template <typename T>
@@ -71,17 +78,14 @@ namespace gamecoe
     {
         std::vector<T> m_components;
 
-        void do_reserve(std::size_t capacity) override
-        {
-            m_components.reserve(capacity);
-        }
+        void do_reserve(std::size_t capacity) override { m_components.reserve(capacity); }
 
         void swap_components(std::uint32_t a, std::uint32_t b) override { std::swap(m_components[a], m_components[b]); }
 
     public:
         component_pool() noexcept = default;
-        component_pool(const component_pool&) = delete;
-        component_pool& operator=(const component_pool&) = delete;
+        component_pool(const component_pool &) = delete;
+        component_pool &operator=(const component_pool &) = delete;
 
         ~component_pool() override = default;
 
@@ -90,12 +94,13 @@ namespace gamecoe
             auto index = m_entities.index(e);
             if (!index) return;
 
-            deactivate(e);   // No-op if e is already inactive. Otherwise moves e (and its component) to the first-inactive slot.
+            deactivate(
+                e); // No-op if e is already inactive. Otherwise moves e (and its component) to the first-inactive slot.
 
-            std::uint32_t i    = m_entities.index(e).value();   // re-resolve: deactivate() may have moved it
+            std::uint32_t i = m_entities.index(e).value(); // re-resolve: deactivate() may have moved it
             std::uint32_t last = static_cast<std::uint32_t>(m_components.size()) - 1;
 
-            m_entities.erase_at(i);   // both endpoints are now inactive, so this is a pure swap-with-back + pop
+            m_entities.erase_at(i); // both endpoints are now inactive, so this is a pure swap-with-back + pop
 
             if (i != last) m_components[i] = std::move(m_components[last]);
             m_components.pop_back();
@@ -108,12 +113,12 @@ namespace gamecoe
         }
 
         template <typename... Args>
-        T* add(entity e, bool active, Args&&... args)
+        T *add(entity e, bool active, Args &&...args)
         {
             GAMECOE_ASSERT_GUARD(!contains(e), "component_pool::add(): entity already has this component",
-                                  try_get(e));   // no-op - active is ignored, existing value is untouched
+                                 try_get(e)); // no-op - active is ignored, existing value is untouched
 
-            const std::uint32_t back_index   = static_cast<std::uint32_t>(m_components.size());
+            const std::uint32_t back_index = static_cast<std::uint32_t>(m_components.size());
             const std::uint32_t target_index = static_cast<std::uint32_t>(m_entities.active_size());
 
             m_components.emplace_back(std::forward<Args>(args)...);
@@ -135,13 +140,13 @@ namespace gamecoe
             return &m_components[target_index];
         }
 
-        [[nodiscard]] T* try_get(entity e)
+        [[nodiscard]] T *try_get(entity e)
         {
             auto index = m_entities.index(e);
             return index ? &m_components[index.value()] : nullptr;
         }
 
-        [[nodiscard]] const T* try_get(entity e) const
+        [[nodiscard]] const T *try_get(entity e) const
         {
             auto index = m_entities.index(e);
             return index ? &m_components[index.value()] : nullptr;
@@ -150,37 +155,37 @@ namespace gamecoe
         // Active partition only, a deactivated entity (e.g. one in a paused scene) is skipped.
         // Activating/deactivating an entity from inside the callback reorders the dense array
         // mid-loop, same hazard as extraction (see extraction.hpp).
-        template<typename Func>
+        template <typename Func>
         void for_each(Func &&func)
         {
             auto size = active_size();
-            for(std::size_t i = 0; i < size; ++i)
+            for (std::size_t i = 0; i < size; ++i)
                 func(m_entities.get_entity_at_index(i), m_components[i]);
         }
 
-        template<typename Func>
+        template <typename Func>
         void for_each(Func &&func) const
         {
             auto size = active_size();
-            for(std::size_t i = 0; i < size; ++i)
+            for (std::size_t i = 0; i < size; ++i)
                 func(m_entities.get_entity_at_index(i), m_components[i]);
         }
 
         // Full scan over both partitions, unlike for_each(). Mutating any pool (activate/deactivate/add/remove)
         // during iteration invalidates the cached bound (see begin()/end() comment).
-        template<typename Func>
+        template <typename Func>
         void for_each_all(Func &&func)
         {
             auto size = m_components.size();
-            for(std::size_t i = 0; i < size; ++i)
+            for (std::size_t i = 0; i < size; ++i)
                 func(m_entities.get_entity_at_index(i), m_components[i]);
         }
 
-        template<typename Func>
+        template <typename Func>
         void for_each_all(Func &&func) const
         {
             auto size = m_components.size();
-            for(std::size_t i = 0; i < size; ++i)
+            for (std::size_t i = 0; i < size; ++i)
                 func(m_entities.get_entity_at_index(i), m_components[i]);
         }
 

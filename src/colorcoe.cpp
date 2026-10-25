@@ -1,5 +1,5 @@
-#include <colorcoe.hpp>
 #include <gamecoe/utils/error_handler.hpp>
+#include <colorcoe.hpp>
 #include <cstddef>
 
 namespace gamecoe
@@ -9,10 +9,7 @@ namespace gamecoe
         return m_red == other.m_red && m_green == other.m_green && m_blue == other.m_blue && m_alpha == other.m_alpha;
     }
 
-    bool color::operator!=(const color &other) const noexcept
-    {
-        return !(*this == other);
-    }
+    bool color::operator!=(const color &other) const noexcept { return !(*this == other); }
 
     std::uint8_t color::red() const noexcept { return m_red; }
 
@@ -24,23 +21,20 @@ namespace gamecoe
 
     glm::vec4 color::normalized() const noexcept
     {
-        return { static_cast<float>(m_red) / 255.0f,
-                 static_cast<float>(m_green) / 255.0f,
-                 static_cast<float>(m_blue) / 255.0f,
-                 static_cast<float>(m_alpha) / 255.0f };
+        return { static_cast<float>(m_red) / 255.0f, static_cast<float>(m_green) / 255.0f,
+                 static_cast<float>(m_blue) / 255.0f, static_cast<float>(m_alpha) / 255.0f };
     }
 
     std::uint32_t color::rgba() const noexcept
     {
-        return (static_cast<std::uint32_t>(m_red) << 24) |
-               (static_cast<std::uint32_t>(m_green) << 16) |
-               (static_cast<std::uint32_t>(m_blue) << 8) |
-                static_cast<std::uint32_t>(m_alpha);
+        return (static_cast<std::uint32_t>(m_red) << 24) | (static_cast<std::uint32_t>(m_green) << 16) |
+               (static_cast<std::uint32_t>(m_blue) << 8) | static_cast<std::uint32_t>(m_alpha);
     }
 
     color color::from_normalized(float red, float green, float blue, float alpha)
     {
-        auto clamp = [](float value) -> std::uint8_t {
+        auto clamp = [](float value) -> std::uint8_t
+        {
             if (value < 0.0f) return 0U;
             if (value > 1.0f) return 255U;
 
@@ -52,23 +46,25 @@ namespace gamecoe
     std::expected<color, error> color::from_hex(const std::string &hex)
     {
         if (!hex.starts_with('#') || (hex.length() != 7 && hex.length() != 9))
-            return std::unexpected(
-                    detail::invalid_argument(
-                        "color::from_hex(): The string argument should be in format of \"#RRGGBBAA\" or \"#RRGGBB\" in hexadecimal"));
+            return std::unexpected(detail::invalid_argument("color::from_hex(): The string argument should be in "
+                                                            "format of \"#RRGGBBAA\" or \"#RRGGBB\" in hexadecimal"));
 
-        auto parse_hex_digit = [](char c) -> std::expected<std::uint8_t, error> {
-            if ('0' <= c && c <= '9')       return static_cast<std::uint8_t>(c - '0');
-            else if ('A' <= c && c <= 'F')  return static_cast<std::uint8_t>(10U + (c - 'A'));
-            else if ('a' <= c && c <= 'f')  return static_cast<std::uint8_t>(10U + (c - 'a'));
+        auto parse_hex_digit = [](char c) -> std::expected<std::uint8_t, error>
+        {
+            if ('0' <= c && c <= '9')
+                return static_cast<std::uint8_t>(c - '0');
+            else if ('A' <= c && c <= 'F')
+                return static_cast<std::uint8_t>(10U + (c - 'A'));
+            else if ('a' <= c && c <= 'f')
+                return static_cast<std::uint8_t>(10U + (c - 'a'));
 
-            return std::unexpected(
-                    detail::invalid_argument(
-                        "color::from_hex(): The string argument should be in format of \"#RRGGBBAA\" or \"#RRGGBB\" in hexadecimal"));
+            return std::unexpected(detail::invalid_argument("color::from_hex(): The string argument should be in "
+                                                            "format of \"#RRGGBBAA\" or \"#RRGGBB\" in hexadecimal"));
         };
 
         std::uint8_t values[4] = { 0U, 0U, 0U, 255U };
         std::size_t iterations = (hex.length() - 1) / 2; // 3 or 4
-        for(std::size_t i = 0; i < iterations; ++i)
+        for (std::size_t i = 0; i < iterations; ++i)
         {
             char first = hex[(2 * i) + 1];
             char second = hex[(2 * i) + 2];
@@ -87,8 +83,10 @@ namespace gamecoe
 
     color color::lerp(const color &a, const color &b, float t)
     {
-        if (t < 0.0f)       t = 0.0f;
-        else if (t > 1.0f)  t = 1.0f;
+        if (t < 0.0f)
+            t = 0.0f;
+        else if (t > 1.0f)
+            t = 1.0f;
 
         std::int16_t red_diff = b.m_red - a.m_red;
         std::int16_t green_diff = b.m_green - a.m_green;

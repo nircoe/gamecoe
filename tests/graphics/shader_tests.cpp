@@ -1,11 +1,11 @@
-#include <gtest/gtest.h>
-#include <support/gl_context.hpp>
 #include <gamecoe/graphics/shader.hpp>
 #include <gamecoe_config.hpp>
+#include <support/gl_context.hpp>
 #include <glad/gl.h>
+#include <gtest/gtest.h>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
-#include <cstdint>
 #include <string>
 #include <utility>
 
@@ -22,41 +22,40 @@ namespace
         return path;
     }
 
-    const std::string valid_vertex_source =
-        "void main()\n"
-        "{\n"
-        "    gl_Position = vec4(0.0, 0.0, 0.0, 1.0);\n"
-        "}\n";
+    const std::string valid_vertex_source = "void main()\n"
+                                            "{\n"
+                                            "    gl_Position = vec4(0.0, 0.0, 0.0, 1.0);\n"
+                                            "}\n";
 
-    const std::string valid_fragment_source =
-        "out vec4 FragColor;\n"
-        "void main()\n"
-        "{\n"
-        "    FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
-        "}\n";
+    const std::string valid_fragment_source = "out vec4 FragColor;\n"
+                                              "void main()\n"
+                                              "{\n"
+                                              "    FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n"
+                                              "}\n";
 
-    const std::string uniform_fragment_source =
-        "uniform bool u_bool;\n"
-        "uniform int u_int;\n"
-        "uniform float u_float;\n"
-        "uniform vec3 u_vec3;\n"
-        "uniform mat4 u_mat4;\n"
-        "out vec4 FragColor;\n"
-        "void main()\n"
-        "{\n"
-        "    vec3 color = u_vec3 * u_float;\n"
-        "    if (u_bool)\n"
-        "        color += vec3(u_int);\n"
-        "    color += vec3(u_mat4[0][0]);\n"
-        "    FragColor = vec4(color, 1.0);\n"
-        "}\n";
-}
+    const std::string uniform_fragment_source = "uniform bool u_bool;\n"
+                                                "uniform int u_int;\n"
+                                                "uniform float u_float;\n"
+                                                "uniform vec3 u_vec3;\n"
+                                                "uniform mat4 u_mat4;\n"
+                                                "out vec4 FragColor;\n"
+                                                "void main()\n"
+                                                "{\n"
+                                                "    vec3 color = u_vec3 * u_float;\n"
+                                                "    if (u_bool)\n"
+                                                "        color += vec3(u_int);\n"
+                                                "    color += vec3(u_mat4[0][0]);\n"
+                                                "    FragColor = vec4(color, 1.0);\n"
+                                                "}\n";
+} // namespace
 
 //==============================================================================
 //              ShaderTests - graphics::shader class tests
 //==============================================================================
 
-class ShaderTests : public GLContextTest {};
+class ShaderTests : public GLContextTest
+{
+};
 
 //==============================================================================
 //                        Creation
@@ -81,8 +80,8 @@ TEST_F(ShaderTests, CreateMissingFileFails)
 {
     SKIP_IF_NO_GL();
 
-    auto result = shader::create("/nonexistent/path/shader_tests_missing.vert",
-                                  "/nonexistent/path/shader_tests_missing.frag");
+    auto result =
+        shader::create("/nonexistent/path/shader_tests_missing.vert", "/nonexistent/path/shader_tests_missing.frag");
     ASSERT_FALSE(result.has_value());
     EXPECT_EQ(result.error().code, error_code::file_read_failure);
 }
@@ -108,12 +107,11 @@ TEST_F(ShaderTests, CreateWithSyntaxErrorFails)
 {
     SKIP_IF_NO_GL();
 
-    const std::string broken_fragment_source =
-        "out vec4 FragColor;\n"
-        "void main()\n"
-        "{\n"
-        "    FragColor = vec4(1.0, 0.0, 0.0, 1.0)\n" // missing semicolon
-        "}\n";
+    const std::string broken_fragment_source = "out vec4 FragColor;\n"
+                                               "void main()\n"
+                                               "{\n"
+                                               "    FragColor = vec4(1.0, 0.0, 0.0, 1.0)\n" // missing semicolon
+                                               "}\n";
 
     auto vertex_path = write_temp_shader("shader_tests_broken.vert", valid_vertex_source);
     auto fragment_path = write_temp_shader("shader_tests_broken.frag", broken_fragment_source);

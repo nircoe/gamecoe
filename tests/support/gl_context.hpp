@@ -1,10 +1,10 @@
 #pragma once
 
-#include <gtest/gtest.h>
 #include <gamecoe/core/window.hpp>
-#include <glad/gl.h>
-#include <GLFW/glfw3.h>
 #include <support/test_utils.hpp>
+#include <GLFW/glfw3.h>
+#include <glad/gl.h>
+#include <gtest/gtest.h>
 #include <optional>
 #include <utility>
 
