@@ -1,6 +1,6 @@
-#include <gtest/gtest.h>
 #include <gamecoe/component/transform.hpp>
 #include <support/test_utils.hpp>
+#include <gtest/gtest.h>
 
 using namespace gamecoe;
 using namespace test_utils;
@@ -38,7 +38,6 @@ TEST_F(TransformTests, MatrixComposition)
     float rotation_angle = glm::radians(90.0f);
     glm::vec3 rotation_axis(0.0f, 1.0f, 0.0f);
 
-    // Known, non-trivial position/rotation/scale
     t.position = glm::vec3(1.0f, 2.0f, 3.0f);
     t.rotation = glm::angleAxis(rotation_angle, rotation_axis);
     t.scale = glm::vec3(2.0f, 1.0f, 0.5f);
@@ -83,10 +82,9 @@ TEST_F(TransformTests, DirectionVectors)
 
     // Test 2: Known 90-degree rotation around Y
     {
+        // Expected value is hardcoded, not derived from forward()'s formula.
         t.rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-        // Analytically-derived expected value (not just re-deriving forward()'s own
-        // formula, which would make this check tautological)
         expect_vec3_near(t.forward(), glm::vec3(-1.0f, 0.0f, 0.0f)); // right-handed: -Z rotated +90 about Y -> -X
     }
 }
@@ -149,8 +147,8 @@ TEST_F(TransformTests, RotateCompositionOrder)
         glm::quat post_multiply_expected = initial_rotation * delta;
         glm::quat pre_multiply_wrong = delta * initial_rotation;
 
-        // The two candidate results must actually differ, otherwise this test
-        // wouldn't catch a regression to the old (buggy) pre-multiply order.
+        // The two candidates must differ, otherwise this test can't tell the right order from the
+        // wrong one.
         EXPECT_FALSE(quat_near(post_multiply_expected, pre_multiply_wrong));
 
         expect_quat_near(t.rotation, post_multiply_expected);

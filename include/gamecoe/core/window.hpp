@@ -1,9 +1,9 @@
 #pragma once
 
-#include <string>
+#include <gamecoe/utils/error.hpp>
 #include <cstdint>
 #include <expected>
-#include <gamecoe/utils/error.hpp>
+#include <string>
 
 struct GLFWwindow;
 
@@ -18,22 +18,23 @@ namespace gamecoe
         std::uint32_t m_height;
         bool m_first_frame;
 
-        window(GLFWwindow *glfwWindow, const std::string &title, std::uint32_t width, std::uint32_t height);
+        window(GLFWwindow *glfw_window, const std::string &title, std::uint32_t width, std::uint32_t height);
         void framebuffer_size_callback(int width, int height);
 
     public:
-        window(const window&) = delete;
-        window& operator=(const window&) = delete;
+        window(const window &) = delete;
+        window &operator=(const window &) = delete;
         window(window &&other) noexcept;
-        window& operator=(window &&other) noexcept;
+        window &operator=(window &&other) noexcept;
         ~window();
 
-        // Requires glfwInit() to have already succeeded (window does not call glfwInit()/glfwTerminate() itself - that's game's responsibility).
-        [[nodiscard]] static std::expected<window, error> create(
-            const std::string &title = "gamecoe", std::uint32_t width = 800, std::uint32_t height = 600);
+        // Needs glfwInit() to have succeeded. game calls glfwInit()/glfwTerminate(), window doesn't.
+        [[nodiscard]] static std::expected<window, error> create(const std::string &title = "gamecoe",
+                                                                 std::uint32_t width = 800,
+                                                                 std::uint32_t height = 600);
 
         bool active();
 
-        float aspect_ratio() const;
+        [[nodiscard]] float aspect_ratio() const noexcept;
     };
 } // namespace gamecoe

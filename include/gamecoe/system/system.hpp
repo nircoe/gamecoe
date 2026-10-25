@@ -17,7 +17,7 @@ namespace gamecoe
         struct entry
         {
             std::string name;
-            std::function<void(game&)> func;
+            std::function<void(game &)> func;
             std::vector<std::uint32_t> reads;
             std::vector<std::uint32_t> writes;
         };
@@ -45,17 +45,17 @@ namespace gamecoe
         // const components go in reads, non-const in writes. Ids are entities::component_id,
         // the same ones that index the component pools.
         template <typename... Components, typename Func>
-        [[nodiscard]] entry create(std::string name, Func&& func)
+        [[nodiscard]] entry create(std::string name, Func &&func)
         {
             static_assert(detail::unique_types_v<std::remove_cvref_t<Components>...>,
-                "systems::create(): duplicate component type "
-                "(T, const T, T& and const T& count as the same component)");
-            static_assert(std::is_invocable_v<std::decay_t<Func>&, game&>,
-                "systems::create(): func must be callable as func(game&)");
+                          "systems::create(): duplicate component type "
+                          "(T, const T, T& and const T& count as the same component)");
+            static_assert(std::is_invocable_v<std::decay_t<Func> &, game &>,
+                          "systems::create(): func must be callable as func(game&)");
             static_assert(std::is_copy_constructible_v<std::decay_t<Func>>,
-                "systems::create(): func must be copy-constructible");
+                          "systems::create(): func must be copy-constructible");
 
-            entry made{std::move(name), std::function<void(game&)>(std::forward<Func>(func)), {}, {}};
+            entry made{ std::move(name), std::function<void(game &)>(std::forward<Func>(func)), {}, {} };
             (detail::add_access<Components>(made), ...);
             return made;
         }

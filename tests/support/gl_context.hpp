@@ -1,11 +1,12 @@
 #pragma once
 
-#include <gtest/gtest.h>
 #include <gamecoe/core/window.hpp>
-#include <glad/gl.h>
-#include <GLFW/glfw3.h>
 #include <support/test_utils.hpp>
+#include <GLFW/glfw3.h>
+#include <glad/gl.h>
+#include <gtest/gtest.h>
 #include <optional>
+#include <utility>
 
 #define SKIP_IF_NO_GL() SKIP_IF_NOT(s_gl_ready, "no display/GL context available")
 

@@ -1,9 +1,9 @@
 #pragma once
 
+#include <gamecoe/utils/error.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <expected>
-#include <gamecoe/utils/error.hpp>
 
 namespace gamecoe
 {
@@ -19,22 +19,23 @@ namespace gamecoe
             void destroy();
             void reset() noexcept;
 
-            [[nodiscard]] static std::expected<buffer, error> create(std::uint32_t target, std::uint32_t binding_point = 0);
+            [[nodiscard]] static std::expected<buffer, error> create(std::uint32_t target,
+                                                                     std::uint32_t binding_point = 0);
 
             void bind() const;
             void unbind() const;
 
         public:
-            buffer(const buffer&) = delete;
-            buffer &operator=(const buffer&) = delete;
+            buffer(const buffer &) = delete;
+            buffer &operator=(const buffer &) = delete;
             buffer(buffer &&other) noexcept;
             buffer &operator=(buffer &&other) noexcept;
             ~buffer();
 
             [[nodiscard]] std::expected<void, error> upload_data(const void *data, std::size_t size);
 
-            std::uint32_t id() const;
-            std::uint32_t target() const;
+            [[nodiscard]] std::uint32_t id() const noexcept;
+            [[nodiscard]] std::uint32_t target() const noexcept;
 
             [[nodiscard]] static std::expected<buffer, error> create_vertex_buffer();
             [[nodiscard]] static std::expected<buffer, error> create_index_buffer();

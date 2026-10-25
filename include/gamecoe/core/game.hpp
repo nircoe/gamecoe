@@ -1,13 +1,14 @@
 #pragma once
 
-#include <gamecoe/core/window.hpp>
-#include <gamecoe/core/scene_id.hpp>
-#include <gamecoe/entity/entity.hpp>
-#include <gamecoe/entity/entities.hpp>
-#include <gamecoe/entity/command_buffer.hpp>
-#include <gamecoe/system/system.hpp>
-#include <gamecoe/system/scheduler.hpp>
 #include <gamecoe/component/scene_tag.hpp>
+#include <gamecoe/component/transform.hpp>
+#include <gamecoe/core/scene_id.hpp>
+#include <gamecoe/core/window.hpp>
+#include <gamecoe/entity/command_buffer.hpp>
+#include <gamecoe/entity/entities.hpp>
+#include <gamecoe/entity/entity.hpp>
+#include <gamecoe/system/scheduler.hpp>
+#include <gamecoe/system/system.hpp>
 #include <gamecoe/utils/error.hpp>
 #include <gamecoe/utils/error_handler.hpp>
 #include <gamecoe_config.hpp>
@@ -32,36 +33,43 @@
 
 namespace gamecoe
 {
-    using scene_builder = void(*)(command_buffer&);
+    using scene_builder = void (*)(command_buffer &);
 
-    enum class scene_status : std::uint8_t { unloaded, loaded, active, inactive };
+    enum class scene_status : std::uint8_t
+    {
+        unloaded,
+        loaded,
+        active,
+        inactive
+    };
 
     class game;
 
-#if GAMECOE_USE_TESTCOE
-    void test_prepare_to_play(game& g);
-    void test_run_systems(game& g);
+#if GAMECOE_BUILD_TESTS
+    void test_prepare_to_play(game &g);
+    void test_run_systems(game &g);
 #endif
 
     class game
     {
         struct scene_metadata
         {
-            command_buffer       pending;
-            scene_builder        builder;
-            std::int8_t          layer;
-            scene_status         status = scene_status::unloaded;
+            command_buffer pending;
+            scene_builder builder;
+            std::int8_t layer;
+            scene_status status = scene_status::unloaded;
 
-            scene_metadata(scene_builder builder, std::int8_t layer) : builder(builder), layer(layer) {}
+            scene_metadata(scene_builder builder, std::int8_t layer) : builder(builder), layer(layer) { }
         };
 
-        static_assert(std::is_nothrow_move_constructible_v<scene_metadata>,
+        static_assert(
+            std::is_nothrow_move_constructible_v<scene_metadata>,
             "scene_metadata must stay nothrow-movable - flat_map reallocation falls back to copying otherwise");
 
         struct pending_scene_op
         {
-            scene_id      id;
-            scene_status  target_status;
+            scene_id id;
+            scene_status target_status;
         };
 
         static_assert(std::is_nothrow_move_constructible_v<pending_scene_op>);
@@ -69,48 +77,51 @@ namespace gamecoe
         gamecoe::entities m_entities;
         std::optional<gamecoe::window> m_window;
         std::flat_map<scene_id, scene_metadata> m_scenes;
-        std::vector<scene_id> m_active_scenes;   // sorted by layer
+        std::vector<scene_id> m_active_scenes; // sorted by layer
         std::vector<pending_scene_op> m_pending_scene_ops;
         std::vector<systems::entry> m_systems;
         std::vector<systems::scheduler::hint> m_system_hints;
-        Color m_background_color;
+        color m_background_color;
         bool m_playing = false;
 
-        game(gamecoe::window &&main_window, const Color &background_color);
-        scene_metadata* find_scene(scene_id id);
-        const scene_metadata* find_scene(scene_id id) const;
+        game(gamecoe::window &&main_window, const color &background_color);
+        scene_metadata *find_scene(scene_id id);
+        const scene_metadata *find_scene(scene_id id) const;
         void insert_active_scene_sorted(scene_id id, std::int8_t layer);
         void prepare_to_play();
         void run_systems();
         void add_system(systems::entry &&entry_);
 
-#if GAMECOE_USE_TESTCOE
-        friend void test_prepare_to_play(game&);
-        friend void test_run_systems(game&);
+#if GAMECOE_BUILD_TESTS
+        friend void test_prepare_to_play(game &);
+        friend void test_run_systems(game &);
 #endif
 
     public:
-        game(const game&) = delete;
-        game& operator=(const game&) = delete;
-        game(game&& other) noexcept;
-        game& operator=(game&&) = delete;
+        game(const game &) = delete;
+        game &operator=(const game &) = delete;
+        game(game &&other) noexcept;
+        game &operator=(game &&) = delete;
         ~game();
 
         [[nodiscard]] static std::expected<game, error> create(
-            const std::string &title = "gamecoe", std::uint32_t width = 800, std::uint32_t height = 600,
-            const Color &background_color = colorcoe::darkSlateGray(),
+            const std::string &title = "gamecoe",
+            std::uint32_t width = 800,
+            std::uint32_t height = 600,
+            const color &background_color = colorcoe::dark_slate_gray(),
             logcoe::LogLevel log_level = logcoe::LogLevel::DEBUG
 #if GAMECOE_USE_SOUNDCOE
-            , const soundcoe::init_config &soundcoe_config = soundcoe::init_config{}
+            ,
+            const soundcoe::init_config &soundcoe_config = soundcoe::init_config{}
 #endif
-            );
+        );
 
-        gamecoe::entities& entities();
-        const gamecoe::entities& entities() const;
-        const gamecoe::window* window() const;
+        [[nodiscard]] gamecoe::entities &entities();
+        [[nodiscard]] const gamecoe::entities &entities() const;
+        [[nodiscard]] const gamecoe::window *window() const;
 
-        const Color& background_color() const;
-        void set_background_color(const Color &background_color);
+        [[nodiscard]] const color &background_color() const;
+        void set_background_color(const color &background_color);
 
         void set_log_level(logcoe::LogLevel level);
 
@@ -132,23 +143,25 @@ namespace gamecoe
         void freeze_all_except(std::initializer_list<scene_id> keep);
 
         void unfreeze_all();
-        bool is_scene_frozen(scene_id id) const;
+        [[nodiscard]] bool is_scene_frozen(scene_id id) const;
 
-        bool has_scene(scene_id id) const;
-        scene_status status(scene_id id) const;
+        [[nodiscard]] bool has_scene(scene_id id) const;
+        [[nodiscard]] scene_status status(scene_id id) const;
         void set_scene_layer(scene_id id, int layer);
-        std::int8_t scene_layer(scene_id id) const;
+        [[nodiscard]] std::int8_t scene_layer(scene_id id) const;
         // Returns a snapshot of the scene's entities (active + inactive)
-        std::vector<entity> scene_entities(scene_id id) const;
+        [[nodiscard]] std::vector<entity> scene_entities(scene_id id) const;
 
         template <typename... Comps>
-        entity create_entity(scene_id id, components::transform initial_transform = components::transform{}, Comps&&... comps);
+        entity create_entity(scene_id id,
+                             components::transform initial_transform = components::transform{},
+                             Comps &&...comps);
 
         // Systems run once per frame, ordered by what they read and write (writers before readers).
         // Two writers of the same component keep registration order. Unrelated systems have no promised order.
         // Must be registered before play() starts. Names must be unique.
         template <typename... Components, typename Func>
-        void register_system(std::string name, Func&& func);
+        void register_system(std::string name, Func &&func);
 
         // Forces `first` to run before `second`, overriding the order derived from component access.
         // Names are checked when play() starts. Unknown names and contradictory hints are logged and skipped.
@@ -158,29 +171,30 @@ namespace gamecoe
     };
 
     template <typename... Components, typename Func>
-    void game::register_system(std::string name, Func&& func)
+    void game::register_system(std::string name, Func &&func)
     {
         GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::register_system(): called on a moved-from game");
         add_system(systems::create<Components...>(std::move(name), std::forward<Func>(func)));
     }
 
     template <typename... Comps>
-    entity game::create_entity(scene_id id, components::transform initial_transform, Comps&&... comps)
+    entity game::create_entity(scene_id id, components::transform initial_transform, Comps &&...comps)
     {
         static_assert((!std::is_same_v<std::decay_t<Comps>, components::scene_tag> && ...),
-            "game::create_entity(): scene_tag is stamped from the scene_id argument, don't pass one");
+                      "game::create_entity(): scene_tag is stamped from the scene_id argument, don't pass one");
         static_assert((!std::is_same_v<std::decay_t<Comps>, components::transform> && ...),
-            "game::create_entity(): transform is a built-in component, use the initial_transform parameter");
+                      "game::create_entity(): transform is a built-in component, use the initial_transform parameter");
         static_assert((!hierarchy_component<std::decay_t<Comps>> && ...),
-            "game::create_entity(): hierarchy components are managed - use entities::set_parent() instead");
+                      "game::create_entity(): hierarchy components are managed - use entities::set_parent() instead");
 
         GAMECOE_ASSERT_GUARD(m_window.has_value(), "game::create_entity(): called on a moved-from game",
                              entity::invalid());
 
-        const scene_metadata* meta = find_scene(id);
+        const scene_metadata *meta = find_scene(id);
         GAMECOE_ASSERT_GUARD(meta != nullptr, "game::create_entity(): scene is not registered", entity::invalid());
         // entities can only be created into an active scene.
-        GAMECOE_ASSERT_GUARD(meta->status == scene_status::active, "game::create_entity(): scene is not active", entity::invalid());
+        GAMECOE_ASSERT_GUARD(meta->status == scene_status::active, "game::create_entity(): scene is not active",
+                             entity::invalid());
 
         entity e = m_entities.create(std::move(initial_transform), id);
         (m_entities.add_component<std::decay_t<Comps>>(e, std::forward<Comps>(comps)), ...);

@@ -1,4 +1,4 @@
-function(fetch_logcoe)
+function(gamecoe_fetch_logcoe)
     if(NOT DEFINED GAMECOE_USE_LOGCOE)
         set(GAMECOE_USE_LOGCOE OFF)
     endif()
@@ -7,6 +7,11 @@ function(fetch_logcoe)
         message(STATUS "[gamecoe] Using logcoe for logging")
         message(STATUS "[gamecoe] To disable: \"set(GAMECOE_USE_LOGCOE OFF)\" before fetching gamecoe")
         set(GAMECOE_USE_LOGCOE 1 PARENT_SCOPE)
+
+        if(TARGET logcoe)
+            message(STATUS "[gamecoe] logcoe already available, skipping fetch")
+            return()
+        endif()
 
         message(STATUS "[gamecoe] Fetching logcoe from source...")
 
@@ -22,5 +27,5 @@ function(fetch_logcoe)
         message(STATUS "[gamecoe] To enable: \"set(GAMECOE_USE_LOGCOE ON)\" before fetching gamecoe")
         set(GAMECOE_USE_LOGCOE 0 PARENT_SCOPE)
     endif()
-    
+
 endfunction()

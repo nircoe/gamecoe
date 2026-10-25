@@ -1,6 +1,9 @@
-#include <gtest/gtest.h>
-#include <support/gl_context.hpp>
 #include <gamecoe/graphics/vertex_array.hpp>
+#include <support/gl_context.hpp>
+#include <gtest/gtest.h>
+#include <cstddef>
+#include <cstdint>
+#include <utility>
 
 using namespace gamecoe;
 using namespace gamecoe::graphics;
@@ -27,11 +30,7 @@ TEST_F(VertexArrayTests, CreateWithoutIndices)
 {
     SKIP_IF_NO_GL();
 
-    float vertices[] = {
-        0.0f, 0.5f, 0.0f,
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f
-    };
+    float vertices[] = { 0.0f, 0.5f, 0.0f, -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f };
     std::size_t vertex_count = 3;
 
     auto result = vertex_array::create(vertices, vertex_count, 3);
@@ -45,12 +44,7 @@ TEST_F(VertexArrayTests, CreateWithIndices)
 {
     SKIP_IF_NO_GL();
 
-    float vertices[] = {
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.5f,  0.5f, 0.0f,
-        -0.5f,  0.5f, 0.0f
-    };
+    float vertices[] = { -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.5f, 0.5f, 0.0f, -0.5f, 0.5f, 0.0f };
     std::uint32_t indices[] = { 0, 1, 2, 2, 3, 0 };
     std::size_t vertex_count = 4;
     std::size_t index_count = 6;
@@ -71,11 +65,7 @@ TEST_F(VertexArrayTests, MoveConstruction)
 {
     SKIP_IF_NO_GL();
 
-    float vertices[] = {
-        0.0f, 0.5f, 0.0f,
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f
-    };
+    float vertices[] = { 0.0f, 0.5f, 0.0f, -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f };
     std::size_t vertex_count = 3;
 
     auto result = vertex_array::create(vertices, vertex_count, 3);
@@ -95,19 +85,10 @@ TEST_F(VertexArrayTests, MoveAssignmentNoDoubleDestroy)
 {
     SKIP_IF_NO_GL();
 
-    float vertices1[] = {
-        0.0f, 0.5f, 0.0f,
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f
-    };
+    float vertices1[] = { 0.0f, 0.5f, 0.0f, -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f };
     std::size_t vertex_count1 = 3;
 
-    float vertices2[] = {
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.5f,  0.5f, 0.0f,
-        -0.5f,  0.5f, 0.0f
-    };
+    float vertices2[] = { -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.5f, 0.5f, 0.0f, -0.5f, 0.5f, 0.0f };
     std::uint32_t indices2[] = { 0, 1, 2, 2, 3, 0 };
     std::size_t vertex_count2 = 4;
     std::size_t index_count2 = 6;
@@ -165,10 +146,8 @@ TEST_F(VertexArrayTests, DestroyShapeVertexArraysRebuildsFreshInstance)
     const vertex_array *before = vertex_array::triangle();
     ASSERT_NE(before, nullptr);
 
-    // Regression guard: the shape cache pointers used to be function-local statics, left
-    // dangling by destroy_shape_vertex_arrays()'s separate tracking vector. They're now
-    // file-scope globals that get nulled on destroy, so triangle() rebuilds instead of
-    // returning freed memory.
+    // Regression guard: destroy_shape_vertex_arrays() must null the shape cache pointers, so
+    // triangle() rebuilds instead of returning freed memory.
     vertex_array::destroy_shape_vertex_arrays();
 
     const vertex_array *after = vertex_array::triangle();

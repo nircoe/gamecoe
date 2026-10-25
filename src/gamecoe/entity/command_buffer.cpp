@@ -1,7 +1,7 @@
 #include <gamecoe/entity/command_buffer.hpp>
-#include <string>
 #include <gamecoe/utils/error_handler.hpp>
 #include <gamecoe_config.hpp>
+#include <string>
 
 #if GAMECOE_USE_LOGCOE
     #include <logcoe.hpp>
@@ -17,24 +17,23 @@ namespace gamecoe
 
     entity command_buffer::resolver::resolve(placeholder p) const
     {
-        GAMECOE_ASSERT_GUARD(p.m_index < m_created.size(), "command_buffer::resolver::resolve(): placeholder out of range", entity::invalid());
+        GAMECOE_ASSERT_GUARD(p.m_index < m_created.size(),
+                             "command_buffer::resolver::resolve(): placeholder out of range", entity::invalid());
         return m_created[p.m_index];
     }
 
     void command_buffer::set_parent(placeholder child, placeholder parent)
     {
-        m_commands.emplace_back([child, parent](entities& ents, const resolver& r)
-        {
-            ents.set_parent(r.resolve(child), r.resolve(parent));
-        });
+        m_commands.emplace_back([child, parent](entities &ents, const resolver &r)
+        { ents.set_parent(r.resolve(child), r.resolve(parent)); });
     }
 
-    void command_buffer::flush(entities& ents, std::optional<scene_id> scene)
+    void command_buffer::flush(entities &ents, std::optional<scene_id> scene)
     {
         std::vector<entity> created;
         created.reserve(m_spawn_transforms.size());
 
-        for (const components::transform& t : m_spawn_transforms)
+        for (const components::transform &t : m_spawn_transforms)
         {
             entity e = ents.create(t, scene);
             created.push_back(e);
@@ -46,7 +45,7 @@ namespace gamecoe
         {
             auto batch = std::move(m_commands);
             total_commands += batch.size();
-            for (auto& cmd : batch)
+            for (auto &cmd : batch)
                 cmd(ents, r);
         }
 
@@ -65,10 +64,7 @@ namespace gamecoe
         m_commands.shrink_to_fit();
     }
 
-    void command_buffer::clear()
-    {
-        cache_and_clear(m_commands.size());
-    }
+    void command_buffer::clear() { cache_and_clear(m_commands.size()); }
 
     void command_buffer::reserve_from_last_build()
     {

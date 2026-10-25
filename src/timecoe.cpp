@@ -3,9 +3,9 @@
 
 namespace
 {
-    float g_lastFrameTime = -1.0f;
-    float g_deltaTime = 0.0f;
-}
+    float g_last_frame_time = -1.0f;
+    float g_delta_time = 0.0f;
+} // namespace
 
 namespace timecoe
 {
@@ -15,15 +15,12 @@ namespace timecoe
         {
             float time = static_cast<float>(glfwGetTime());
 
-            if (g_lastFrameTime < 0.0f) g_lastFrameTime = time;
+            if (g_last_frame_time < 0.0f) g_last_frame_time = time;
 
-            g_deltaTime = time - g_lastFrameTime;
-            g_lastFrameTime = time;
+            g_delta_time = time - g_last_frame_time;
+            g_last_frame_time = time;
         }
     } // namespace detail
 
-    float deltaTime() noexcept
-    {
-        return g_deltaTime;
-    }
+    float delta_time() noexcept { return g_delta_time; }
 } // namespace timecoe

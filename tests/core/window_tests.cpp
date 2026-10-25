@@ -1,11 +1,12 @@
-#include <gtest/gtest.h>
 #include <gamecoe/core/window.hpp>
-#include <GLFW/glfw3.h>
 #include <support/test_utils.hpp>
+#include <GLFW/glfw3.h>
+#include <gtest/gtest.h>
+#include <utility>
 
 using namespace gamecoe;
 
-#define SKIP_IF_NO_WINDOW(result) \
+#define SKIP_IF_NO_WINDOW(result)                                                                                      \
     SKIP_IF_NOT((result).has_value(), "window::create() failed - no display/GL context available")
 
 //==============================================================================

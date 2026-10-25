@@ -1,13 +1,14 @@
-#include <gtest/gtest.h>
+#include <gamecoe/component/parent_child.hpp>
+#include <gamecoe/component/scene_tag.hpp>
+#include <gamecoe/component/transform.hpp>
 #include <gamecoe/core/game.hpp>
 #include <gamecoe/entity/command_buffer.hpp>
 #include <gamecoe/entity/entities.hpp>
-#include <gamecoe/component/scene_tag.hpp>
-#include <gamecoe/component/transform.hpp>
-#include <gamecoe/component/parent_child.hpp>
 #include <support/scene_id.hpp>
 #include <support/test_utils.hpp>
+#include <gtest/gtest.h>
 #include <algorithm>
+#include <cstddef>
 #include <optional>
 #include <utility>
 #include <vector>
@@ -16,55 +17,75 @@ using namespace gamecoe;
 
 namespace gamecoe
 {
-    void test_prepare_to_play(game& g) { g.prepare_to_play(); }
-    void test_run_systems(game& g)
+    void test_prepare_to_play(game &g) { g.prepare_to_play(); }
+    void test_run_systems(game &g)
     {
         if (!g.m_playing) g.prepare_to_play();
         g.run_systems();
     }
 } // namespace gamecoe
 
-#define SKIP_IF_NO_GAME(result) \
+#define SKIP_IF_NO_GAME(result)                                                                                        \
     SKIP_IF_NOT((result).has_value(), "game::create() failed - no display/GL context available")
 
 #define EXPECT_SCENE_UNREGISTERED_DEATH(call) EXPECT_DEATH(call, "scene is not registered")
 
 namespace
 {
-    constexpr scene_id scene_a = scene_id::TestScene1;
-    constexpr scene_id scene_b = scene_id::TestScene2;
-    constexpr scene_id scene_c = scene_id::TestScene3;
+    constexpr scene_id scene_a = scene_id::test_scene1;
+    constexpr scene_id scene_b = scene_id::test_scene2;
+    constexpr scene_id scene_c = scene_id::test_scene3;
 
-    void build_scene_a(command_buffer &buf) { buf.spawn(); buf.spawn(); buf.spawn(); }
+    void build_scene_a(command_buffer &buf)
+    {
+        buf.spawn();
+        buf.spawn();
+        buf.spawn();
+    }
     void build_scene_b(command_buffer &buf) { buf.spawn(); }
-    void build_scene_c(command_buffer &buf) { buf.spawn(); buf.spawn(); }
+    void build_scene_c(command_buffer &buf)
+    {
+        buf.spawn();
+        buf.spawn();
+    }
 
-    struct marker { int value; };
-    struct world_transform_marker { int value; };
-    struct camera_matrices_marker { int value; };
+    struct marker
+    {
+        int value;
+    };
+    struct world_transform_marker
+    {
+        int value;
+    };
+    struct camera_matrices_marker
+    {
+        int value;
+    };
 
     std::vector<int> g_system_order;
-    void free_function_system(game&) { g_system_order.push_back(2); }
-    auto push_order(int value) { return [value](game &) { g_system_order.push_back(value); }; }
+    void free_function_system(game &) { g_system_order.push_back(2); }
+    auto push_order(int value)
+    {
+        return [value](game &) { g_system_order.push_back(value); };
+    }
 
     void build_scene_hierarchy(command_buffer &buf)
     {
         command_buffer::placeholder parent = buf.spawn();
         command_buffer::placeholder child = buf.spawn();
-        buf.add<marker>(child, marker{5});
+        buf.add<marker>(child, marker{ 5 });
         buf.set_parent(child, parent);
     }
 
-    std::size_t count_scene_entities(game &g, scene_id id)
-    {
-        return g.scene_entities(id).size();
-    }
+    std::size_t count_scene_entities(game &g, scene_id id) { return g.scene_entities(id).size(); }
 
     std::size_t count_active_scene_entities(game &g, scene_id id)
     {
         std::size_t count = 0;
-        g.entities().for_each<components::scene_tag>(
-            [id, &count](entity, const components::scene_tag &tag) { if (tag.id == id) ++count; });
+        g.entities().for_each<components::scene_tag>([id, &count](entity, const components::scene_tag &tag)
+        {
+            if (tag.id == id) ++count;
+        });
         return count;
     }
 
@@ -121,8 +142,7 @@ TEST_F(GameTests, CreateSceneDuringPlayIsGuarded)
 #ifndef NDEBUG
     EXPECT_DEATH(g->create_scene(scene_a, build_scene_a), "cannot be created during game::play");
 #else
-    // Release: guard-return, the play-phase lock is what makes m_scenes storage-stable for the
-    // rest of play() - this is the actual mechanism the three original UAF sites relied on.
+    // Release: guard-return. The play-phase lock keeps m_scenes storage-stable for the rest of play().
     g->create_scene(scene_a, build_scene_a);
     EXPECT_FALSE(g->has_scene(scene_a));
 #endif
@@ -162,12 +182,11 @@ TEST_F(GameTests, LoadDefersFlushUntilActivate)
     EXPECT_EQ(g->entities().size(), 3u);
     EXPECT_EQ(count_scene_entities(*g, scene_a), 3u);
 
-    g->entities().for_each_all<components::scene_tag>(
-        [this](entity e, const components::scene_tag &tag)
-        {
-            EXPECT_EQ(tag.id, scene_a);
-            EXPECT_TRUE(g->entities().is_active(e));
-        });
+    g->entities().for_each_all<components::scene_tag>([this](entity e, const components::scene_tag &tag)
+    {
+        EXPECT_EQ(tag.id, scene_a);
+        EXPECT_TRUE(g->entities().is_active(e));
+    });
 }
 
 TEST_F(GameTests, DeactivateReactivateMovesPartitions)
@@ -242,7 +261,7 @@ TEST_F(GameTests, UnloadDestroysParentedSceneEntities)
     g->entities().set_parent(entities_a[1], entities_a[0]);
 
     // A parented child gets destroyed via its parent's cascade before unload_scene()'s own
-    // loop reaches it - the count must still land on 3, not crash on the already-dead handle.
+    // loop reaches it - the count must still land on 0, not crash on the already-dead handle.
     g->unload_scene(scene_a);
 
     EXPECT_EQ(count_scene_entities(*g, scene_a), 0u);
@@ -350,7 +369,7 @@ TEST_F(GameTests, CreateEntityTagsScene)
     components::transform t;
     t.position = glm::vec3(1.0f, 2.0f, 3.0f);
 
-    entity e = g->create_entity(scene_a, t, marker{7});
+    entity e = g->create_entity(scene_a, t, marker{ 7 });
 
     ASSERT_TRUE(g->entities().valid(e));
     ASSERT_NE(g->entities().get_component<components::scene_tag>(e), nullptr);
@@ -620,7 +639,7 @@ TEST_F(GameTests, UnregisteredSceneGuarded)
     // Test 5: status on an unregistered scene id
     {
 #ifndef NDEBUG
-        EXPECT_SCENE_UNREGISTERED_DEATH(g->status(scene_a));
+        EXPECT_SCENE_UNREGISTERED_DEATH((void)g->status(scene_a));
 #else
         // Release: guard-return, unregistered id is a well-defined unloaded rather than UB.
         EXPECT_EQ(g->status(scene_a), scene_status::unloaded);
@@ -631,13 +650,10 @@ TEST_F(GameTests, UnregisteredSceneGuarded)
 #ifndef NDEBUG
 TEST_F(GameTests, SceneEntitiesUnregisteredSceneIsGuarded)
 {
-    EXPECT_DEATH(g->scene_entities(scene_a), "game::scene_entities\\(\\): scene is not registered");
+    EXPECT_DEATH((void)g->scene_entities(scene_a), "game::scene_entities\\(\\): scene is not registered");
 }
 #else
-TEST_F(GameTests, SceneEntitiesUnregisteredSceneReturnsEmpty)
-{
-    EXPECT_TRUE(g->scene_entities(scene_a).empty());
-}
+TEST_F(GameTests, SceneEntitiesUnregisteredSceneReturnsEmpty) { EXPECT_TRUE(g->scene_entities(scene_a).empty()); }
 #endif
 
 TEST_F(GameTests, RepeatedLoadOrActivateGuarded)
@@ -723,7 +739,6 @@ TEST_F(GameTests, FreezeSceneBasics)
             EXPECT_TRUE(g->entities().is_active(e));
         EXPECT_EQ(count_active_scene_entities(*g, scene_a), 0u);
         EXPECT_EQ(count_scene_entities(*g, scene_a), 3u);
-        EXPECT_EQ(count_scene_entities(*g, scene_a), 3u);
         EXPECT_EQ(count_active_scene_entities(*g, scene_b), 1u);
     }
 
@@ -762,16 +777,16 @@ TEST_F(GameTests, FreezeScenesListOverloads)
 {
     setup_two_scenes(*g);
 
-    g->freeze_scenes({scene_a, scene_b});
+    g->freeze_scenes({ scene_a, scene_b });
     EXPECT_TRUE(g->is_scene_frozen(scene_a));
     EXPECT_TRUE(g->is_scene_frozen(scene_b));
 
-    g->unfreeze_scenes({scene_a});
+    g->unfreeze_scenes({ scene_a });
     EXPECT_FALSE(g->is_scene_frozen(scene_a));
     EXPECT_TRUE(g->is_scene_frozen(scene_b));
 
     // The repeated id is the already-frozen no-op.
-    g->freeze_scenes({scene_a, scene_a});
+    g->freeze_scenes({ scene_a, scene_a });
     EXPECT_TRUE(g->is_scene_frozen(scene_a));
 
     g->freeze_scenes({});
@@ -779,7 +794,7 @@ TEST_F(GameTests, FreezeScenesListOverloads)
     EXPECT_TRUE(g->is_scene_frozen(scene_a));
     EXPECT_TRUE(g->is_scene_frozen(scene_b));
 
-    g->unfreeze_scenes({scene_a, scene_b});
+    g->unfreeze_scenes({ scene_a, scene_b });
     EXPECT_FALSE(g->is_scene_frozen(scene_a));
     EXPECT_FALSE(g->is_scene_frozen(scene_b));
 }
@@ -812,7 +827,7 @@ TEST_F(GameTests, FreezeAllExceptSnapshot)
 
     // Test 3: the list overload keeps every listed scene, and a kept frozen scene stays frozen
     {
-        g->freeze_all_except({scene_a, scene_b});
+        g->freeze_all_except({ scene_a, scene_b });
         EXPECT_FALSE(g->is_scene_frozen(scene_a));
         EXPECT_TRUE(g->is_scene_frozen(scene_b));
         EXPECT_TRUE(g->is_scene_frozen(scene_c));
@@ -840,7 +855,7 @@ TEST_F(GameTests, UnfreezeAll)
 
     // Test 1: clears every frozen scene
     {
-        g->freeze_scenes({scene_a, scene_b});
+        g->freeze_scenes({ scene_a, scene_b });
         g->unfreeze_all();
         EXPECT_FALSE(g->is_scene_frozen(scene_a));
         EXPECT_FALSE(g->is_scene_frozen(scene_b));
@@ -994,16 +1009,16 @@ TEST_F(GameTests, FreezeGuarded)
         g->unfreeze_all();
 
 #ifndef NDEBUG
-        EXPECT_SCENE_UNREGISTERED_DEATH((g->freeze_scenes({scene_a, unregistered, scene_b})));
-        EXPECT_SCENE_UNREGISTERED_DEATH((g->unfreeze_scenes({scene_a, unregistered, scene_b})));
+        EXPECT_SCENE_UNREGISTERED_DEATH((g->freeze_scenes({ scene_a, unregistered, scene_b })));
+        EXPECT_SCENE_UNREGISTERED_DEATH((g->unfreeze_scenes({ scene_a, unregistered, scene_b })));
 #else
         // Release: the bad element is skipped and the rest are still applied.
-        g->freeze_scenes({scene_a, unregistered, scene_b});
+        g->freeze_scenes({ scene_a, unregistered, scene_b });
         EXPECT_TRUE(g->is_scene_frozen(scene_a));
         EXPECT_TRUE(g->is_scene_frozen(scene_b));
         EXPECT_FALSE(g->entities().is_scene_frozen(unregistered));
 
-        g->unfreeze_scenes({scene_a, unregistered, scene_b});
+        g->unfreeze_scenes({ scene_a, unregistered, scene_b });
         EXPECT_FALSE(g->is_scene_frozen(scene_a));
         EXPECT_FALSE(g->is_scene_frozen(scene_b));
 #endif
@@ -1012,7 +1027,7 @@ TEST_F(GameTests, FreezeGuarded)
     // Test 5: is_scene_frozen on an unregistered scene
     {
 #ifndef NDEBUG
-        EXPECT_SCENE_UNREGISTERED_DEATH(g->is_scene_frozen(unregistered));
+        EXPECT_SCENE_UNREGISTERED_DEATH((void)g->is_scene_frozen(unregistered));
 #else
         // Release: guard-return, an unregistered scene is not frozen.
         EXPECT_FALSE(g->is_scene_frozen(unregistered));
@@ -1094,27 +1109,25 @@ TEST_F(GameTests, RegisteredSystemsRunInRegistrationOrder)
     EXPECT_TRUE(g_system_order.empty());
 
     test_run_systems(*g);
-    EXPECT_EQ(g_system_order, (std::vector<int>{1, 2, 3}));
+    EXPECT_EQ(g_system_order, (std::vector<int>{ 1, 2, 3 }));
 
     test_run_systems(*g);
-    EXPECT_EQ(g_system_order, (std::vector<int>{1, 2, 3, 1, 2, 3}));
+    EXPECT_EQ(g_system_order, (std::vector<int>{ 1, 2, 3, 1, 2, 3 }));
 }
 
 TEST_F(GameTests, SystemsRunInScheduledOrder)
 {
     g_system_order.clear();
 
-    g->register_system<const world_transform_marker, const camera_matrices_marker>(
-        "render_system", push_order(3));
-    g->register_system<const world_transform_marker, camera_matrices_marker>(
-        "camera_system", push_order(2));
+    g->register_system<const world_transform_marker, const camera_matrices_marker>("render_system", push_order(3));
+    g->register_system<const world_transform_marker, camera_matrices_marker>("camera_system", push_order(2));
     g->register_system<world_transform_marker>("transform_system", push_order(1));
 
     test_run_systems(*g);
-    EXPECT_EQ(g_system_order, (std::vector<int>{1, 2, 3}));
+    EXPECT_EQ(g_system_order, (std::vector<int>{ 1, 2, 3 }));
 
     test_run_systems(*g);
-    EXPECT_EQ(g_system_order, (std::vector<int>{1, 2, 3, 1, 2, 3}));
+    EXPECT_EQ(g_system_order, (std::vector<int>{ 1, 2, 3, 1, 2, 3 }));
 }
 
 TEST_F(GameTests, RunBeforeOverridesDerivedOrder)
@@ -1126,7 +1139,7 @@ TEST_F(GameTests, RunBeforeOverridesDerivedOrder)
     g->run_before("r", "w");
 
     test_run_systems(*g);
-    EXPECT_EQ(g_system_order, (std::vector<int>{2, 1}));
+    EXPECT_EQ(g_system_order, (std::vector<int>{ 2, 1 }));
 }
 
 TEST_F(GameTests, RunBeforeResolvesForwardReferences)
@@ -1138,7 +1151,7 @@ TEST_F(GameTests, RunBeforeResolvesForwardReferences)
     g->register_system("late", push_order(2));
 
     test_run_systems(*g);
-    EXPECT_EQ(g_system_order, (std::vector<int>{2, 1}));
+    EXPECT_EQ(g_system_order, (std::vector<int>{ 2, 1 }));
 }
 
 TEST_F(GameTests, BadRunBeforeHintsAreSkipped)
@@ -1153,7 +1166,7 @@ TEST_F(GameTests, BadRunBeforeHintsAreSkipped)
     g->run_before("a", "b");
 
     test_run_systems(*g);
-    EXPECT_EQ(g_system_order, (std::vector<int>{2, 1}));
+    EXPECT_EQ(g_system_order, (std::vector<int>{ 2, 1 }));
 }
 
 TEST_F(GameTests, RunBeforeGuarded)
@@ -1169,7 +1182,7 @@ TEST_F(GameTests, RunBeforeGuarded)
 #else
     g->run_before("b", "a");
     test_run_systems(*g);
-    EXPECT_EQ(g_system_order, (std::vector<int>{1, 2}));
+    EXPECT_EQ(g_system_order, (std::vector<int>{ 1, 2 }));
 #endif
 }
 
@@ -1187,7 +1200,7 @@ TEST_F(GameTests, PrepareToPlayRunsOnce)
 #else
     test_prepare_to_play(*g);
     test_run_systems(*g);
-    EXPECT_EQ(g_system_order, (std::vector<int>{2, 1}));
+    EXPECT_EQ(g_system_order, (std::vector<int>{ 2, 1 }));
 #endif
 }
 
@@ -1199,13 +1212,13 @@ TEST_F(GameTests, RegisterSystemGuarded)
 
     // Test 1: registering a null function
     {
-        void (*null_system)(game&) = nullptr;
+        void (*null_system)(game &) = nullptr;
 
 #ifndef NDEBUG
         EXPECT_DEATH(g->register_system("null", null_system), "system function is null");
 #else
         g->register_system("null", null_system);
-        g->register_system("counter", [&calls](game&) { ++calls; });
+        g->register_system("counter", [&calls](game &) { ++calls; });
         test_run_systems(*g);
         EXPECT_EQ(calls, 1);
 #endif
@@ -1216,7 +1229,7 @@ TEST_F(GameTests, RegisterSystemGuarded)
         test_prepare_to_play(*g);
 
 #ifndef NDEBUG
-        EXPECT_DEATH(g->register_system("late", [](game&) {}), "cannot be registered during game::play");
+        EXPECT_DEATH(g->register_system("late", [](game &) { }), "cannot be registered during game::play");
 #else
         g_system_order.clear();
         g->register_system("late", push_order(1));
@@ -1229,28 +1242,28 @@ TEST_F(GameTests, RegisterSystemGuarded)
 TEST_F(GameTests, RegisterSystemRejectsDuplicateNames)
 {
 #ifndef NDEBUG
-    g->register_system("dup", [](game&) {});
-    EXPECT_DEATH(g->register_system("dup", [](game&) {}), "already registered");
+    g->register_system("dup", [](game &) { });
+    EXPECT_DEATH(g->register_system("dup", [](game &) { }), "already registered");
 #else
     g_system_order.clear();
     g->register_system("dup", push_order(1));
     g->register_system("dup", push_order(2));
     g->register_system("other", push_order(3));
     test_run_systems(*g);
-    EXPECT_EQ(g_system_order, (std::vector<int>{1, 3}));
+    EXPECT_EQ(g_system_order, (std::vector<int>{ 1, 3 }));
 #endif
 }
 
 TEST_F(GameTests, RegisterSystemRejectsEmptyName)
 {
 #ifndef NDEBUG
-    EXPECT_DEATH(g->register_system("", [](game&) {}), "system name is empty");
+    EXPECT_DEATH(g->register_system("", [](game &) { }), "system name is empty");
 #else
     g_system_order.clear();
     g->register_system("", push_order(1));
     g->register_system("ok", push_order(2));
     test_run_systems(*g);
-    EXPECT_EQ(g_system_order, (std::vector<int>{2}));
+    EXPECT_EQ(g_system_order, (std::vector<int>{ 2 }));
 #endif
 }
 
@@ -1313,9 +1326,9 @@ TEST_F(GameMoveTests, RegisterSystemOnMovedFromGameGuarded)
     int calls = 0;
 
 #ifndef NDEBUG
-    EXPECT_DEATH(result->register_system("moved", [&calls](game&) { ++calls; }), "called on a moved-from game");
+    EXPECT_DEATH(result->register_system("moved", [&calls](game &) { ++calls; }), "called on a moved-from game");
 #else
-    result->register_system("counter", [&calls](game&) { ++calls; });
+    result->register_system("counter", [&calls](game &) { ++calls; });
     test_run_systems(*result);
     EXPECT_EQ(calls, 0);
 #endif
@@ -1341,7 +1354,7 @@ TEST_F(GameMoveTests, RunBeforeOnMovedFromGameGuarded)
     EXPECT_TRUE(g_system_order.empty());
 
     test_run_systems(moved);
-    EXPECT_EQ(g_system_order, (std::vector<int>{1, 2}));
+    EXPECT_EQ(g_system_order, (std::vector<int>{ 1, 2 }));
 #endif
 }
 
@@ -1369,10 +1382,10 @@ TEST_F(GameMoveTests, MovedFromGameGuardsEveryPublicMethod)
     EXPECT_DEATH(source.unload_scene(scene_a), "called on a moved-from game");
     EXPECT_DEATH(source.freeze_scene(scene_a), "called on a moved-from game");
     EXPECT_DEATH(source.unfreeze_scene(scene_a), "called on a moved-from game");
-    EXPECT_DEATH(source.freeze_scenes({scene_a}), "called on a moved-from game");
-    EXPECT_DEATH(source.unfreeze_scenes({scene_a}), "called on a moved-from game");
+    EXPECT_DEATH(source.freeze_scenes({ scene_a }), "called on a moved-from game");
+    EXPECT_DEATH(source.unfreeze_scenes({ scene_a }), "called on a moved-from game");
     EXPECT_DEATH(source.freeze_all_except(scene_a), "called on a moved-from game");
-    EXPECT_DEATH(source.freeze_all_except({scene_a}), "called on a moved-from game");
+    EXPECT_DEATH(source.freeze_all_except({ scene_a }), "called on a moved-from game");
     EXPECT_DEATH(source.unfreeze_all(), "called on a moved-from game");
     EXPECT_DEATH(source.set_scene_layer(scene_a, 1), "called on a moved-from game");
     EXPECT_DEATH((void)const_source.has_scene(scene_a), "called on a moved-from game");
@@ -1384,7 +1397,7 @@ TEST_F(GameMoveTests, MovedFromGameGuardsEveryPublicMethod)
 #else
     (void)source.entities();
     (void)const_source.entities();
-    EXPECT_EQ(const_source.background_color(), colorcoe::darkSlateGray());
+    EXPECT_EQ(const_source.background_color(), colorcoe::dark_slate_gray());
 
     source.set_log_level(logcoe::LogLevel::DEBUG);
     source.create_scene(scene_c, build_scene_c);
@@ -1395,10 +1408,10 @@ TEST_F(GameMoveTests, MovedFromGameGuardsEveryPublicMethod)
     source.unload_scene(scene_a);
     source.freeze_scene(scene_a);
     source.unfreeze_scene(scene_a);
-    source.freeze_scenes({scene_a});
-    source.unfreeze_scenes({scene_a});
+    source.freeze_scenes({ scene_a });
+    source.unfreeze_scenes({ scene_a });
     source.freeze_all_except(scene_a);
-    source.freeze_all_except({scene_a});
+    source.freeze_all_except({ scene_a });
     source.unfreeze_all();
     source.set_scene_layer(scene_a, 1);
 
@@ -1419,7 +1432,11 @@ TEST_F(GameMoveTests, SystemsSurviveGameMove)
 
     g_system_order.clear();
     int calls = 0;
-    result->register_system("counter", [&calls](game&) { ++calls; g_system_order.push_back(1); });
+    result->register_system("counter", [&calls](game &)
+    {
+        ++calls;
+        g_system_order.push_back(1);
+    });
     result->register_system("second", push_order(2));
     result->run_before("second", "counter");
 
@@ -1427,11 +1444,11 @@ TEST_F(GameMoveTests, SystemsSurviveGameMove)
 
     test_run_systems(moved);
     EXPECT_EQ(calls, 1);
-    EXPECT_EQ(g_system_order, (std::vector<int>{2, 1}));
+    EXPECT_EQ(g_system_order, (std::vector<int>{ 2, 1 }));
 
     test_run_systems(*result);
     EXPECT_EQ(calls, 1);
-    EXPECT_EQ(g_system_order, (std::vector<int>{2, 1}));
+    EXPECT_EQ(g_system_order, (std::vector<int>{ 2, 1 }));
 }
 
 TEST_F(GameMoveTests, FrozenStateSurvivesGameMove)

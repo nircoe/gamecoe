@@ -1,11 +1,11 @@
-function(ensure_jinja2 OUTPUT_PYTHON_VAR)
+function(gamecoe_ensure_jinja2 OUTPUT_PYTHON_VAR)
     # Check if the user has jinja2 installed
     execute_process(
         COMMAND ${Python3_EXECUTABLE} -c "import jinja2"
         RESULT_VARIABLE JINJA2_RESULT
         OUTPUT_QUIET ERROR_QUIET
     )
-    
+
     if(JINJA2_RESULT EQUAL 0)
         message(STATUS "[gamecoe] Using jinja2 to generate GLAD")
         set(${OUTPUT_PYTHON_VAR} ${Python3_EXECUTABLE} PARENT_SCOPE)
@@ -19,7 +19,7 @@ function(ensure_jinja2 OUTPUT_PYTHON_VAR)
         RESULT_VARIABLE JINJA2_INSTALL_RESULT
         OUTPUT_QUIET ERROR_QUIET
     )
-    
+
     if(JINJA2_INSTALL_RESULT EQUAL 0)
         execute_process(
             COMMAND ${Python3_EXECUTABLE} -c "import jinja2"
@@ -65,7 +65,7 @@ function(ensure_jinja2 OUTPUT_PYTHON_VAR)
     message(STATUS "[gamecoe] Using virtual environment at: ${VENV_DIR}")
 endfunction()
 
-function(generate_glad)
+function(gamecoe_generate_glad)
     message(STATUS "[gamecoe] Fetching GLAD from source...")
 
     FetchContent_Declare(
@@ -77,7 +77,7 @@ function(generate_glad)
     FetchContent_MakeAvailable(glad)
 
     find_package(Python3 COMPONENTS Interpreter REQUIRED)
-    ensure_jinja2(PYTHON_EXE)
+    gamecoe_ensure_jinja2(PYTHON_EXE)
 
     # User-configurable options
     if(NOT DEFINED GAMECOE_GRAPHICS_API)
@@ -88,7 +88,7 @@ function(generate_glad)
     elseif(GAMECOE_GRAPHICS_API NOT STREQUAL "OpenGL") # TODO: Change when adding Vulkan support
         message(FATAL_ERROR "[gamecoe] ${GAMECOE_GRAPHICS_API} is not a supported graphics API")
     endif()
-    
+
     set(DEFAULT_VERSION_MAJOR OFF)
     if(NOT DEFINED GAMECOE_GRAPHICS_VERSION_MAJOR)
         set(DEFAULT_VERSION_MAJOR ON)
@@ -195,7 +195,7 @@ function(generate_glad)
         VERBATIM
     )
 
-    add_custom_target(glad
+    add_custom_target(gamecoe_glad
         DEPENDS ${GAMECOE_GLAD_SOURCES} ${GAMECOE_GLAD_HEADERS}
     )
 endfunction()

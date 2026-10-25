@@ -24,19 +24,15 @@ target_link_libraries(gamecoe
         # testcoe
 )
 
-target_compile_features(gamecoe 
-    PRIVATE 
-        cxx_std_20
+target_compile_definitions(gamecoe
+    PRIVATE
+        GLFW_INCLUDE_NONE
 )
 
-if(MSVC)
-    target_compile_options(gamecoe PRIVATE /W4 /WX)
-else()
-    target_compile_options(gamecoe PRIVATE -Werror -Wall -Wextra -Wpedantic)
-endif()
+gamecoe_enable_strict_warnings(gamecoe)
 
 if(MINGW)
     target_link_options(gamecoe INTERFACE -static-libgcc -static-libstdc++ -static)
 endif()
 
-add_dependencies(gamecoe glad)
+add_dependencies(gamecoe gamecoe_glad)

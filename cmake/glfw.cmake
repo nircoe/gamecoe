@@ -1,4 +1,9 @@
-function(fetch_glfw)
+function(gamecoe_fetch_glfw)
+    if(TARGET glfw)
+        message(STATUS "[gamecoe] glfw already available, skipping fetch")
+        return()
+    endif()
+
     message(STATUS "[gamecoe] Fetching GLFW from source...")
 
     set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -9,7 +14,7 @@ function(fetch_glfw)
     if(UNIX AND NOT APPLE)
         option(GAMECOE_GLFW_WAYLAND "Enable Wayland support" ON)
         option(GAMECOE_GLFW_X11 "Enable X11 support" ON)
-        
+
         message(STATUS "[gamecoe] GLFW window system (Linux):")
         if(GAMECOE_GLFW_WAYLAND)
             message(STATUS "[gamecoe] Wayland: ENABLED")
@@ -28,6 +33,17 @@ function(fetch_glfw)
         endif()
         set(GLFW_BUILD_WAYLAND ${GAMECOE_GLFW_WAYLAND} CACHE BOOL "" FORCE)
         set(GLFW_BUILD_X11 ${GAMECOE_GLFW_X11} CACHE BOOL "" FORCE)
+
+        option(GAMECOE_QUIET_GRAPHICS_WARNINGS "Suppress system graphics warnings (libdecor, Mesa)" ON)
+        if(GAMECOE_QUIET_GRAPHICS_WARNINGS)
+            message(STATUS "[gamecoe] Graphics warnings suppressed")
+            message(STATUS "[gamecoe] To show warnings: \"set(GAMECOE_QUIET_GRAPHICS_WARNINGS OFF)\" before fetching gamecoe")
+            set(GAMECOE_QUIET_GRAPHICS_WARNINGS 1)
+        else()
+            message(STATUS "[gamecoe] Showing all graphics warnings")
+            message(STATUS "[gamecoe] To suppress: \"set(GAMECOE_QUIET_GRAPHICS_WARNINGS ON)\" before fetching gamecoe")
+            set(GAMECOE_QUIET_GRAPHICS_WARNINGS 0)
+        endif()
     endif()
 
     FetchContent_Declare(

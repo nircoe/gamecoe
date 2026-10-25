@@ -1,7 +1,10 @@
-#include <gtest/gtest.h>
 #include <gamecoe/entity/entity.hpp>
-#include <set>
+#include <gtest/gtest.h>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <map>
+#include <set>
 #include <unordered_set>
 
 using namespace gamecoe;
@@ -18,8 +21,7 @@ protected:
     {
         std::size_t operator()(entity e) const noexcept
         {
-            return std::hash<std::uint32_t>{}(e.id()) ^
-                   (std::hash<std::uint16_t>{}(e.generation()) << 1);
+            return std::hash<std::uint32_t>{}(e.id()) ^ (std::hash<std::uint16_t>{}(e.generation()) << 1);
         }
     };
 };
@@ -65,7 +67,7 @@ TEST_F(EntityTests, CreationAndValidity)
         auto invalid = entity::invalid();
 
         EXPECT_TRUE(invalid == entity::invalid());
-        EXPECT_EQ(invalid, entity::invalid()); // Two invalid entities are equal
+        EXPECT_EQ(invalid, entity::invalid());
     }
 }
 
@@ -83,7 +85,6 @@ TEST_F(EntityTests, BitPacking)
     EXPECT_EQ(e.id(), 1);
     EXPECT_EQ(e.generation(), 0);
 
-    // Create entity with generation set
     auto e2 = entity::create(0, 1);
     EXPECT_EQ(e2.id(), 0);
     EXPECT_EQ(e2.generation(), 1);
@@ -101,7 +102,6 @@ TEST_F(EntityTests, BitPacking)
 
 TEST_F(EntityTests, Comparison)
 {
-    // Test equality
     auto e1 = entity::create(42, 5);
     auto e2 = entity::create(42, 5);
     auto e3 = entity::create(42, 6);

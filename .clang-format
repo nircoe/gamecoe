@@ -1,0 +1,31 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+UseTab: Never
+ColumnLimit: 120
+BreakBeforeBraces: Allman
+AccessModifierOffset: -4
+PointerAlignment: Right
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyBlock: true
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: WithoutElse
+BreakTemplateDeclarations: Yes
+NamespaceIndentation: All
+FixNamespaceComments: true
+IndentCaseLabels: true
+IndentPPDirectives: BeforeHash
+InsertNewlineAtEOF: true
+BinPackParameters: false
+Cpp11BracedListStyle: false
+LambdaBodyIndentation: OuterScope
+PenaltyReturnTypeOnItsOwnLine: 1000
+IncludeBlocks: Merge
+IncludeCategories:
+  - Regex: '^<(gamecoe/[^>]*|gamecoe_config\.hpp|gamecoe\.hpp|support/[^>]*)>$'
+    Priority: 1
+  - Regex: '^<(colorcoe|inputcoe|timecoe)\.hpp>$'
+    Priority: 2
+  - Regex: '^<[^>]+\.(h|hpp)>$'
+    Priority: 3
+  - Regex: '^<[^>.]+>$'
+    Priority: 4

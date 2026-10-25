@@ -1,8 +1,10 @@
-#include <gtest/gtest.h>
-#include <support/gl_context.hpp>
 #include <gamecoe/graphics/buffer.hpp>
 #include <gamecoe_config.hpp>
+#include <support/gl_context.hpp>
 #include <glad/gl.h>
+#include <gtest/gtest.h>
+#include <cstdint>
+#include <utility>
 
 using namespace gamecoe;
 using namespace gamecoe::graphics;
@@ -11,7 +13,9 @@ using namespace gamecoe::graphics;
 //              GraphicsBufferTests - graphics::buffer class tests
 //==============================================================================
 
-class GraphicsBufferTests : public GLContextTest {};
+class GraphicsBufferTests : public GLContextTest
+{
+};
 
 //==============================================================================
 //                        Creation

@@ -1,7 +1,7 @@
-#include <gtest/gtest.h>
-#include <gamecoe/system/system.hpp>
-#include <gamecoe/entity/entities.hpp>
 #include <gamecoe/component/transform.hpp>
+#include <gamecoe/entity/entities.hpp>
+#include <gamecoe/system/system.hpp>
+#include <gtest/gtest.h>
 #include <cstdint>
 #include <vector>
 
@@ -14,7 +14,7 @@ namespace
         int value;
     };
 
-    void noop_system(game&) {}
+    void noop_system(game &) { }
 } // namespace
 
 //==============================================================================
@@ -33,24 +33,24 @@ TEST_F(SystemTests, CreateSplitsReadsAndWrites)
     // Test 1: const goes to reads, non-const goes to writes
     {
         systems::entry entry = systems::create<const components::transform, marker>("a", noop_system);
-        EXPECT_EQ(entry.reads, std::vector<std::uint32_t>{transform_id});
-        EXPECT_EQ(entry.writes, std::vector<std::uint32_t>{marker_id});
+        EXPECT_EQ(entry.reads, std::vector<std::uint32_t>{ transform_id });
+        EXPECT_EQ(entry.writes, std::vector<std::uint32_t>{ marker_id });
     }
 
     // Test 2: all-const goes to reads only, all-non-const goes to writes only
     {
         systems::entry reads_only = systems::create<const components::transform, const marker>("a", noop_system);
-        EXPECT_EQ(reads_only.reads, (std::vector<std::uint32_t>{transform_id, marker_id}));
+        EXPECT_EQ(reads_only.reads, (std::vector<std::uint32_t>{ transform_id, marker_id }));
         EXPECT_TRUE(reads_only.writes.empty());
 
         systems::entry writes_only = systems::create<components::transform, marker>("a", noop_system);
         EXPECT_TRUE(writes_only.reads.empty());
-        EXPECT_EQ(writes_only.writes, (std::vector<std::uint32_t>{transform_id, marker_id}));
+        EXPECT_EQ(writes_only.writes, (std::vector<std::uint32_t>{ transform_id, marker_id }));
     }
 
     // Test 3: empty pack gives empty access sets and a callable function
     {
-        systems::entry entry = systems::create("a", [](game&) {});
+        systems::entry entry = systems::create("a", [](game &) { });
         EXPECT_TRUE(entry.reads.empty());
         EXPECT_TRUE(entry.writes.empty());
         EXPECT_TRUE(static_cast<bool>(entry.func));
@@ -59,14 +59,14 @@ TEST_F(SystemTests, CreateSplitsReadsAndWrites)
     // Test 4: declaration order is kept within each vector
     {
         systems::entry entry = systems::create<marker, components::transform>("a", noop_system);
-        EXPECT_EQ(entry.writes, (std::vector<std::uint32_t>{marker_id, transform_id}));
+        EXPECT_EQ(entry.writes, (std::vector<std::uint32_t>{ marker_id, transform_id }));
     }
 
     // Test 5: reference forms behave like the plain forms
     {
-        systems::entry entry = systems::create<const components::transform&, marker&>("a", noop_system);
-        EXPECT_EQ(entry.reads, std::vector<std::uint32_t>{transform_id});
-        EXPECT_EQ(entry.writes, std::vector<std::uint32_t>{marker_id});
+        systems::entry entry = systems::create<const components::transform &, marker &>("a", noop_system);
+        EXPECT_EQ(entry.reads, std::vector<std::uint32_t>{ transform_id });
+        EXPECT_EQ(entry.writes, std::vector<std::uint32_t>{ marker_id });
     }
 
     // Test 6: const and non-const forms share one id
@@ -86,7 +86,7 @@ TEST_F(SystemTests, CreateStoresName)
 
     // Test 2: the name is kept for a lambda and with an explicit component pack
     {
-        EXPECT_EQ(systems::create("lambda", [](game&) {}).name, "lambda");
+        EXPECT_EQ(systems::create("lambda", [](game &) { }).name, "lambda");
         EXPECT_EQ(systems::create<marker>("m", noop_system).name, "m");
     }
 }

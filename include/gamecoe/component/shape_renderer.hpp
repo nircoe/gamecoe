@@ -11,13 +11,13 @@ namespace gamecoe
         struct shape_renderer
         {
             shape kind = shape::invalid;
-            Color color;
+            gamecoe::color color;
 
-            static shape_renderer triangle(const Color &color) { return { shape::triangle, color }; }
-            static shape_renderer rectangle(const Color &color) { return { shape::rectangle, color }; }
-            static shape_renderer box(const Color &color) { return { shape::box, color }; }
-            static shape_renderer circle(const Color &color) { return { shape::circle, color }; }
-            static shape_renderer sphere(const Color &color) { return { shape::sphere, color }; }
+            static shape_renderer triangle(const gamecoe::color &color_) { return { shape::triangle, color_ }; }
+            static shape_renderer rectangle(const gamecoe::color &color_) { return { shape::rectangle, color_ }; }
+            static shape_renderer box(const gamecoe::color &color_) { return { shape::box, color_ }; }
+            static shape_renderer circle(const gamecoe::color &color_) { return { shape::circle, color_ }; }
+            static shape_renderer sphere(const gamecoe::color &color_) { return { shape::sphere, color_ }; }
         };
 
         static_assert(std::is_standard_layout_v<shape_renderer>);
