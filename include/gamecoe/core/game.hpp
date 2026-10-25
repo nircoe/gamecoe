@@ -39,7 +39,7 @@ namespace gamecoe
 
     class game;
 
-#if GAMECOE_USE_TESTCOE
+#if GAMECOE_BUILD_TESTS
     void test_prepare_to_play(game& g);
     void test_run_systems(game& g);
 #endif
@@ -85,7 +85,7 @@ namespace gamecoe
         void run_systems();
         void add_system(systems::entry &&entry_);
 
-#if GAMECOE_USE_TESTCOE
+#if GAMECOE_BUILD_TESTS
         friend void test_prepare_to_play(game&);
         friend void test_run_systems(game&);
 #endif

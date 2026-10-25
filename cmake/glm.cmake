@@ -1,4 +1,9 @@
-function(fetch_glm)
+function(gamecoe_fetch_glm)
+    if(TARGET glm::glm-header-only)
+        message(STATUS "[gamecoe] glm already available, skipping fetch")
+        return()
+    endif()
+
     message(STATUS "[gamecoe] Fetching glm from source...")
 
     set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "" FORCE)

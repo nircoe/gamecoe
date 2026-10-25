@@ -1,25 +1,17 @@
-function(fetch_testcoe)
-    if(NOT DEFINED GAMECOE_USE_TESTCOE)
-        set(GAMECOE_USE_TESTCOE OFF)
+function(gamecoe_fetch_testcoe)
+    if(TARGET testcoe)
+        message(STATUS "[gamecoe] testcoe already available, skipping fetch")
+        return()
     endif()
 
-    if(GAMECOE_USE_TESTCOE)
-        message(STATUS "[gamecoe] Using testcoe for testing")
-        message(STATUS "[gamecoe] To disable: \"set(GAMECOE_USE_TESTCOE OFF)\" before fetching gamecoe")
-        set(GAMECOE_USE_TESTCOE 1 PARENT_SCOPE)
+    message(STATUS "[gamecoe] Fetching testcoe from source...")
+    message(STATUS "[gamecoe] To change: \"set(GAMECOE_BUILD_TESTS OFF)\" before fetching gamecoe")
 
-        message(STATUS "[gamecoe] Fetching testcoe from source...")
-
-        FetchContent_Declare(
-            testcoe
-            GIT_REPOSITORY https://github.com/nircoe/testcoe.git
-            GIT_TAG v0.2.0
-            GIT_SHALLOW TRUE
-        )
-        FetchContent_MakeAvailable(testcoe)
-    else()
-        message(STATUS "[gamecoe] testcoe disabled")
-        message(STATUS "[gamecoe] To enable: \"set(GAMECOE_USE_TESTCOE ON)\" before fetching gamecoe")
-        set(GAMECOE_USE_TESTCOE 0 PARENT_SCOPE)
-    endif()
+    FetchContent_Declare(
+        testcoe
+        GIT_REPOSITORY https://github.com/nircoe/testcoe.git
+        GIT_TAG v0.2.0
+        GIT_SHALLOW TRUE
+    )
+    FetchContent_MakeAvailable(testcoe)
 endfunction()

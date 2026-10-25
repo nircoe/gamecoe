@@ -1,4 +1,4 @@
-function(fetch_soundcoe)
+function(gamecoe_fetch_soundcoe)
     if(NOT DEFINED GAMECOE_USE_SOUNDCOE)
         set(GAMECOE_USE_SOUNDCOE OFF)
     endif()
@@ -12,6 +12,11 @@ function(fetch_soundcoe)
         message(STATUS "[gamecoe] Using soundcoe for sound management")
         message(STATUS "[gamecoe] To disable: \"set(GAMECOE_USE_SOUNDCOE OFF)\" before fetching gamecoe")
         set(GAMECOE_USE_SOUNDCOE 1 PARENT_SCOPE)
+
+        if(TARGET soundcoe)
+            message(STATUS "[gamecoe] soundcoe already available, skipping fetch")
+            return()
+        endif()
 
         message(STATUS "[gamecoe] Fetching soundcoe from source...")
 
@@ -27,5 +32,5 @@ function(fetch_soundcoe)
         message(STATUS "[gamecoe] To enable: \"set(GAMECOE_USE_SOUNDCOE ON)\" before fetching gamecoe")
         set(GAMECOE_USE_SOUNDCOE 0 PARENT_SCOPE)
     endif()
-    
+
 endfunction()

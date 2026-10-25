@@ -7,6 +7,8 @@ target_include_directories(gamecoe_headers
         $<INSTALL_INTERFACE:include>
 )
 
+target_compile_features(gamecoe_headers INTERFACE cxx_std_23)
+
 target_link_libraries(gamecoe_headers
     INTERFACE
         glm::glm-header-only

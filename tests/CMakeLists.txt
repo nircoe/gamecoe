@@ -48,8 +48,6 @@ endif()
 target_include_directories(gamecoe_tests PRIVATE ${GAMECOE_GLAD_OUTPUT_DIR}/include)
 target_include_directories(gamecoe_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-if(MSVC)
-    target_compile_options(gamecoe_tests PRIVATE /W4 /WX)
-else()
-    target_compile_options(gamecoe_tests PRIVATE -Werror -Wall -Wextra -Wpedantic)
-endif()
+target_compile_definitions(gamecoe_tests PRIVATE GLFW_INCLUDE_NONE)
+
+gamecoe_enable_strict_warnings(gamecoe_tests)
