@@ -96,3 +96,15 @@ jobs:
           exit 1
         fi
       shell: bash
+
+  format-check:
+    name: Format check
+    runs-on: ubuntu-26.04
+    if: github.event.pull_request.draft == false || github.event_name == 'push'
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v7
+
+    - name: Check formatting
+      run: git ls-files '*.cpp' '*.hpp' ':!:external/' | xargs clang-format --dry-run -Werror
+      shell: bash
